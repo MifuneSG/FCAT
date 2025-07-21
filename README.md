@@ -2,7 +2,7 @@
 # Fleet Commanders Assistant Tool (FCAT)
 
 **Version:** 0.2‑beta
-
+![Screenshot Example of the tool](https://cdn.discordapp.com/attachments/1059709687769092177/1396989242315509872/image.png?ex=6880171e&is=687ec59e&hm=2c3914a41fdb6aeca63907f46cccfc2f15229e1cd23dcf1a251672e5190e6757&)
 ---
 
 ## 🚀 Overview
