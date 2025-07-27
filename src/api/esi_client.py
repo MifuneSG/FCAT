@@ -10,7 +10,7 @@ import requests
 REDIRECT_URI = "http://localhost:17900/callback"
 SCOPES = "esi-fleets.read_fleet.v1"
 
-# The URL for your deployed proxy on Render.com or your domain
+
 PROXY_EXCHANGE_URL = "https://fcat-proxy.onrender.com/exchange"
 
 AUTH_URL = (
