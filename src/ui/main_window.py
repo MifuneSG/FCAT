@@ -18,6 +18,7 @@ class MainWindow(QMainWindow):
         # Menu bar → Settings → Booster Channels…
         menubar: QMenuBar = self.menuBar()
         settingsMenu = menubar.addMenu("Settings")
+        settingsMenu = menubar.addMenu("Alerts")
 
         self.boostSettings: QAction = QAction("Booster Channels…", self)
         settingsMenu.addAction(self.boostSettings)
