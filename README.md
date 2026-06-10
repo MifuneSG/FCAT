@@ -130,12 +130,8 @@ FCAT is deliberately honest about the limits of EVE's data. This matters if you'
 | Data | Source | Notes |
 |------|--------|-------|
 | Fleet hierarchy, ships, systems | ESI | Live, every 5s |
-| Ship → role | ESI ship groups | Classified by **hull, not fit** — a Venture or logi-fit Svipul reads as its hull's role |
 | Tackle on you | Combat log | `Warp scramble attempt …` — the **only** EWar EVE logs |
-| Webs / neuts / ECM / TD / damp | ❌ Not logged | EVE writes no log line; cannot be detected by any tool |
 | Boost loadouts | Boost **chat channel** | Only what pilots **drag into the channel**; the FC must be in that channel. No telemetry exists |
-| Who's in local / d-scan | ❌ Not exposed | EVE doesn't log local membership or d-scan; the d-scan tool is paste-driven |
-
 ---
 
 ## Download (beta)
