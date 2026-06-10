@@ -1,0 +1,24 @@
+# ─── Secrets — NEVER commit ───
+# Real EVE ESI credentials live here; they ship only baked into the built exe.
+FCAT/AppSecrets.cs
+
+# ─── Build output ───
+bin/
+obj/
+*.user
+.vs/
+
+# ─── Rider / JetBrains ───
+.idea/
+
+# ─── NuGet ───
+*.nupkg
+packages/
+
+# ─── Local AI assistant / editor settings ───
+.claude/
+
+# ─── Scratch / run logs ───
+fcat_err.txt
+fcat_out.txt
+*.log

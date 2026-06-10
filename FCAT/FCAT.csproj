@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+
+    <!-- Branding -->
+    <ApplicationIcon>fcat.ico</ApplicationIcon>
+    <AssemblyTitle>FCAT — Fleet Commander Assistance Tool</AssemblyTitle>
+    <Product>FCAT</Product>
+    <Version>0.9.0</Version>
+    <FileVersion>0.9.0.0</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Embedded so the window/taskbar icon resolves at runtime -->
+    <Resource Include="fcat.ico"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Template file for contributors — not compiled -->
+    <Compile Remove="AppSecrets.example.cs"/>
+    <None Include="AppSecrets.example.cs"/>
+  </ItemGroup>
+
+</Project>

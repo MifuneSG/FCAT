@@ -1,0 +1,85 @@
+<Window x:Class="FCAT.AlertOverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:FCAT.Models"
+        Title="FCAT Alerts"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight" Width="300">
+
+    <Border Background="#d20b0e14" BorderBrush="#33ffffff" BorderThickness="1" CornerRadius="9" Width="300">
+        <StackPanel>
+
+            <!-- Drag handle (hidden when locked / click-through) -->
+            <Border x:Name="DragHandle" Background="#3312203a" CornerRadius="9,9,0,0"
+                    Padding="10,6" Cursor="SizeAll" MouseLeftButtonDown="DragHandle_MouseDown">
+                <TextBlock Text="⠿  FCAT alerts — drag to position, then Lock"
+                           Foreground="#9aa3b3" FontFamily="Segoe UI" FontSize="10"/>
+            </Border>
+
+            <!-- Most-recent alerts (newest on top; older ones clip off) -->
+            <Border MaxHeight="260" ClipToBounds="True" Padding="6,6,6,6">
+                <ItemsControl ItemsSource="{Binding Alerts}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type models:FcAlert}">
+                            <Border Margin="0,0,0,5" CornerRadius="6" Padding="10,7">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background"      Value="#e6141b27"/>
+                                        <Setter Property="BorderBrush"     Value="#33ffffff"/>
+                                        <Setter Property="BorderThickness" Value="1"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCritical}" Value="True">
+                                                <Setter Property="Background"  Value="#e6260f0f"/>
+                                                <Setter Property="BorderBrush" Value="#e2574c"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="3"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Rectangle Grid.Column="0" Width="3" RadiusX="1.5" RadiusY="1.5" Margin="0,0,9,0">
+                                        <Rectangle.Style>
+                                            <Style TargetType="Rectangle">
+                                                <Setter Property="Fill" Value="#c9883e"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsCritical}" Value="True">
+                                                        <Setter Property="Fill" Value="#e2574c"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Rectangle.Style>
+                                    </Rectangle>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding AlertTag}" FontFamily="Segoe UI" FontSize="11" FontWeight="SemiBold">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#c9883e"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsCritical}" Value="True">
+                                                            <Setter Property="Foreground" Value="#e2574c"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Headline}" Foreground="#e6ebf2"
+                                                   FontFamily="Segoe UI" FontSize="13" TextWrapping="Wrap"/>
+                                        <TextBlock Text="{Binding SubText}" Foreground="#9aa3b3"
+                                                   FontFamily="Segoe UI" FontSize="11" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Text="{Binding Timestamp, StringFormat=HH:mm:ss}"
+                                               Foreground="#5c6473" FontFamily="Consolas" FontSize="10" VerticalAlignment="Top"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+        </StackPanel>
+    </Border>
+</Window>
