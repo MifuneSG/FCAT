@@ -22,3 +22,6 @@ packages/
 fcat_err.txt
 fcat_out.txt
 *.log
+
+# ─── Packaged release archives (upload these to GitHub Releases, don't commit) ───
+*.zip
