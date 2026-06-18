@@ -67,11 +67,38 @@ public static class ShipRoleClassifier
         // ── Support / scout ────────────────────────────────────────
         { 830,  ShipRole.Support }, // Covert Ops (Helios, Buzzard, Cheetah, Anathema — scanners)
         { 1022, ShipRole.Support }, // Prototype Exploration Ship (Zephyr)
-        // NOTE: T1 exploration frigates (Heron/Magnate/Probe/Imicus) and the Venture share
-        // group 25 (Frigate) with combat frigates, so they can't be split out by hull alone.
-
         // NOTE: Tactical Destroyers (group 1305 — Svipul, Confessor, Jackdaw, Hecate) are NOT
         // mapped, so they fall through to DPS, which is correct for nearly all doctrines.
+    };
+
+    /// <summary>
+    /// Per-TYPE overrides for hulls whose fleet role differs from their group default. These
+    /// are ships that share a broad group with unrelated hulls (e.g. the Venture sits in the
+    /// generic "Frigate" group), or specialist variants we want to pin precisely. Type-ID keys
+    /// mean combat variants stay correct automatically — e.g. base Osprey → Logi, but
+    /// "Osprey Navy Issue" (a different type) falls through to DPS.
+    ///
+    /// This table is also the seed for future fit/doctrine-aware classification.
+    /// </summary>
+    private static readonly Dictionary<int, ShipRole> TypeOverrides = new()
+    {
+        // ── Mining frigate (group 25 Frigate) ──
+        { 32880, ShipRole.Mining  },  // Venture
+
+        // ── T1 exploration frigates (group 25 Frigate) → scouts/support ──
+        { 605,   ShipRole.Support },  // Heron
+        { 607,   ShipRole.Support },  // Imicus
+        { 586,   ShipRole.Support },  // Probe
+        { 29248, ShipRole.Support },  // Magnate
+
+        // ── T1 logistics cruisers (group 26 Cruiser) → fleet logi ──
+        { 620,   ShipRole.Logi    },  // Osprey   (Navy Issue 29340 stays DPS)
+        { 625,   ShipRole.Logi    },  // Augoror
+        { 634,   ShipRole.Logi    },  // Exequror
+        { 631,   ShipRole.Logi    },  // Scythe    (Fleet Issue 29336 stays DPS)
+
+        // ── Logistics battleship (group 27 Battleship) ──
+        { 33472, ShipRole.Logi    },  // Nestor
     };
 
     /// <summary>EVE group_id 29 = Capsule (pod). A pilot in a pod has lost their ship.</summary>
@@ -79,7 +106,13 @@ public static class ShipRoleClassifier
 
     public static bool IsCapsule(int groupId) => groupId == CapsuleGroupId;
 
-    /// <summary>Returns the fleet role for an EVE ship group_id. Unknown types default to DPS.</summary>
-    public static ShipRole Classify(int groupId) =>
-        GroupMap.TryGetValue(groupId, out var role) ? role : ShipRole.DPS;
+    /// <summary>
+    /// Returns the fleet role for a ship. A per-type override wins over the group default;
+    /// otherwise the ship's group decides, falling back to DPS for unmapped hulls.
+    /// </summary>
+    public static ShipRole Classify(int typeId, int groupId)
+    {
+        if (TypeOverrides.TryGetValue(typeId, out var overridden)) return overridden;
+        return GroupMap.TryGetValue(groupId, out var role) ? role : ShipRole.DPS;
+    }
 }

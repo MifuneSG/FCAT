@@ -62,6 +62,7 @@
         <local:StringToVisibilityConverter x:Key="StringToVisibility"/>
         <local:RoleToColorConverter        x:Key="RoleColor"/>
         <local:UrlToImageConverter         x:Key="UrlToImage"/>
+        <local:BoolToAccentBrushConverter  x:Key="TabAccent"/>
 
         <!-- ════════════════════════════════════════════════════════════
              CARD — flat surface, hairline border, soft rounded corners
@@ -216,8 +217,8 @@
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
             <views:SettingsView/>
         </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:DScanViewModel}">
-            <views:DScanView/>
+        <DataTemplate DataType="{x:Type vm:IntelViewModel}">
+            <views:IntelView/>
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:FleetViewModel}">
             <views:FleetView/>

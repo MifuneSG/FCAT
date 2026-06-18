@@ -156,6 +156,63 @@ public class EsiGroupInfo
     public int CategoryId { get; set; }   // 6 = Ship
 }
 
+/// <summary>One entry from POST /v1/characters/affiliation/ — a pilot's corp/alliance.</summary>
+public class CharAffiliation
+{
+    [JsonPropertyName("character_id")]   public int  CharacterId   { get; set; }
+    [JsonPropertyName("corporation_id")] public int  CorporationId { get; set; }
+    [JsonPropertyName("alliance_id")]    public int? AllianceId    { get; set; }
+    [JsonPropertyName("faction_id")]     public int? FactionId     { get; set; }
+}
+
+// ── System intel ──
+public class EsiSystem
+{
+    [JsonPropertyName("system_id")]        public int     SystemId        { get; set; }
+    [JsonPropertyName("name")]             public string  Name            { get; set; } = string.Empty;
+    [JsonPropertyName("security_status")]  public double  SecurityStatus  { get; set; }
+    [JsonPropertyName("constellation_id")] public int     ConstellationId { get; set; }
+    [JsonPropertyName("stargates")]        public int[]?  Stargates       { get; set; }
+}
+
+public class EsiStargate
+{
+    [JsonPropertyName("name")]        public string Name { get; set; } = string.Empty;
+    [JsonPropertyName("destination")] public EsiStargateDestination? Destination { get; set; }
+}
+public class EsiStargateDestination { [JsonPropertyName("system_id")] public int SystemId { get; set; } }
+
+public class EsiConstellation
+{
+    [JsonPropertyName("name")]      public string Name     { get; set; } = string.Empty;
+    [JsonPropertyName("region_id")] public int    RegionId { get; set; }
+}
+
+public class EsiNameOnly { [JsonPropertyName("name")] public string Name { get; set; } = string.Empty; }
+
+public class SystemKills
+{
+    [JsonPropertyName("system_id")] public int SystemId  { get; set; }
+    [JsonPropertyName("ship_kills")] public int ShipKills { get; set; }
+    [JsonPropertyName("pod_kills")]  public int PodKills  { get; set; }
+    [JsonPropertyName("npc_kills")]  public int NpcKills  { get; set; }
+}
+
+public class SystemJumps
+{
+    [JsonPropertyName("system_id")]  public int SystemId  { get; set; }
+    [JsonPropertyName("ship_jumps")] public int ShipJumps { get; set; }
+}
+
+public class SovEntry
+{
+    [JsonPropertyName("system_id")]  public int  SystemId   { get; set; }
+    [JsonPropertyName("alliance_id")] public int? AllianceId { get; set; }
+    [JsonPropertyName("faction_id")]  public int? FactionId  { get; set; }
+}
+
+public class CharacterLocation { [JsonPropertyName("solar_system_id")] public int SolarSystemId { get; set; } }
+
 /// <summary>Minimal type info returned by GET /v3/universe/types/{typeId}/</summary>
 public class EsiTypeInfo
 {

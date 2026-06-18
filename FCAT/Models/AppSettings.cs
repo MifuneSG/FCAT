@@ -18,6 +18,9 @@ public class AppSettings
     public string CapTroubleSound    { get; set; } = "Beep";
     public string BoostLostSound     { get; set; } = "Double Beep";
 
+    /// <summary>Seconds before an alert auto-clears from the feed/overlay. 0 = never.</summary>
+    public int AlertClearSeconds { get; set; } = 60;
+
     // ── Alert overlay (on-screen, over the game) ──
     public bool   OverlayLocked { get; set; }
     public double OverlayLeft   { get; set; } = 60;

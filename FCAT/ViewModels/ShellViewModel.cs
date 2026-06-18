@@ -32,12 +32,12 @@ public partial class ShellViewModel : ObservableObject
         CurrentPage = new SettingsViewModel(_settings, this);
     }
 
-    // Reused so the d-scan's ESI lookups stay cached across visits.
-    private DScanViewModel? _dscan;
-    public void ShowDScan()
+    // Intel tools — single combined window; reused so ESI lookups stay cached across visits.
+    private IntelViewModel? _intel;
+    public void ShowIntel()
     {
-        _dscan ??= new DScanViewModel(_esi, this);
-        CurrentPage = _dscan;
+        _intel ??= new IntelViewModel(_esi, _auth, this);
+        CurrentPage = _intel;
     }
 
     public void ShowFleet(long fleetId)

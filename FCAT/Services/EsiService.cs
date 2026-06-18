@@ -202,6 +202,88 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
         return result;
     }
 
+    // ── System intel ──
+    public async Task<int?> ResolveSystemIdAsync(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return null;
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/v1/universe/ids/");
+        request.Headers.Add("User-Agent", "FCAT/1.0 (Fleet Commander Assistance Tool)");
+        request.Content = new StringContent(JsonSerializer.Serialize(new[] { name.Trim() }),
+            System.Text.Encoding.UTF8, "application/json");
+        var response = await httpClient.SendAsync(request);
+        if (!response.IsSuccessStatusCode) return null;
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<UniverseIdsResult>(json);
+        // /universe/ids/ returns systems under a "systems" array — reuse a small inline read
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        if (doc.RootElement.TryGetProperty("systems", out var systems) && systems.GetArrayLength() > 0)
+            return systems[0].GetProperty("id").GetInt32();
+        return null;
+    }
+
+    public async Task<EsiSystem?>        GetSystemAsync(int id)        => await GetPublicAsync<EsiSystem>($"/v4/universe/systems/{id}/");
+    public async Task<EsiStargate?>      GetStargateAsync(int id)      => await GetPublicAsync<EsiStargate>($"/v1/universe/stargates/{id}/");
+    public async Task<EsiConstellation?> GetConstellationAsync(int id) => await GetPublicAsync<EsiConstellation>($"/v1/universe/constellations/{id}/");
+    public async Task<string?>           GetRegionNameAsync(int id)    => (await GetPublicAsync<EsiNameOnly>($"/v1/universe/regions/{id}/"))?.Name;
+
+    public async Task<List<SystemKills>> GetSystemKillsAsync() => await GetPublicAsync<List<SystemKills>>("/v2/universe/system_kills/") ?? [];
+    public async Task<List<SystemJumps>> GetSystemJumpsAsync() => await GetPublicAsync<List<SystemJumps>>("/v1/universe/system_jumps/") ?? [];
+    public async Task<List<SovEntry>>    GetSovMapAsync()      => await GetPublicAsync<List<SovEntry>>("/v1/sovereignty/map/") ?? [];
+
+    /// <summary>The logged-in pilot's current solar system (needs esi-location scope).</summary>
+    public async Task<CharacterLocation?> GetCharacterLocationAsync(int characterId)
+        => await GetAuthenticatedAsync<CharacterLocation>($"/v2/characters/{characterId}/location/");
+
+    /// <summary>Resolves character names → IDs via POST /v1/universe/ids/ (public, batched).</summary>
+    public async Task<Dictionary<string, int>> ResolveCharacterIdsAsync(IEnumerable<string> names)
+    {
+        var list = names.Select(n => n.Trim()).Where(n => n.Length > 0)
+                        .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        if (list.Count == 0) return result;
+
+        foreach (var chunk in list.Chunk(500))
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/v1/universe/ids/");
+            request.Headers.Add("User-Agent", "FCAT/1.0 (Fleet Commander Assistance Tool)");
+            request.Content = new StringContent(JsonSerializer.Serialize(chunk),
+                System.Text.Encoding.UTF8, "application/json");
+
+            var response = await httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode) continue;
+
+            var json = await response.Content.ReadAsStringAsync();
+            var r = JsonSerializer.Deserialize<UniverseIdsResult>(json);
+            if (r?.Characters != null)
+                foreach (var c in r.Characters) result[c.Name] = c.Id;
+        }
+        return result;
+    }
+
+    /// <summary>Fetches corp/alliance affiliation for characters via POST /v1/characters/affiliation/.</summary>
+    public async Task<List<CharAffiliation>> GetAffiliationsAsync(IEnumerable<int> characterIds)
+    {
+        var list = characterIds.Distinct().ToList();
+        var result = new List<CharAffiliation>();
+        if (list.Count == 0) return result;
+
+        foreach (var chunk in list.Chunk(1000))
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/v1/characters/affiliation/");
+            request.Headers.Add("User-Agent", "FCAT/1.0 (Fleet Commander Assistance Tool)");
+            request.Content = new StringContent(JsonSerializer.Serialize(chunk),
+                System.Text.Encoding.UTF8, "application/json");
+
+            var response = await httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode) continue;
+
+            var json = await response.Content.ReadAsStringAsync();
+            var affs = JsonSerializer.Deserialize<List<CharAffiliation>>(json);
+            if (affs != null) result.AddRange(affs);
+        }
+        return result;
+    }
+
     /// <summary>Fetches category_id for each group (GET /v3/universe/groups/{id}/), parallel + capped.</summary>
     public async Task<Dictionary<int, int>> GetGroupCategoriesAsync(IEnumerable<int> groupIds)
     {

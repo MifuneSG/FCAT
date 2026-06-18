@@ -23,6 +23,7 @@ public partial class SettingsViewModel : ObservableObject
         TackledSound       = settings.Current.TackledSound;
         CapTroubleSound    = settings.Current.CapTroubleSound;
         BoostLostSound     = settings.Current.BoostLostSound;
+        AlertClearSeconds  = settings.Current.AlertClearSeconds;
     }
 
     // ── Alert sounds ──
@@ -30,6 +31,24 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _tackledSound    = "Alarm";
     [ObservableProperty] private string _capTroubleSound = "Beep";
     [ObservableProperty] private string _boostLostSound  = "Double Beep";
+
+    // ── Auto-clear ──
+    private static readonly int[] ClearPresets = [0, 15, 30, 60, 120, 300];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AlertClearLabel))]
+    private int _alertClearSeconds = 60;
+
+    public string AlertClearLabel => AlertClearSeconds <= 0
+        ? "Off (keep)"
+        : AlertClearSeconds < 60 ? $"{AlertClearSeconds}s" : $"{AlertClearSeconds / 60}m";
+
+    [RelayCommand]
+    private void CycleAlertClear()
+    {
+        var i = Array.IndexOf(ClearPresets, AlertClearSeconds);
+        AlertClearSeconds = ClearPresets[(i + 1) % ClearPresets.Length];
+    }
 
     private static string Cycle(string current)
     {
@@ -89,6 +108,7 @@ public partial class SettingsViewModel : ObservableObject
         _settings.Current.TackledSound       = TackledSound;
         _settings.Current.CapTroubleSound    = CapTroubleSound;
         _settings.Current.BoostLostSound     = BoostLostSound;
+        _settings.Current.AlertClearSeconds  = AlertClearSeconds;
         _settings.Save();
 
         StatusMessage = "Saved. Applies next time you enter a fleet.";

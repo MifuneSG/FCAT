@@ -54,6 +54,16 @@ public class StringToVisibilityConverter : IValueConverter
         => throw new NotImplementedException();
 }
 
+// true → cyan accent (for active-tab underlines), false → transparent
+public class BoolToAccentBrushConverter : IValueConverter
+{
+    private static readonly Brush On = new SolidColorBrush(Color.FromRgb(0x4d, 0xb8, 0xd4));
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is true ? On : Brushes.Transparent;
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
 // Maps EVE role strings to a display colour brush
 public class RoleToColorConverter : IValueConverter
 {

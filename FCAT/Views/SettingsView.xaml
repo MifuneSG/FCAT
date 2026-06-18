@@ -145,8 +145,25 @@
                 <TextBox Style="{StaticResource DarkTextBox}" Width="220" HorizontalAlignment="Left"
                          Text="{Binding BoostChannelPrefix, UpdateSourceTrigger=PropertyChanged}"/>
 
+                <!-- Alerts: auto-clear -->
+                <TextBlock Text="ALERTS" Style="{StaticResource SectionLabel}" Margin="0,24,0,7"/>
+                <Grid Margin="0,0,0,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="160"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Auto-clear after" Foreground="{StaticResource EveTextSecondary}"
+                               FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Command="{Binding CycleAlertClearCommand}" Style="{StaticResource SecondaryButton}"
+                            Height="32" Padding="16,0" ToolTip="How long an alert stays before clearing (click to change)">
+                        <TextBlock Text="{Binding AlertClearLabel}" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                    </Button>
+                </Grid>
+                <TextBlock Text="Alerts disappear from the feed and overlay after this long."
+                           Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,0,0,0"/>
+
                 <!-- Alert sounds -->
-                <TextBlock Text="ALERT SOUNDS" Style="{StaticResource SectionLabel}" Margin="0,24,0,7"/>
+                <TextBlock Text="ALERT SOUNDS" Style="{StaticResource SectionLabel}" Margin="0,18,0,7"/>
                 <TextBlock Text="Pick a tone per alert. Click a sound to cycle presets; ▶ to preview."
                            Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
                            TextWrapping="Wrap" Margin="0,0,0,9"/>

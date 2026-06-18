@@ -289,7 +289,7 @@ public partial class FleetViewModel : ObservableObject
             // Set ship role from group_id cache
             if (_groupIdCache.TryGetValue(member.ShipTypeId, out var groupId))
             {
-                vm.ShipRole     = ShipRoleClassifier.Classify(groupId);
+                vm.ShipRole     = ShipRoleClassifier.Classify(member.ShipTypeId, groupId);
                 vm.IsInCapsule  = ShipRoleClassifier.IsCapsule(groupId);
             }
 
@@ -702,5 +702,15 @@ public partial class FleetViewModel : ObservableObject
             // Throttle per type so tackle spam doesn't machine-gun the speaker.
             SoundService.PlayThrottled(preset, alert.AlertType.ToString(), TimeSpan.FromSeconds(2));
         }
+
+        // Auto-clear after the configured timeout (0 = keep until session ends).
+        var clearSecs = _settings.Current.AlertClearSeconds;
+        if (clearSecs > 0) _ = ExpireAlertAsync(alert, clearSecs);
+    }
+
+    private async Task ExpireAlertAsync(FcAlert alert, int seconds)
+    {
+        try { await Task.Delay(TimeSpan.FromSeconds(seconds)); } catch { return; }
+        App.Current.Dispatcher.Invoke(() => Alerts.Remove(alert));
     }
 }
