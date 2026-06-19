@@ -9,18 +9,27 @@ public partial class ShellViewModel : ObservableObject
     private readonly EsiService _esi;
     private readonly CombatLogService _combatLog;
     private readonly SettingsService _settings;
+    private readonly AlertHub _alertHub;
+    private readonly SessionLog _sessionLog;
 
-    public ShellViewModel(EsiAuthService auth, EsiService esi, CombatLogService combatLog, SettingsService settings)
+    public ShellViewModel(EsiAuthService auth, EsiService esi, CombatLogService combatLog,
+                          SettingsService settings, AlertHub alertHub, SessionLog sessionLog)
     {
         _auth = auth;
         _esi = esi;
         _combatLog = combatLog;
         _settings = settings;
+        _alertHub = alertHub;
+        _sessionLog = sessionLog;
         CurrentPage = new LoginViewModel(_auth, this);
     }
 
     [ObservableProperty]
     private ObservableObject _currentPage = null!;
+
+    // The live fleet-monitoring session. Kept alive across navigation so the alert overlay and
+    // combat-log/boost/cap-chain watching keep running while the FC browses Intel, Settings, etc.
+    private FleetViewModel? _session;
 
     public void ShowMenu()
     {
@@ -29,7 +38,12 @@ public partial class ShellViewModel : ObservableObject
 
     public void ShowSettings()
     {
-        CurrentPage = new SettingsViewModel(_settings, this);
+        CurrentPage = new SettingsViewModel(_settings, _alertHub, this);
+    }
+
+    public void ShowSessionLog()
+    {
+        CurrentPage = new SessionLogViewModel(_sessionLog, this);
     }
 
     // Intel tools — single combined window; reused so ESI lookups stay cached across visits.
@@ -42,13 +56,24 @@ public partial class ShellViewModel : ObservableObject
 
     public void ShowFleet(long fleetId)
     {
-        CurrentPage = new FleetViewModel(_auth, _esi, _combatLog, _settings, this, fleetId);
+        // Reuse the running session for the same fleet; otherwise end the old one and start fresh.
+        if (_session is { } s && s.SessionFleetId == fleetId)
+        {
+            CurrentPage = _session;
+            return;
+        }
+        _session?.Shutdown();
+        _session = new FleetViewModel(_auth, _esi, _combatLog, _settings, _alertHub, _sessionLog, this, fleetId);
+        CurrentPage = _session;
     }
 
-    public void BackToMenu()
+    /// <summary>Leaves the fleet view but KEEPS the session monitoring in the background.</summary>
+    public void BackToMenu() => ShowMenu();
+
+    /// <summary>Fully ends the monitoring session (overlay alerts stop updating).</summary>
+    public void EndSession()
     {
-        if (CurrentPage is FleetViewModel fvm)
-            fvm.Shutdown();
-        ShowMenu();
+        _session?.Shutdown();
+        _session = null;
     }
 }

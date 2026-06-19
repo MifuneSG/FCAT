@@ -164,46 +164,7 @@
                                VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <!-- Overlay toggle -->
-                <Button Grid.Column="7" Command="{Binding ToggleOverlayCommand}"
-                        Style="{StaticResource GhostButton}" Padding="11,7" Margin="0,0,2,0"
-                        ToolTip="Show an on-screen alert overlay over your game">
-                    <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Text"       Value="⧉ Overlay"/>
-                                <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding OverlayEnabled}" Value="True">
-                                        <Setter Property="Text"       Value="⧉ Overlay"/>
-                                        <Setter Property="Foreground" Value="{StaticResource EveAccent}"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </Button>
-
-                <!-- Lock toggle (only while overlay is shown) -->
-                <Button Grid.Column="8" Command="{Binding ToggleOverlayLockCommand}"
-                        Style="{StaticResource GhostButton}" Padding="11,7" Margin="0,0,2,0"
-                        ToolTip="Lock makes the overlay click-through so it won't steal clicks"
-                        Visibility="{Binding OverlayEnabled, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Text"       Value="🔓 Unlocked"/>
-                                <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding OverlayLocked}" Value="True">
-                                        <Setter Property="Text"       Value="🔒 Locked"/>
-                                        <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </Button>
+                <!-- Overlay controls now live in Settings (the overlay is app-wide and persists). -->
 
                 <Button Grid.Column="9" Command="{Binding BackToMenuCommand}"
                         Style="{StaticResource GhostButton}" Padding="13,7">
@@ -254,9 +215,9 @@
                         <DataTemplate DataType="{x:Type vm:FleetStat}">
                             <StackPanel Orientation="Horizontal" Margin="0,0,16,0" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding Count}" Foreground="{Binding Color}"
-                                           FontFamily="{StaticResource FontUI}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Label}" Foreground="{StaticResource EveTextDim}"
-                                           FontFamily="{StaticResource FontUI}" FontSize="10" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                           FontFamily="{StaticResource FontUI}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Label}" Foreground="{StaticResource EveTextSecondary}"
+                                           FontFamily="{StaticResource FontUI}" FontSize="11" Margin="4,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -286,7 +247,7 @@
 
             <!-- Mainline label + composition advisories -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="{Binding MainlineLabel}" Foreground="{StaticResource EveTextDim}"
+                <TextBlock Text="{Binding MainlineLabel}" Foreground="{StaticResource EveTextSecondary}"
                            FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0"
                            Visibility="{Binding MainlineLabel, Converter={StaticResource StringToVisibility}}"/>
                 <ItemsControl ItemsSource="{Binding Advisories}" VerticalAlignment="Center">
@@ -692,8 +653,38 @@
                 </Grid>
             </Border>
 
-            <!-- ───────── ALERTS ───────── -->
-            <Border Grid.Column="2" Style="{StaticResource Card}">
+            <!-- ───────── RIGHT COLUMN: cap chain + alerts ───────── -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- LOGI CHAIN advisory (Guardian/Basilisk only) -->
+                <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12"
+                        Visibility="{Binding HasLogiChain, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel Margin="16,12,16,12">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="LOGI CHAIN" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
+                            <TextBlock Text="cap order — top caps bottom, loops" Foreground="{StaticResource EveTextDim}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="10" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding LogiChain}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,1">
+                                        <TextBlock Text="↓" Foreground="{StaticResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11" Width="16" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="↺ back to top" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="16,2,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- ALERTS -->
+                <Border Grid.Row="1" Style="{StaticResource Card}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -810,7 +801,8 @@
                         </ItemsControl>
                     </ScrollViewer>
                 </Grid>
-            </Border>
+                </Border>
+            </Grid>
         </Grid>
 
         <!-- ════════════════════ MOVE PICKER OVERLAY ════════════════════ -->

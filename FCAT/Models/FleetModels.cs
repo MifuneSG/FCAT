@@ -168,11 +168,20 @@ public class CharAffiliation
 // ── System intel ──
 public class EsiSystem
 {
-    [JsonPropertyName("system_id")]        public int     SystemId        { get; set; }
-    [JsonPropertyName("name")]             public string  Name            { get; set; } = string.Empty;
-    [JsonPropertyName("security_status")]  public double  SecurityStatus  { get; set; }
-    [JsonPropertyName("constellation_id")] public int     ConstellationId { get; set; }
-    [JsonPropertyName("stargates")]        public int[]?  Stargates       { get; set; }
+    [JsonPropertyName("system_id")]        public int      SystemId        { get; set; }
+    [JsonPropertyName("name")]             public string   Name            { get; set; } = string.Empty;
+    [JsonPropertyName("security_status")]  public double   SecurityStatus  { get; set; }
+    [JsonPropertyName("constellation_id")] public int      ConstellationId { get; set; }
+    [JsonPropertyName("stargates")]        public int[]?   Stargates       { get; set; }
+    [JsonPropertyName("position")]         public EsiPosition? Position    { get; set; }
+}
+
+/// <summary>A point in EVE's universe (metres). Top-down maps use X (east-west) and Z (north-south).</summary>
+public class EsiPosition
+{
+    [JsonPropertyName("x")] public double X { get; set; }
+    [JsonPropertyName("y")] public double Y { get; set; }
+    [JsonPropertyName("z")] public double Z { get; set; }
 }
 
 public class EsiStargate
@@ -186,6 +195,7 @@ public class EsiConstellation
 {
     [JsonPropertyName("name")]      public string Name     { get; set; } = string.Empty;
     [JsonPropertyName("region_id")] public int    RegionId { get; set; }
+    [JsonPropertyName("systems")]   public int[]? Systems  { get; set; }
 }
 
 public class EsiNameOnly { [JsonPropertyName("name")] public string Name { get; set; } = string.Empty; }

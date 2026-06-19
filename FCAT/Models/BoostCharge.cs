@@ -2,10 +2,15 @@ namespace FCAT.Models;
 
 public enum BoostCategory
 {
+    // ── Combat (Command Burst) ──
     Skirmish,
     Armor,
     Shield,
-    Info
+    Info,
+    // ── Mining (Mining Foreman Burst) ──
+    MiningYield,    // Mining Laser Field Enhancement — mining amount
+    MiningOptimal,  // Mining Laser Optimization — range + capacitor/duration
+    MiningPreserve  // Mining Equipment Preservation — crystal/equipment wear
 }
 
 /// <summary>One command-burst charge a booster can run, with the gang link it provides.</summary>
@@ -40,6 +45,11 @@ public static class BoostChargeCatalog
         new("Electronic Hardening Charge",   BoostCategory.Info,     "Anti-EWAR"),
         new("Electronic Superiority Charge", BoostCategory.Info,     "EWAR strength"),
         new("Sensor Optimization Charge",    BoostCategory.Info,     "Sensor str. + targeting range"),
+
+        // ── Mining (Mining Foreman Burst charges — used by Orca / Porpoise / Rorqual / mining CDs) ──
+        new("Mining Laser Field Enhancement Charge", BoostCategory.MiningYield,    "Mining yield"),
+        new("Mining Laser Optimization Charge",      BoostCategory.MiningOptimal,  "Mining range + duration"),
+        new("Mining Equipment Preservation Charge",  BoostCategory.MiningPreserve, "Crystal / equipment wear"),
     ];
 
     private static readonly Dictionary<string, BoostChargeInfo> ByName =
@@ -55,10 +65,13 @@ public static class BoostChargeCatalog
 
     public static string CategoryTag(BoostCategory c) => c switch
     {
-        BoostCategory.Skirmish => "SKIRM",
-        BoostCategory.Armor    => "ARMOR",
-        BoostCategory.Shield   => "SHIELD",
-        BoostCategory.Info     => "INFO",
-        _                      => "?"
+        BoostCategory.Skirmish       => "SKIRM",
+        BoostCategory.Armor          => "ARMOR",
+        BoostCategory.Shield         => "SHIELD",
+        BoostCategory.Info           => "INFO",
+        BoostCategory.MiningYield     => "YIELD",
+        BoostCategory.MiningOptimal   => "RANGE",
+        BoostCategory.MiningPreserve  => "PRESV",
+        _                            => "?"
     };
 }

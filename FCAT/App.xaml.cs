@@ -24,10 +24,12 @@ public partial class App : Application
         var esiService = new EsiService(httpClient, authService);
         var combatLogService = new CombatLogService();
         var settingsService = new SettingsService();
+        var sessionLog = new SessionLog();
+        var alertHub = new AlertHub(settingsService, sessionLog);
 
-        var shell = new ShellViewModel(authService, esiService, combatLogService, settingsService);
+        var shell = new ShellViewModel(authService, esiService, combatLogService, settingsService, alertHub, sessionLog);
 
-        var window = new MainWindow { DataContext = shell };
+        var window = new MainWindow(alertHub) { DataContext = shell };
         window.Show();
     }
 }

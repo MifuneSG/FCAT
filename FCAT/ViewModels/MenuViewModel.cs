@@ -99,6 +99,9 @@ public partial class MenuViewModel : ObservableObject
     [RelayCommand]
     private void OpenDScan() => _shell.ShowIntel();
 
+    [RelayCommand]
+    private void OpenSessionLog() => _shell.ShowSessionLog();
+
     [RelayCommand(CanExecute = nameof(CanEnterFleet))]
     private void EnterFleet() => _shell.ShowFleet(DetectedFleetId);
 

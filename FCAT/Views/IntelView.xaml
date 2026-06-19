@@ -170,9 +170,21 @@
                                 </ItemsControl.ItemContainerStyle>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type vm:MapNode}">
-                                        <StackPanel Width="84" HorizontalAlignment="Center">
+                                        <StackPanel Width="84" HorizontalAlignment="Center" Background="Transparent" Cursor="Hand"
+                                                    Tag="{Binding DataContext.System, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    ToolTip="Right-click for Dotlan / zKillboard">
+                                            <StackPanel.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="Open in Dotlan"
+                                                              Command="{Binding PlacementTarget.Tag.OpenDotlanCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                              CommandParameter="{Binding}"/>
+                                                    <MenuItem Header="Open on zKillboard"
+                                                              Command="{Binding PlacementTarget.Tag.OpenZkillCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                              CommandParameter="{Binding}"/>
+                                                </ContextMenu>
+                                            </StackPanel.ContextMenu>
                                             <Grid Width="34" Height="34" HorizontalAlignment="Center">
-                                                <Ellipse Fill="{Binding Fill}">
+                                                <Ellipse Fill="{Binding SovFill}">
                                                     <Ellipse.Style>
                                                         <Style TargetType="Ellipse">
                                                             <Setter Property="Stroke" Value="#0b0e14"/>
@@ -190,9 +202,23 @@
                                                         </Style>
                                                     </Ellipse.Style>
                                                 </Ellipse>
-                                                <TextBlock Text="{Binding Sec}" Foreground="#0b0e14" FontFamily="{StaticResource FontMono}" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Sec}" Foreground="#f3f6fb" FontFamily="{StaticResource FontMono}" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Grid>
-                                            <TextBlock Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="10" HorizontalAlignment="Center" TextAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                            <TextBlock Text="{Binding Name}" FontFamily="{StaticResource FontUI}" FontSize="10" HorizontalAlignment="Center" TextAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,2,0,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{StaticResource EveTextSecondary}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                                <Setter Property="Foreground" Value="{StaticResource EveGoldSoft}"/>
+                                                                <Setter Property="FontWeight"  Value="SemiBold"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding SovLabel}" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="9" HorizontalAlignment="Center" TextAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                       Visibility="{Binding SovLabel, Converter={StaticResource StringToVisibility}}"/>
                                             <Border Background="#e2574c" CornerRadius="3" Padding="4,0" HorizontalAlignment="Center" Margin="0,2,0,0" Visibility="{Binding Hot, Converter={StaticResource BoolToVisibility}}">
                                                 <TextBlock Text="{Binding KillBadge}" Foreground="#ffffff" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold"/>
                                             </Border>

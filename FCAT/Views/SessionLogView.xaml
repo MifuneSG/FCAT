@@ -1,0 +1,100 @@
+<UserControl x:Class="FCAT.Views.SessionLogView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:FCAT.ViewModels"
+             xmlns:svc="clr-namespace:FCAT.Services"
+             d:DataContext="{d:DesignInstance vm:SessionLogViewModel}"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d">
+
+    <Grid Background="Transparent">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top bar -->
+        <Border Grid.Row="0" Background="{StaticResource EvePanelBg}" BorderBrush="{StaticResource EveHairline}" BorderThickness="0,0,0,1">
+            <Grid Height="54" Margin="18,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="FCAT" Foreground="{StaticResource EveGold}" FontFamily="{StaticResource FontUI}" FontSize="17" FontWeight="Light" VerticalAlignment="Center"/>
+                    <Rectangle Width="1" Height="20" Margin="14,0" Fill="{StaticResource EveHairlineStrong}" VerticalAlignment="Center"/>
+                    <TextBlock Text="After-Action Report" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Button Command="{Binding BackCommand}" Style="{StaticResource GhostButton}" Padding="13,7" HorizontalAlignment="Right">
+                    <TextBlock Text="← Menu" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="14,12,14,14">
+            <Grid Margin="20,16,20,16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <TextBlock Text="SESSION TIMELINE" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Log.Summary}" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                               HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </Grid>
+
+                <Rectangle Grid.Row="1" Height="1" Fill="{StaticResource EveHairline}" Margin="0,10,0,8"/>
+
+                <!-- Empty state -->
+                <StackPanel Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Visibility="{Binding Log.Entries.Count, Converter={StaticResource CountToInvisibility}}">
+                    <TextBlock Text="No events recorded yet" Foreground="{StaticResource EveTextSecondary}"
+                               FontFamily="{StaticResource FontUI}" FontSize="13" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Alerts and fleet changes appear here while a fleet is monitored." Foreground="{StaticResource EveTextDim}"
+                               FontFamily="{StaticResource FontUI}" FontSize="11" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Log.Entries}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type svc:AarEntry}">
+                                <Grid Margin="0,0,6,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="72"/>
+                                        <ColumnDefinition Width="92"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Time, StringFormat=HH:mm:ss}" Foreground="{StaticResource EveTextDim}"
+                                               FontFamily="{StaticResource FontMono}" FontSize="11" VerticalAlignment="Top"/>
+                                    <Border Grid.Column="1" CornerRadius="4" Padding="6,1" Background="{StaticResource EveRaisedBg}"
+                                            HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,8,0">
+                                        <TextBlock Text="{Binding Category}" Foreground="{StaticResource EveGoldSoft}"
+                                                   FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold"/>
+                                    </Border>
+                                    <TextBlock Grid.Column="2" Text="{Binding Text}" Foreground="{StaticResource EveTextSecondary}"
+                                               FontFamily="{StaticResource FontUI}" FontSize="12" TextWrapping="Wrap"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <Grid Grid.Row="3" Margin="0,12,0,0">
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource EveGreen}"
+                               FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Command="{Binding ClearCommand}" Style="{StaticResource GhostButton}" Height="34" Padding="14,0" Margin="0,0,8,0">
+                            <TextBlock Text="Clear" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                        </Button>
+                        <Button Command="{Binding CopyCommand}" Style="{StaticResource SecondaryButton}" Height="34" Padding="14,0" Margin="0,0,8,0">
+                            <TextBlock Text="Copy" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                        </Button>
+                        <Button Command="{Binding SaveCommand}" Style="{StaticResource PrimaryButton}" Height="34" Padding="18,0">
+                            <TextBlock Text="Save .md" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

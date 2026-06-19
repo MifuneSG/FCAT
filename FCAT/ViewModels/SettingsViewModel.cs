@@ -11,9 +11,13 @@ public partial class SettingsViewModel : ObservableObject
     private readonly SettingsService _settings;
     private readonly ShellViewModel _shell;
 
-    public SettingsViewModel(SettingsService settings, ShellViewModel shell)
+    /// <summary>The app-lifetime overlay/alert state — bound directly by the overlay controls.</summary>
+    public AlertHub Overlay { get; }
+
+    public SettingsViewModel(SettingsService settings, AlertHub overlay, ShellViewModel shell)
     {
         _settings = settings;
+        Overlay   = overlay;
         _shell = shell;
 
         EveLogsPath        = settings.Current.EveLogsPath;
@@ -23,7 +27,7 @@ public partial class SettingsViewModel : ObservableObject
         TackledSound       = settings.Current.TackledSound;
         CapTroubleSound    = settings.Current.CapTroubleSound;
         BoostLostSound     = settings.Current.BoostLostSound;
-        AlertClearSeconds  = settings.Current.AlertClearSeconds;
+        _alertClearSeconds = settings.Current.AlertClearSeconds;
     }
 
     // ── Alert sounds ──
@@ -33,22 +37,26 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _boostLostSound  = "Double Beep";
 
     // ── Auto-clear ──
-    private static readonly int[] ClearPresets = [0, 15, 30, 60, 120, 300];
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(AlertClearLabel))]
+    // Free-text seconds entry (like the boost-channel field). Backed by an int; non-numeric or
+    // negative input is clamped to 0 (= keep alerts until the session ends).
     private int _alertClearSeconds = 60;
 
-    public string AlertClearLabel => AlertClearSeconds <= 0
-        ? "Off (keep)"
-        : AlertClearSeconds < 60 ? $"{AlertClearSeconds}s" : $"{AlertClearSeconds / 60}m";
-
-    [RelayCommand]
-    private void CycleAlertClear()
+    public string AlertClearSecondsText
     {
-        var i = Array.IndexOf(ClearPresets, AlertClearSeconds);
-        AlertClearSeconds = ClearPresets[(i + 1) % ClearPresets.Length];
+        get => _alertClearSeconds.ToString();
+        set
+        {
+            var seconds = int.TryParse(value, out var n) && n > 0 ? n : 0;
+            if (SetProperty(ref _alertClearSeconds, seconds, nameof(AlertClearSecondsText)))
+                OnPropertyChanged(nameof(AlertClearHint));
+        }
     }
+
+    public int AlertClearSeconds => _alertClearSeconds;
+
+    public string AlertClearHint => _alertClearSeconds <= 0
+        ? "Off — alerts stay until the session ends."
+        : "Alerts disappear from the feed and overlay after this long.";
 
     private static string Cycle(string current)
     {

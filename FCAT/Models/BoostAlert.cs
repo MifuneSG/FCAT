@@ -15,6 +15,7 @@ public enum AlertType
     Tackled,        // Warp scramble / disruption — you are held and cannot warp
     CapTrouble,     // A module shut off due to insufficient capacitor (real combat-log line)
     BoostLost,      // A booster podded out — their gang links dropped
+    LogiChain,      // A cap-chain logi (Guardian/Basilisk) dropped — the ring needs re-forming
     Info
 }
 
@@ -33,6 +34,7 @@ public class FcAlert
         AlertType.Tackled    => "TACKLED",
         AlertType.CapTrouble => "CAP OUT",
         AlertType.BoostLost  => "BOOST LOST",
+        AlertType.LogiChain  => "LOGI CHAIN",
         _                    => "INFO"
     };
 
@@ -42,6 +44,7 @@ public class FcAlert
         AlertType.Tackled    => "Point / scram on you",
         AlertType.CapTrouble => "Module offline — cap",
         AlertType.BoostLost  => "Booster down",
+        AlertType.LogiChain  => "Cap chain needs adjusting",
         _                    => Detail
     };
 
@@ -51,6 +54,7 @@ public class FcAlert
         AlertType.Tackled    => string.IsNullOrEmpty(AttackerName) ? "Unknown source" : AttackerName,
         AlertType.CapTrouble => Detail,
         AlertType.BoostLost  => Detail,
+        AlertType.LogiChain  => Detail,
         _                    => string.Empty
     };
 }

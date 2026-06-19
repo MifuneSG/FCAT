@@ -151,16 +151,62 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="160"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="Auto-clear after" Foreground="{StaticResource EveTextSecondary}"
                                FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center"/>
-                    <Button Grid.Column="1" Command="{Binding CycleAlertClearCommand}" Style="{StaticResource SecondaryButton}"
-                            Height="32" Padding="16,0" ToolTip="How long an alert stays before clearing (click to change)">
-                        <TextBlock Text="{Binding AlertClearLabel}" FontFamily="{StaticResource FontUI}" FontSize="12"/>
-                    </Button>
+                    <TextBox Grid.Column="1" Style="{StaticResource DarkTextBox}" Width="80"
+                             TextAlignment="Center" MaxLength="5"
+                             Text="{Binding AlertClearSecondsText, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="Seconds before an alert clears. 0 = keep until the session ends."/>
+                    <TextBlock Grid.Column="2" Text="seconds  (0 = keep)" Foreground="{StaticResource EveTextDim}"
+                               FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" Margin="10,0,0,0"/>
                 </Grid>
-                <TextBlock Text="Alerts disappear from the feed and overlay after this long."
+                <TextBlock Text="{Binding AlertClearHint}"
                            Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,0,0,0"/>
+
+                <!-- Alert overlay (on-screen, over the game) -->
+                <TextBlock Text="ALERT OVERLAY" Style="{StaticResource SectionLabel}" Margin="0,18,0,7"/>
+                <TextBlock Text="A small always-on-top window that shows alerts over your game. It stays up no matter which FCAT screen you're on, as long as a fleet is being monitored."
+                           Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                           TextWrapping="Wrap" Margin="0,0,0,9"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Command="{Binding Overlay.ToggleOverlayCommand}" Style="{StaticResource SecondaryButton}"
+                            Height="34" Padding="16,0" Margin="0,0,8,0" ToolTip="Show / hide the on-screen alert overlay">
+                        <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="⧉ Overlay: OFF"/>
+                                    <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Overlay.OverlayEnabled}" Value="True">
+                                            <Setter Property="Text" Value="⧉ Overlay: ON"/>
+                                            <Setter Property="Foreground" Value="{StaticResource EveAccent}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Button>
+                    <Button Command="{Binding Overlay.ToggleOverlayLockCommand}" Style="{StaticResource SecondaryButton}"
+                            Height="34" Padding="16,0" ToolTip="Lock makes the overlay click-through so it won't steal clicks from the game"
+                            Visibility="{Binding Overlay.OverlayEnabled, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="🔓 Unlocked"/>
+                                    <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Overlay.OverlayLocked}" Value="True">
+                                            <Setter Property="Text" Value="🔒 Locked"/>
+                                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Button>
+                </StackPanel>
 
                 <!-- Alert sounds -->
                 <TextBlock Text="ALERT SOUNDS" Style="{StaticResource SectionLabel}" Margin="0,18,0,7"/>

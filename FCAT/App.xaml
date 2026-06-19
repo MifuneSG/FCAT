@@ -223,6 +223,9 @@
         <DataTemplate DataType="{x:Type vm:FleetViewModel}">
             <views:FleetView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SessionLogViewModel}">
+            <views:SessionLogView/>
+        </DataTemplate>
 
     </Application.Resources>
 </Application>

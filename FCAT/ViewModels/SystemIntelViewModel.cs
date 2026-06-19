@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Threading;
+using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -8,9 +10,10 @@ using FCAT.Services;
 
 namespace FCAT.ViewModels;
 
-/// <summary>A node in the mini constellation map (a solar system).</summary>
+/// <summary>A node in the constellation map (a solar system).</summary>
 public record MapNode(double NodeLeft, double NodeTop, double CenterX, double CenterY,
-                      string Name, string Sec, Brush Fill, bool IsCurrent, string KillBadge, bool Hot);
+                      int SystemId, string Name, string Sec, Brush Fill, Brush SovFill,
+                      string SovLabel, bool IsCurrent, string KillBadge, bool Hot);
 
 /// <summary>A gate link between two systems on the map.</summary>
 public record MapLink(double X1, double Y1, double X2, double Y2);
@@ -34,6 +37,10 @@ public partial class SystemIntelViewModel : ObservableObject
     private DateTime _activityAt;
     private readonly Dictionary<int, string> _nameCache = [];
 
+    // Session caches so re-pulls (and revisited constellations) stay cheap on ESI.
+    private readonly Dictionary<int, EsiSystem> _systemCache  = [];
+    private readonly Dictionary<int, int>       _gateDestCache = [];   // stargateId → destination systemId
+
     private int _currentSystemId;
     private CancellationTokenSource? _cts;
 
@@ -43,10 +50,10 @@ public partial class SystemIntelViewModel : ObservableObject
         _auth = auth;
     }
 
-    // ── Map geometry ──
+    // ── Map geometry — a square canvas the constellation is projected into ──
     public double CanvasWidth  => 320;
-    public double CanvasHeight => 250;
-    private const double Cx = 160, Cy = 118, Radius = 92, NodeHalfW = 42, NodeHalfH = 17;
+    public double CanvasHeight => 320;
+    private const double Margin = 46, NodeHalfW = 42, NodeHalfH = 17;
 
     [ObservableProperty] private bool   _isBusy;
     [ObservableProperty] private bool   _hasResult;
@@ -118,7 +125,7 @@ public partial class SystemIntelViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            var sys = await _esi.GetSystemAsync(systemId);
+            var sys = await GetSystemCachedAsync(systemId);
             if (sys == null) { Status = "Couldn't load that system."; return; }
             _currentSystemId = systemId;
 
@@ -129,22 +136,63 @@ public partial class SystemIntelViewModel : ObservableObject
             LocationLine = $"{con?.Name} · {region}".Trim(' ', '·');
             SovHolder = await ResolveSovAsync(systemId);
 
-            var neighbours = new List<EsiSystem>();
-            if (sys.Stargates is { Length: > 0 })
-            {
-                var gates = await Task.WhenAll(sys.Stargates.Select(_esi.GetStargateAsync));
-                var dests = gates.Where(g => g?.Destination != null).Select(g => _esi.GetSystemAsync(g!.Destination!.SystemId));
-                neighbours = (await Task.WhenAll(dests)).Where(s => s != null).Select(s => s!).ToList();
-            }
+            // Load every system in the constellation (positions + stargates) for a Dotlan-style map.
+            var conSystemIds = con?.Systems ?? [systemId];
+            var loaded = await Task.WhenAll(conSystemIds.Select(GetSystemCachedAsync));
+            var systems = loaded.Where(s => s?.Position != null).Select(s => s!).ToList();
+            if (systems.All(s => s.SystemId != systemId)) systems.Add(sys);   // always include current
+
+            // Resolve gate links that stay inside the constellation.
+            var inCon = systems.Select(s => s.SystemId).ToHashSet();
+            var links = await ResolveConstellationLinksAsync(systems, inCon);
+
+            // Direct gate neighbours of the current system (for the textual list beside the map).
+            var neighbourIds = links.Where(l => l.a == systemId || l.b == systemId)
+                                    .Select(l => l.a == systemId ? l.b : l.a).ToHashSet();
+            var neighbours = systems.Where(s => neighbourIds.Contains(s.SystemId)).ToList();
+
+            await ResolveSovNamesAsync(systems);
 
             BuildHeader(sys);
             BuildNeighbours(neighbours);
-            BuildMap(sys, neighbours);
+            BuildMap(systems, links);
 
-            Status = $"{sys.Name} · {neighbours.Count} adjacent systems";
+            Status = $"{sys.Name} · {systems.Count} systems in {con?.Name}";
             HasResult = true;
         }
         finally { IsBusy = false; }
+    }
+
+    private async Task<EsiSystem?> GetSystemCachedAsync(int id)
+    {
+        if (_systemCache.TryGetValue(id, out var cached)) return cached;
+        var sys = await _esi.GetSystemAsync(id);
+        if (sys != null) _systemCache[id] = sys;
+        return sys;
+    }
+
+    /// <summary>Returns the set of undirected gate links between systems that are both in the constellation.</summary>
+    private async Task<List<(int a, int b)>> ResolveConstellationLinksAsync(List<EsiSystem> systems, HashSet<int> inCon)
+    {
+        var links = new HashSet<(int, int)>();
+        var gatesToFetch = systems.SelectMany(s => s.Stargates ?? [])
+                                  .Where(g => !_gateDestCache.ContainsKey(g)).Distinct().ToList();
+        if (gatesToFetch.Count > 0)
+        {
+            var fetched = await Task.WhenAll(gatesToFetch.Select(_esi.GetStargateAsync));
+            for (var i = 0; i < gatesToFetch.Count; i++)
+                if (fetched[i]?.Destination != null)
+                    _gateDestCache[gatesToFetch[i]] = fetched[i]!.Destination!.SystemId;
+        }
+
+        foreach (var s in systems)
+            foreach (var gate in s.Stargates ?? [])
+                if (_gateDestCache.TryGetValue(gate, out var dest) && inCon.Contains(dest))
+                {
+                    var edge = s.SystemId < dest ? (s.SystemId, dest) : (dest, s.SystemId);
+                    links.Add(edge);
+                }
+        return links.ToList();
     }
 
     private void BuildHeader(EsiSystem sys)
@@ -169,20 +217,42 @@ public partial class SystemIntelViewModel : ObservableObject
         }
     }
 
-    private void BuildMap(EsiSystem center, List<EsiSystem> neighbours)
+    /// <summary>
+    /// Projects the constellation's systems onto the canvas using their real ESI positions
+    /// (top-down: X → horizontal, Z → vertical, flipped to match Dotlan/in-game orientation),
+    /// then draws the actual gate links between them.
+    /// </summary>
+    private void BuildMap(List<EsiSystem> systems, List<(int a, int b)> links)
     {
         MapNodes.Clear();
         MapLinks.Clear();
-        MapNodes.Add(MakeNode(center, Cx, Cy, isCurrent: true));
+        if (systems.Count == 0) return;
 
-        var n = neighbours.Count;
-        for (var i = 0; i < n; i++)
+        var xs = systems.Select(s => s.Position!.X).ToList();
+        var zs = systems.Select(s => s.Position!.Z).ToList();
+        double minX = xs.Min(), maxX = xs.Max(), minZ = zs.Min(), maxZ = zs.Max();
+        double rangeX = maxX - minX, rangeZ = maxZ - minZ;
+        double span = Math.Max(rangeX, rangeZ);   // uniform scale keeps the shape undistorted
+        double usable = CanvasWidth - 2 * Margin;
+
+        Point Project(EsiPosition p)
         {
-            var ang = -Math.PI / 2 + 2 * Math.PI * i / n;
-            var x = Cx + Radius * Math.Cos(ang);
-            var y = Cy + Radius * Math.Sin(ang);
-            MapLinks.Add(new MapLink(Cx, Cy, x, y));
-            MapNodes.Add(MakeNode(neighbours[i], x, y, isCurrent: false));
+            // Centre each axis within the canvas; fall back to the middle when a system is alone.
+            var nx = span > 0 ? (p.X - minX - rangeX / 2) / span : 0;
+            var nz = span > 0 ? (p.Z - minZ - rangeZ / 2) / span : 0;
+            return new Point(CanvasWidth / 2 + nx * usable, CanvasHeight / 2 - nz * usable);
+        }
+
+        var centres = systems.ToDictionary(s => s.SystemId, s => Project(s.Position!));
+
+        foreach (var (a, b) in links)
+            if (centres.TryGetValue(a, out var pa) && centres.TryGetValue(b, out var pb))
+                MapLinks.Add(new MapLink(pa.X, pa.Y, pb.X, pb.Y));
+
+        foreach (var sys in systems)
+        {
+            var c = centres[sys.SystemId];
+            MapNodes.Add(MakeNode(sys, c.X, c.Y, sys.SystemId == _currentSystemId));
         }
     }
 
@@ -190,9 +260,23 @@ public partial class SystemIntelViewModel : ObservableObject
     {
         var k = _kills.GetValueOrDefault(sys.SystemId);
         var hot = k.ship + k.pod > 0;
+        var sovId = _sov.GetValueOrDefault(sys.SystemId);
+        var sovLabel = sovId is > 0 ? _nameCache.GetValueOrDefault(sovId.Value, "") : "";
         return new MapNode(cx - NodeHalfW, cy - NodeHalfH, cx, cy,
-            sys.Name, sys.SecurityStatus.ToString("0.0"), SecBrush(sys.SecurityStatus),
+            sys.SystemId, sys.Name, sys.SecurityStatus.ToString("0.0"),
+            SecBrush(sys.SecurityStatus), SovBrush(sovId), sovLabel,
             isCurrent, hot ? (k.ship + k.pod).ToString() : string.Empty, hot);
+    }
+
+    /// <summary>Resolves alliance names for every sov-held system in the constellation (one batch).</summary>
+    private async Task ResolveSovNamesAsync(List<EsiSystem> systems)
+    {
+        var ids = systems.Select(s => _sov.GetValueOrDefault(s.SystemId))
+                         .Where(a => a is > 0).Select(a => a!.Value)
+                         .Where(a => !_nameCache.ContainsKey(a)).Distinct().ToList();
+        if (ids.Count == 0) return;
+        foreach (var (id, name) in await _esi.ResolveNamesAsync(ids))
+            if (name.Length > 0) _nameCache[id] = name;
     }
 
     private async Task<string> ResolveSovAsync(int systemId)
@@ -230,5 +314,41 @@ public partial class SystemIntelViewModel : ObservableObject
         var br = new SolidColorBrush(Color.FromRgb(r, g, b));
         br.Freeze();
         return br;
+    }
+
+    // ── Sovereignty coloring ──
+    // Each alliance gets a stable colour from this palette (hashed by id) so you can see at a
+    // glance which systems share an owner; unclaimed systems are a neutral slate.
+    private static readonly Brush SovNone = Frozen(0x3a, 0x44, 0x55);
+    private static readonly Brush[] SovPalette =
+    [
+        Frozen(0x5a, 0x8f, 0xd6), Frozen(0x3f, 0xae, 0x8f), Frozen(0xc9, 0x88, 0x3e),
+        Frozen(0x9b, 0x7b, 0xd4), Frozen(0xd4, 0x6a, 0x6a), Frozen(0x4d, 0xb8, 0xa0),
+        Frozen(0xd0, 0xb0, 0x55), Frozen(0xc0, 0x68, 0xb0), Frozen(0x6f, 0x9b, 0x5a),
+    ];
+
+    private static Brush SovBrush(int? allianceId)
+        => allianceId is > 0 ? SovPalette[(allianceId.Value & 0x7fffffff) % SovPalette.Length] : SovNone;
+
+    // ── Per-system links (right-click a map bubble) ──
+    [RelayCommand]
+    private static void OpenDotlan(MapNode? node)
+    {
+        if (node == null) return;
+        var name = node.Name.Replace(' ', '_');
+        OpenUrl($"https://evemaps.dotlan.net/system/{Uri.EscapeDataString(name)}");
+    }
+
+    [RelayCommand]
+    private static void OpenZkill(MapNode? node)
+    {
+        if (node == null) return;
+        OpenUrl($"https://zkillboard.com/system/{node.SystemId}/");
+    }
+
+    private static void OpenUrl(string url)
+    {
+        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+        catch { /* no browser / blocked — nothing useful to do */ }
     }
 }

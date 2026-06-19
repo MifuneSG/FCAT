@@ -107,6 +107,18 @@ public static class ShipRoleClassifier
     public static bool IsCapsule(int groupId) => groupId == CapsuleGroupId;
 
     /// <summary>
+    /// The cap-CHAIN logistics cruisers: Guardian (Amarr) and Basilisk (Caldari). These rely on
+    /// energy-transfer chains to stay cap-stable, so when one drops the ring must be re-formed.
+    /// The Scimitar (11978) and Oneiros (11989) are cap-independent "solo" logi and deliberately
+    /// excluded — they don't chain.
+    /// </summary>
+    public static readonly IReadOnlySet<int> CapChainHullTypeIds = new HashSet<int>
+    {
+        11987, // Guardian
+        11985, // Basilisk
+    };
+
+    /// <summary>
     /// Returns the fleet role for a ship. A per-type override wins over the group default;
     /// otherwise the ship's group decides, falling back to DPS for unmapped hulls.
     /// </summary>

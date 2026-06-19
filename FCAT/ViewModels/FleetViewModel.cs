@@ -14,6 +14,8 @@ public partial class FleetViewModel : ObservableObject
     private readonly EsiService      _esi;
     private readonly CombatLogService _combatLog;
     private readonly SettingsService _settings;
+    private readonly AlertHub        _alertHub;
+    private readonly SessionLog      _sessionLog;
     private readonly ShellViewModel  _shell;
 
     private CancellationTokenSource? _pollCts;
@@ -32,20 +34,30 @@ public partial class FleetViewModel : ObservableObject
     private readonly Dictionary<int, bool> _inCapsule = [];
     private readonly List<FleetMemberViewModel> _currentMembers = [];
 
+    // Roster tracking for the after-action log (pilot joins/leaves). First poll seeds the
+    // baseline silently so we don't log the whole fleet as "joined" at startup.
+    private Dictionary<int, string> _rosterNames = [];
+    private bool _rosterInitialized;
+
     public long SessionFleetId { get; }
 
     public FleetViewModel(EsiAuthService auth, EsiService esi, CombatLogService combatLog,
-                          SettingsService settings, ShellViewModel shell, long fleetId)
+                          SettingsService settings, AlertHub alertHub, SessionLog sessionLog,
+                          ShellViewModel shell, long fleetId)
     {
         _auth      = auth;
         _esi       = esi;
         _combatLog = combatLog;
         _settings  = settings;
+        _alertHub  = alertHub;
+        _sessionLog = sessionLog;
         _shell     = shell;
 
         SessionFleetId = fleetId;
         CharacterName  = auth.AuthenticatedCharacterName;
         FleetIdDisplay = fleetId.ToString();
+
+        _sessionLog.StartSession(fleetId, auth.AuthenticatedCharacterName);
 
         _combatLog.AlertRaised += OnAlertRaised;
         _combatLog.StartWatching(_settings.Current.GamelogsPath);
@@ -53,8 +65,6 @@ public partial class FleetViewModel : ObservableObject
         _boost.Updated += OnBoostUpdated;
         _boost.StartWatching(_settings.Current.ChatlogsPath, _settings.Current.BoostChannelPrefix);
         BoostChannelName = _boost.ActiveChannel ?? "not found";
-
-        OverlayLocked = _settings.Current.OverlayLocked;
 
         StartPolling();
     }
@@ -70,24 +80,6 @@ public partial class FleetViewModel : ObservableObject
     [ObservableProperty] private string _inviteName = string.Empty;
     [ObservableProperty] private string _mainlineLabel = string.Empty;
 
-    // Alert overlay (managed by the view's code-behind, which owns the actual Window)
-    [ObservableProperty] private bool _overlayEnabled;
-    [ObservableProperty] private bool _overlayLocked;
-    public double OverlayLeft => _settings.Current.OverlayLeft;
-    public double OverlayTop  => _settings.Current.OverlayTop;
-
-    [RelayCommand] private void ToggleOverlay()     => OverlayEnabled = !OverlayEnabled;
-    [RelayCommand] private void ToggleOverlayLock()  => OverlayLocked  = !OverlayLocked;
-
-    /// <summary>Called by the view when the overlay moves / locks, so position survives sessions.</summary>
-    public void PersistOverlay(double left, double top, bool locked)
-    {
-        _settings.Current.OverlayLeft   = left;
-        _settings.Current.OverlayTop    = top;
-        _settings.Current.OverlayLocked = locked;
-        _settings.Save();
-    }
-
     // Move picker state
     [ObservableProperty] private bool _isMovePickerOpen;
     [ObservableProperty] private string _movePilotName = string.Empty;
@@ -100,11 +92,15 @@ public partial class FleetViewModel : ObservableObject
 
     public ObservableCollection<WingViewModel>        Wings            { get; } = [];
     public ObservableCollection<FleetMemberViewModel> FleetCommandLevel { get; } = [];
-    public ObservableCollection<FcAlert>              Alerts           { get; } = [];
+    // The alert feed lives on the app-lifetime AlertHub so it (and the overlay) survive navigation.
+    public ObservableCollection<FcAlert>              Alerts           => _alertHub.Alerts;
     public ObservableCollection<MoveTargetViewModel>  MoveTargets      { get; } = [];
     public ObservableCollection<FleetStat>            RoleStats        { get; } = [];
     public ObservableCollection<BoostStat>            BoostStats       { get; } = [];
     public ObservableCollection<FleetAdvisory>        Advisories       { get; } = [];
+    // Suggested cap-chain order (Guardian/Basilisk only), alphabetical so every logi derives the same ring.
+    public ObservableCollection<string>               LogiChain        { get; } = [];
+    public bool HasLogiChain => LogiChain.Count >= 2;
 
     // ── Polling ───────────────────────────────────────────────────────────────
     private void StartPolling()
@@ -148,7 +144,6 @@ public partial class FleetViewModel : ObservableObject
         _combatLog.AlertRaised -= OnAlertRaised;
         _boost.Updated -= OnBoostUpdated;
         _boost.StopWatching();
-        OverlayEnabled = false;   // triggers the view to close the overlay window
         IsLive = false;
     }
 
@@ -260,9 +255,28 @@ public partial class FleetViewModel : ObservableObject
             _inCapsule[m.CharacterId] = isCapsule;
         }
 
+        // ── 5. Roster diff for the AAR (joins / leaves) ───────────────────────
+        var roster = members.ToDictionary(m => m.CharacterId,
+                                          m => string.IsNullOrEmpty(m.CharacterName) ? $"#{m.CharacterId}" : m.CharacterName);
+        var rosterEvents = new List<string>();
+        if (_rosterInitialized)
+        {
+            foreach (var (id, name) in roster)
+                if (!_rosterNames.ContainsKey(id)) rosterEvents.Add($"JOIN|{name} joined the fleet");
+            foreach (var (id, name) in _rosterNames)
+                if (!roster.ContainsKey(id)) rosterEvents.Add($"LEAVE|{name} left the fleet");
+        }
+        _rosterNames = roster;
+        _rosterInitialized = true;
+
         await App.Current.Dispatcher.InvokeAsync(() =>
         {
             foreach (var a in deathAlerts) RaiseAlert(a);
+            foreach (var ev in rosterEvents)
+            {
+                var parts = ev.Split('|', 2);
+                _sessionLog.Record(parts[0], parts[1]);
+            }
             RebuildHierarchy(members, wings ?? []);
         });
     }
@@ -319,8 +333,48 @@ public partial class FleetViewModel : ObservableObject
         }
 
         ComputeStats();
+        UpdateCapChain();
         StatusMessage = $"{MemberCount} pilots";
     }
+
+    // ── Cap-chain advisory (Guardian/Basilisk) ──────────────────────────────────
+    // We build our OWN ordered ring from the authorized ESI fleet list (alphabetical, so every
+    // logi pilot derives the same order independently) and alert the FC when a chain member is
+    // lost so the ring can be re-formed. We can see a logi leave / swap hull / get podded via
+    // ESI — we cannot see who is actually transferring to whom (that isn't exposed), so this is
+    // an advisory "membership changed" signal, not a live "the chain is broken in space" reading.
+    private List<string> _lastChain = [];
+
+    private void UpdateCapChain()
+    {
+        var chain = _currentMembers
+            .Where(m => ShipRoleClassifier.CapChainHullTypeIds.Contains(m.ShipTypeId))
+            .Select(m => m.CharacterName)
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        LogiChain.Clear();
+        foreach (var n in chain) LogiChain.Add(n);
+        OnPropertyChanged(nameof(HasLogiChain));
+
+        // Alert only when a previously-known ring LOSES a member (joins just re-order quietly).
+        var lost = _lastChain.Except(chain, StringComparer.OrdinalIgnoreCase).ToList();
+        if (_lastChain.Count >= 2 && lost.Count > 0)
+        {
+            var who = string.Join(", ", lost);
+            var detail = chain.Count >= 2
+                ? $"{who} dropped — re-form ring: {RingText(chain)}"
+                : $"{who} dropped — cap chain collapsed ({chain.Count} left)";
+            RaiseAlert(new FcAlert { Timestamp = DateTime.Now, AlertType = AlertType.LogiChain, Detail = detail });
+        }
+
+        _lastChain = chain;
+    }
+
+    /// <summary>"A → B → C → (A)" — shows the closed loop the cap chain should form.</summary>
+    private static string RingText(List<string> names)
+        => names.Count == 0 ? "" : string.Join(" → ", names) + $" → ({names[0]})";
 
     // ── Composition + boost coverage header ─────────────────────────────────────
     private static readonly Brush BrLogi   = Frozen(0x3f, 0xae, 0x8f);
@@ -329,10 +383,11 @@ public partial class FleetViewModel : ObservableObject
     private static readonly Brush BrEwar    = Frozen(0x9b, 0x7b, 0xd4);
     private static readonly Brush BrSupport = Frozen(0x4d, 0xb8, 0xd4);
     private static readonly Brush BrCap     = Frozen(0xd4, 0xa4, 0x49);
-    private static readonly Brush BrIndy   = Frozen(0x6b, 0x76, 0x89);
-    private static readonly Brush BrDps    = Frozen(0x9a, 0xa3, 0xb3);
+    private static readonly Brush BrIndy   = Frozen(0x8a, 0x96, 0xab);
+    private static readonly Brush BrDps    = Frozen(0xc6, 0xce, 0xdb);   // brightened — was a dim slate, hard to read
     private static readonly Brush BrAccent   = Frozen(0x4d, 0xb8, 0xd4);
     private static readonly Brush BrDim      = Frozen(0x5c, 0x64, 0x73);
+    private static readonly Brush BrUncovered = Frozen(0x80, 0x8a, 0x9b); // muted but legible — for boost links with 0 coverage
     private static readonly Brush BrCritical = Frozen(0xe2, 0x57, 0x4c);
     private static readonly Brush BrAmber    = Frozen(0xc9, 0x88, 0x3e);
 
@@ -393,15 +448,27 @@ public partial class FleetViewModel : ObservableObject
         AddRole("DPS",    BrDps,     r => r is ShipRole.DPS or ShipRole.Unknown);
 
         // ── Boost coverage ───────────────────────────────────────────────────
+        // The boost row tracks the link types that matter for the fleet kind: combat fleets
+        // care about Shield/Armor/Skirmish/Info; mining fleets about the Mining Foreman bursts.
+        // The FC is usually the booster, so these come from the boost channel (Chatlogs).
         void AddBoost(string label, BoostCategory cat, Brush color)
         {
             var n = _currentMembers.Count(m => m.BoostCategories.Contains(cat));
-            BoostStats.Add(new BoostStat(label, n, n > 0 ? color : BrDim));
+            BoostStats.Add(new BoostStat(label, n, n > 0 ? color : BrUncovered));
         }
-        AddBoost("Shield",   BoostCategory.Shield,   BrLogi);
-        AddBoost("Armor",    BoostCategory.Armor,    BrCap);
-        AddBoost("Skirmish", BoostCategory.Skirmish, BrAccent);
-        AddBoost("Info",     BoostCategory.Info,     BrEwar);
+        if (kind == FleetKind.Mining)
+        {
+            AddBoost("Yield", BoostCategory.MiningYield,    BrLogi);
+            AddBoost("Range", BoostCategory.MiningOptimal,  BrAccent);
+            AddBoost("Presv", BoostCategory.MiningPreserve, BrCap);
+        }
+        else
+        {
+            AddBoost("Shield",   BoostCategory.Shield,   BrLogi);
+            AddBoost("Armor",    BoostCategory.Armor,    BrCap);
+            AddBoost("Skirmish", BoostCategory.Skirmish, BrAccent);
+            AddBoost("Info",     BoostCategory.Info,     BrEwar);
+        }
 
         // ── Mainline / fleet-kind label ──────────────────────────────────────
         var sharePct = (int)Math.Round(dominantShare * 100);
@@ -681,36 +748,9 @@ public partial class FleetViewModel : ObservableObject
     }
 
     // ── Alert handler ─────────────────────────────────────────────────────────
-    private void OnAlertRaised(FcAlert alert) => App.Current.Dispatcher.Invoke(() => RaiseAlert(alert));
+    // All alerts flow through the app-lifetime AlertHub (sound, auto-clear, overlay) so they
+    // persist regardless of which page is open.
+    private void OnAlertRaised(FcAlert alert) => App.Current.Dispatcher.Invoke(() => _alertHub.Raise(alert));
 
-    /// <summary>Inserts an alert at the top of the feed. Must be called on the UI thread.</summary>
-    private void RaiseAlert(FcAlert alert)
-    {
-        Alerts.Insert(0, alert);
-        while (Alerts.Count > 100)       // keep the feed bounded
-            Alerts.RemoveAt(Alerts.Count - 1);
-
-        if (_settings.Current.AlertSoundsEnabled)
-        {
-            var preset = alert.AlertType switch
-            {
-                AlertType.Tackled    => _settings.Current.TackledSound,
-                AlertType.CapTrouble => _settings.Current.CapTroubleSound,
-                AlertType.BoostLost  => _settings.Current.BoostLostSound,
-                _                    => "None",
-            };
-            // Throttle per type so tackle spam doesn't machine-gun the speaker.
-            SoundService.PlayThrottled(preset, alert.AlertType.ToString(), TimeSpan.FromSeconds(2));
-        }
-
-        // Auto-clear after the configured timeout (0 = keep until session ends).
-        var clearSecs = _settings.Current.AlertClearSeconds;
-        if (clearSecs > 0) _ = ExpireAlertAsync(alert, clearSecs);
-    }
-
-    private async Task ExpireAlertAsync(FcAlert alert, int seconds)
-    {
-        try { await Task.Delay(TimeSpan.FromSeconds(seconds)); } catch { return; }
-        App.Current.Dispatcher.Invoke(() => Alerts.Remove(alert));
-    }
+    private void RaiseAlert(FcAlert alert) => _alertHub.Raise(alert);
 }
