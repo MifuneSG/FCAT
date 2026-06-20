@@ -121,6 +121,12 @@
                                FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
                 </Button>
 
+                <Button Command="{Binding OpenPingCommand}"
+                        Style="{StaticResource PrimaryButton}" Height="46" Margin="0,0,0,10">
+                    <TextBlock Text="📣  Ping / MOTD"
+                               FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
+                </Button>
+
                 <Button Command="{Binding OpenSessionLogCommand}"
                         Style="{StaticResource SecondaryButton}" Height="40" Margin="0,0,0,10">
                     <TextBlock Text="🗎  After-Action Report"

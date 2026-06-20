@@ -107,15 +107,17 @@ public static class ShipRoleClassifier
     public static bool IsCapsule(int groupId) => groupId == CapsuleGroupId;
 
     /// <summary>
-    /// The cap-CHAIN logistics cruisers: Guardian (Amarr) and Basilisk (Caldari). These rely on
-    /// energy-transfer chains to stay cap-stable, so when one drops the ring must be re-formed.
-    /// The Scimitar (11978) and Oneiros (11989) are cap-independent "solo" logi and deliberately
-    /// excluded — they don't chain.
+    /// The cap-CHAIN logistics ships: Guardian (Amarr) and Basilisk (Caldari), plus their T1
+    /// cap-transfer precursors Osprey (shield) and Augoror (armor). These rely on energy-transfer
+    /// chains to stay cap-stable, so when one drops the ring must be re-formed. The Scimitar (11978)
+    /// and Oneiros (11989) are cap-independent "solo" logi and deliberately excluded — they don't chain.
     /// </summary>
     public static readonly IReadOnlySet<int> CapChainHullTypeIds = new HashSet<int>
     {
         11987, // Guardian
         11985, // Basilisk
+        620,   // Osprey  (T1 shield logi — cap-chains like the Basilisk)
+        625,   // Augoror (T1 armor logi — cap-chains like the Guardian)
     };
 
     /// <summary>

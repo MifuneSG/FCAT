@@ -82,6 +82,11 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
             $"/v1/fleets/{fleetId}/members/{characterId}/", body);
     }
 
+    /// <summary>Sets the fleet MOTD (PUT /fleets/{id}/). is_free_move is preserved by passing it back.</summary>
+    public async Task<bool> SetFleetMotdAsync(long fleetId, string motd, bool isFreeMove)
+        => await SendAuthenticatedAsync(HttpMethod.Put, $"/v1/fleets/{fleetId}/",
+               new { is_free_move = isFreeMove, motd });
+
     public async Task<bool> RenameWingAsync(long fleetId, long wingId, string name)
         => await SendAuthenticatedAsync(HttpMethod.Put, $"/v1/fleets/{fleetId}/wings/{wingId}/", new { name });
 
@@ -221,6 +226,8 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
         return null;
     }
 
+    /// <summary>All solar system IDs in New Eden (GET /v1/universe/systems/).</summary>
+    public async Task<List<int>>         GetAllSystemIdsAsync()        => await GetPublicAsync<List<int>>("/v1/universe/systems/") ?? [];
     public async Task<EsiSystem?>        GetSystemAsync(int id)        => await GetPublicAsync<EsiSystem>($"/v4/universe/systems/{id}/");
     public async Task<EsiStargate?>      GetStargateAsync(int id)      => await GetPublicAsync<EsiStargate>($"/v1/universe/stargates/{id}/");
     public async Task<EsiConstellation?> GetConstellationAsync(int id) => await GetPublicAsync<EsiConstellation>($"/v1/universe/constellations/{id}/");

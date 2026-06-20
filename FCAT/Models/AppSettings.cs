@@ -12,6 +12,14 @@ public class AppSettings
     /// <summary>Filename prefix of the boost chat channel logs (e.g. "Boost").</summary>
     public string BoostChannelPrefix { get; set; } = "Boost";
 
+    /// <summary>The system the fleet forms up in — used by the straggler check. Name + id.</summary>
+    public string FormupSystem   { get; set; } = string.Empty;
+    public int    FormupSystemId { get; set; }
+
+    /// <summary>Ping/MOTD profiles (one per alliance + a personal one) and the active selection.</summary>
+    public List<PingProfile> PingProfiles      { get; set; } = [];
+    public string            ActivePingProfile { get; set; } = string.Empty;
+
     // ── Alert sounds ──
     public bool   AlertSoundsEnabled { get; set; } = true;
     public string TackledSound       { get; set; } = "Alarm";

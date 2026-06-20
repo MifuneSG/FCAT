@@ -657,11 +657,46 @@
             <Grid Grid.Column="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- LOGI CHAIN advisory (Guardian/Basilisk only) -->
+                <!-- FORM-UP — who hasn't arrived yet; auto-hides once the fleet departs staging -->
                 <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12"
+                        Visibility="{Binding ShowFormupCard, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel Margin="16,12,16,12">
+                        <Grid Margin="0,0,0,6">
+                            <TextBlock Text="FORM-UP" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding StragglerSummary}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       FontFamily="{StaticResource FontUI}" FontSize="11">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasStragglers}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Stragglers}"
+                                      Visibility="{Binding HasStragglers, Converter={StaticResource BoolToVisibility}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,1">
+                                        <TextBlock Text="•" Foreground="{StaticResource EveAmber}" FontSize="12" Width="14" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- LOGI CHAIN advisory (Guardian/Basilisk only) -->
+                <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,12"
                         Visibility="{Binding HasLogiChain, Converter={StaticResource BoolToVisibility}}">
                     <StackPanel Margin="16,12,16,12">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
@@ -684,7 +719,7 @@
                 </Border>
 
                 <!-- ALERTS -->
-                <Border Grid.Row="1" Style="{StaticResource Card}">
+                <Border Grid.Row="2" Style="{StaticResource Card}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>

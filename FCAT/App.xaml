@@ -207,6 +207,90 @@
             </Setter>
         </Style>
 
+        <!-- ══ DARK COMBOBOX ══ -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{StaticResource EveTextPrimary}"/>
+            <Setter Property="FontFamily" Value="{StaticResource FontUI}"/>
+            <Setter Property="FontSize"   Value="12"/>
+            <Setter Property="Padding"    Value="10,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="bd" Background="Transparent" Padding="{TemplateBinding Padding}" CornerRadius="4">
+                            <ContentPresenter TextElement.Foreground="{StaticResource EveTextPrimary}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#14202e"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Foreground" Value="{StaticResource EveTextPrimary}"/>
+            <Setter Property="FontFamily" Value="{StaticResource FontUI}"/>
+            <Setter Property="FontSize"   Value="12"/>
+            <Setter Property="Height"     Value="30"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="26"/>
+                            </Grid.ColumnDefinitions>
+                            <!-- Full-width background + open-on-click (sits behind everything) -->
+                            <ToggleButton Grid.ColumnSpan="2" Focusable="False" ClickMode="Press"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="bd" Background="#0f1622" BorderBrush="{StaticResource EveHairlineStrong}"
+                                                BorderThickness="1" CornerRadius="7"/>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource EveAccent}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <!-- Selected item (non-editable) -->
+                            <ContentPresenter x:Name="contentPresenter" Grid.Column="0" IsHitTestVisible="False"
+                                              Margin="11,0,0,0" VerticalAlignment="Center"
+                                              TextElement.Foreground="{StaticResource EveTextPrimary}"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"/>
+                            <!-- Editable text entry (shown only when IsEditable) -->
+                            <TextBox x:Name="PART_EditableTextBox" Grid.Column="0" Visibility="Collapsed"
+                                     Margin="8,0,0,0" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                                     Background="Transparent" BorderThickness="0" Padding="0"
+                                     Foreground="{StaticResource EveTextPrimary}" CaretBrush="{StaticResource EveAccent}"/>
+                            <Path Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"
+                                  Data="M 0 0 L 8 0 L 4 5 Z" Fill="{StaticResource EveTextSecondary}"/>
+                            <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom"
+                                   AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
+                                <Border Background="#0f1622" BorderBrush="{StaticResource EveHairlineStrong}" BorderThickness="1"
+                                        CornerRadius="7" Margin="0,2,0,0" Padding="3"
+                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <ScrollViewer><ItemsPresenter/></ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEditable" Value="True">
+                                <Setter TargetName="PART_EditableTextBox" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="contentPresenter"     Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- ══ PAGE → VIEW MAPPINGS ══ -->
         <DataTemplate DataType="{x:Type vm:LoginViewModel}">
             <views:LoginView/>
@@ -225,6 +309,9 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:SessionLogViewModel}">
             <views:SessionLogView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PingViewModel}">
+            <views:PingView/>
         </DataTemplate>
 
     </Application.Resources>

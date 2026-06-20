@@ -26,8 +26,9 @@ public partial class App : Application
         var settingsService = new SettingsService();
         var sessionLog = new SessionLog();
         var alertHub = new AlertHub(settingsService, sessionLog);
+        var systemSearch = new SystemSearchService(esiService);
 
-        var shell = new ShellViewModel(authService, esiService, combatLogService, settingsService, alertHub, sessionLog);
+        var shell = new ShellViewModel(authService, esiService, combatLogService, settingsService, alertHub, sessionLog, systemSearch);
 
         var window = new MainWindow(alertHub) { DataContext = shell };
         window.Show();

@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -9,25 +10,76 @@ namespace FCAT.ViewModels;
 public partial class SettingsViewModel : ObservableObject
 {
     private readonly SettingsService _settings;
+    private readonly SystemSearchService _systemSearch;
     private readonly ShellViewModel _shell;
 
     /// <summary>The app-lifetime overlay/alert state — bound directly by the overlay controls.</summary>
     public AlertHub Overlay { get; }
 
-    public SettingsViewModel(SettingsService settings, AlertHub overlay, ShellViewModel shell)
+    public SettingsViewModel(SettingsService settings, AlertHub overlay,
+                             SystemSearchService systemSearch, ShellViewModel shell)
     {
         _settings = settings;
         Overlay   = overlay;
+        _systemSearch = systemSearch;
         _shell = shell;
 
         EveLogsPath        = settings.Current.EveLogsPath;
         BoostChannelPrefix = settings.Current.BoostChannelPrefix;
+        _formupSystemText  = settings.Current.FormupSystem;
+        _formupSystemId    = settings.Current.FormupSystemId;
 
         AlertSoundsEnabled = settings.Current.AlertSoundsEnabled;
         TackledSound       = settings.Current.TackledSound;
         CapTroubleSound    = settings.Current.CapTroubleSound;
         BoostLostSound     = settings.Current.BoostLostSound;
         _alertClearSeconds = settings.Current.AlertClearSeconds;
+
+        _ = LoadSystemsAsync();
+    }
+
+    // ── Form-up system (autocomplete search) ──
+    [ObservableProperty] private string _formupSystemText = string.Empty;
+    [ObservableProperty] private bool   _systemsLoading;
+    public ObservableCollection<SystemMatch> SystemSuggestions { get; } = [];
+
+    private int  _formupSystemId;
+    private bool _suppressSearch;   // stops the dropdown re-opening when we set the text programmatically
+
+    private async Task LoadSystemsAsync()
+    {
+        SystemsLoading = true;
+        await _systemSearch.EnsureLoadedAsync();
+        SystemsLoading = false;
+    }
+
+    partial void OnFormupSystemTextChanged(string value)
+    {
+        if (_suppressSearch) return;
+        SystemSuggestions.Clear();
+        foreach (var m in _systemSearch.Search(value)) SystemSuggestions.Add(m);
+        _formupSystemId = _systemSearch.ResolveId(value) ?? 0;   // 0 until a real system is matched
+    }
+
+    [RelayCommand]
+    private void PickSystem(SystemMatch? match)
+    {
+        if (match == null) return;
+        _suppressSearch = true;
+        FormupSystemText = match.Name;
+        _formupSystemId  = match.Id;
+        _suppressSearch = false;
+        SystemSuggestions.Clear();
+    }
+
+    [RelayCommand]
+    private void ClearFormup()
+    {
+        _suppressSearch = true;
+        FormupSystemText = string.Empty;
+        _formupSystemId = 0;
+        _suppressSearch = false;
+        SystemSuggestions.Clear();
     }
 
     // ── Alert sounds ──
@@ -111,6 +163,8 @@ public partial class SettingsViewModel : ObservableObject
         _settings.Current.EveLogsPath        = EveLogsPath.Trim();
         _settings.Current.BoostChannelPrefix = string.IsNullOrWhiteSpace(BoostChannelPrefix)
             ? "Boost" : BoostChannelPrefix.Trim();
+        _settings.Current.FormupSystem       = FormupSystemText.Trim();
+        _settings.Current.FormupSystemId     = _formupSystemId;
 
         _settings.Current.AlertSoundsEnabled = AlertSoundsEnabled;
         _settings.Current.TackledSound       = TackledSound;

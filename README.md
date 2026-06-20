@@ -17,7 +17,7 @@ Live fleet readout, ship-role classification, boost tracking, combat alerts, and
 
 ## Table of contents
 - [What is FCAT](#what-is-fcat)
-- [Screenshots](#screenshots)
+- [Demos](#demos)
 - [Features](#features)
 - [What FCAT can and can't see](#what-fcat-can-and-cant-see)
 - [Download (beta)](#download-beta)
@@ -36,23 +36,20 @@ FCAT is a Windows desktop tool that sits beside EVE Online and gives the FC a si
 
 ---
 
-## Screenshots
+## Demos
 
-<!-- TODO: Add your screenshots into docs/screenshots/ and uncomment.
-     Suggested shots: login, main menu, fleet view, composition header,
-     move/promote picker, d-scan analyzer, settings (alert sounds), the overlay over EVE. -->
+Short GIFs show the tool in motion better than stills. Drop recordings into [`docs/gifs/`](docs/gifs/)
+and uncomment the matching rows below (see [docs/gifs/README.md](docs/gifs/README.md) for how to record them).
 
-| Login | Main menu |
-|-------|-----------|
-<!-- | ![](docs/screenshots/login.png) | ![](docs/screenshots/menu.png) | -->
+<!-- Uncomment each row once the GIF exists in docs/gifs/ -->
 
-| Fleet view | D-scan analyzer |
-|------------|-----------------|
-<!-- | ![](docs/screenshots/fleet.png) | ![](docs/screenshots/dscan.png) | -->
+| Fleet view (live) | Intel — constellation map |
+|-------------------|---------------------------|
+<!-- | ![](docs/gifs/fleet.gif) | ![](docs/gifs/intel.gif) | -->
 
-| Alert overlay (over EVE) | Settings |
-|--------------------------|----------|
-<!-- | ![](docs/screenshots/overlay.png) | ![](docs/screenshots/settings.png) | -->
+| Ping / MOTD builder | Alert overlay (over EVE) |
+|---------------------|--------------------------|
+<!-- | ![](docs/gifs/ping.gif) | ![](docs/gifs/overlay.gif) | -->
 
 ---
 
@@ -111,10 +108,20 @@ Alerts appear in a feed, can play **configurable sounds** (6 presets, per-alert-
 
 <!-- ![Alerts + overlay](docs/screenshots/overlay.png) -->
 
-### 🔭 Intel Tools — D-scan analyzer
-Paste a directional scan and get an instant threat breakdown by role (`3 LOGI · 7 DPS · 2 TACKLE · 1 DICTOR`) plus a per-ship list — drones/structures/pods are filtered out. **Copy for comms** produces a clean summary to paste into Discord/fleet chat.
+### 🔭 Intel Tools — D-scan analyzer & constellation map
+Paste a directional scan or your Local member list and get an instant threat breakdown by role (`3 LOGI · 7 DPS · 2 TACKLE · 1 DICTOR`) plus a per-ship list — drones/structures/pods are filtered out. **Copy for comms** produces a clean summary to paste into Discord/fleet chat. Alongside it, a live **constellation map** of your current system — laid out from real ESI positions with actual stargate links, **colored by sovereignty holder**, with recent kills highlighted and right-click links to **Dotlan / zKillboard**.
 
-<!-- ![D-scan](docs/screenshots/dscan.png) -->
+### 📣 Ping / MOTD builder
+Compose a fleet **ping** (Hurf → FC → forming → comms → doctrine) and a formatted **fleet MOTD** from shared dropdowns, then **push the MOTD straight to your fleet** over ESI. Alliance **profiles** carry their own doctrines, comms channels, and clickable in-game **boost/logi channel links**; doctrines link to their fitting page and the forming system + anchors become clickable in-game links. Alliance profiles are locked to members of that alliance.
+
+### 🧭 Form-up & straggler tracking
+Set your staging system (with autocomplete). While forming, a quiet panel shows **who hasn't arrived yet**; once the fleet moves out it auto-hides, then silently logs anyone **left behind** in staging to the after-action report (pilots who got podded back are excluded).
+
+### 🔗 Logi cap-chain advisory
+For cap-chain logi (Guardian / Basilisk / Osprey / Augoror), FCAT builds an alphabetical **cap-chain order** every fleet derives the same way, and alerts the FC when a chain member drops so the ring can be re-formed. Built from authorized ESI fleet data only — it does not read the in-game chain or automate anything.
+
+### 🗎 After-action report
+A running timeline of the op — alerts, pilots joining/leaving, form-up events — that you can **copy or save as Markdown** for your fleet write-up.
 
 ### ⚙️ Settings
 Configure your EVE logs folder (with live "found" checks for Gamelogs/Chatlogs), the boost channel name, and alert sounds.
@@ -213,7 +220,7 @@ Ideas under consideration (not promises):
 
 ## License
 
-> **TODO:** choose a license. For an open tool meant to be vetted, **MIT** is a common, permissive choice — add a `LICENSE` file. Until then, all rights reserved by the author.
+FCAT is released under the **[MIT License](LICENSE)** — free to use, fork, and modify; just keep the copyright notice. It comes with no warranty.
 
 ---
 

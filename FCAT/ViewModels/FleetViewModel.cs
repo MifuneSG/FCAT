@@ -102,6 +102,25 @@ public partial class FleetViewModel : ObservableObject
     public ObservableCollection<string>               LogiChain        { get; } = [];
     public bool HasLogiChain => LogiChain.Count >= 2;
 
+    // Pilots not in the configured form-up system (the straggler check).
+    public ObservableCollection<string>               Stragglers       { get; } = [];
+    public bool   FormupConfigured => !string.IsNullOrWhiteSpace(_settings.Current.FormupSystem);
+    public bool   HasStragglers    => Stragglers.Count > 0;
+    [ObservableProperty] private string _stragglerSummary = string.Empty;
+    [ObservableProperty] private bool   _showFormupCard;   // visible only during form-up, hides once fleet departs
+
+    // Form-up lifecycle: show the card while staging, hide it once the fleet moves out, then
+    // silently log anyone still sitting in staging "long after" departure to the AAR.
+    private enum FormupPhase { Forming, Departed }
+    private FormupPhase _formupPhase = FormupPhase.Forming;
+    private bool _everStaged;                 // true once a majority actually gathered in the form-up system
+    private DateTime? _departedAt;
+    private readonly HashSet<int> _leftBehindLogged = [];
+    // Pilots podded at any point this session — they respawn at staging, so being there is expected,
+    // not "left behind." Excluded from the left-behind check.
+    private readonly HashSet<int> _poddedThisSession = [];
+    private static readonly TimeSpan LeftBehindAfter = TimeSpan.FromMinutes(3);  // "long after the fleet is gone"
+
     // ── Polling ───────────────────────────────────────────────────────────────
     private void StartPolling()
     {
@@ -252,6 +271,7 @@ public partial class FleetViewModel : ObservableObject
                     _boost.ClearPilot(m.CharacterName);   // links are gone with the ship
                 }
             }
+            if (isCapsule) _poddedThisSession.Add(m.CharacterId);   // died this session — exempt from "left behind"
             _inCapsule[m.CharacterId] = isCapsule;
         }
 
@@ -334,7 +354,72 @@ public partial class FleetViewModel : ObservableObject
 
         ComputeStats();
         UpdateCapChain();
+        UpdateFormup();
         StatusMessage = $"{MemberCount} pilots";
+    }
+
+    // ── Form-up / straggler tracking ───────────────────────────────────────────────
+    // Phase 1 (Forming): the FORM-UP card lists who hasn't reached the staging system yet — quiet,
+    // no alerts. Phase 2 (Departed): once a majority of the fleet leaves staging, the card hides and
+    // a silent listener logs anyone STILL parked in staging "long after" departure to the AAR.
+    // All comparisons are by system NAME (already resolved per member) — no extra ESI calls.
+    private void UpdateFormup()
+    {
+        var formup = _settings.Current.FormupSystem?.Trim() ?? string.Empty;
+        OnPropertyChanged(nameof(FormupConfigured));
+
+        if (formup.Length == 0)
+        {
+            Stragglers.Clear();
+            StragglerSummary = string.Empty;
+            ShowFormupCard = false;
+            OnPropertyChanged(nameof(HasStragglers));
+            return;
+        }
+
+        bool InFormup(FleetMemberViewModel m) =>
+            string.Equals(m.SolarSystemName, formup, StringComparison.OrdinalIgnoreCase);
+
+        var known = _currentMembers.Where(m => !string.IsNullOrEmpty(m.SolarSystemName)).ToList();
+        if (known.Count == 0) { ShowFormupCard = _formupPhase == FormupPhase.Forming; return; }
+
+        var inCount = known.Count(InFormup);
+        var share   = (double)inCount / known.Count;
+
+        // Detect the fleet leaving staging: it must first have actually gathered there.
+        if (_formupPhase == FormupPhase.Forming)
+        {
+            if (!_everStaged && inCount >= 2 && share >= 0.5) _everStaged = true;
+            if (_everStaged && share < 0.5)
+            {
+                _formupPhase = FormupPhase.Departed;
+                _departedAt  = DateTime.Now;
+                _sessionLog.Record("FORM-UP", $"Fleet departed form-up system {formup}");
+            }
+        }
+
+        if (_formupPhase == FormupPhase.Forming)
+        {
+            Stragglers.Clear();
+            foreach (var m in known.Where(m => !InFormup(m))
+                                   .OrderBy(m => m.SolarSystemName, StringComparer.OrdinalIgnoreCase)
+                                   .ThenBy(m => m.CharacterName, StringComparer.OrdinalIgnoreCase))
+                Stragglers.Add($"{m.CharacterName} — {m.SolarSystemName}");
+            StragglerSummary = Stragglers.Count == 0 ? $"All pilots in {formup}" : $"{Stragglers.Count} not in {formup}";
+            ShowFormupCard = true;
+        }
+        else // Departed — card gone; quietly note anyone left behind in staging.
+        {
+            Stragglers.Clear();
+            ShowFormupCard = false;
+            if (_departedAt is { } dep && DateTime.Now - dep >= LeftBehindAfter)
+                foreach (var m in known.Where(m => InFormup(m) && !_poddedThisSession.Contains(m.CharacterId)))
+                    if (_leftBehindLogged.Add(m.CharacterId))
+                        _sessionLog.Record("LEFT BEHIND",
+                            $"{m.CharacterName} still in {formup} ~{(int)(DateTime.Now - dep).TotalMinutes}m after the fleet moved out");
+        }
+
+        OnPropertyChanged(nameof(HasStragglers));
     }
 
     // ── Cap-chain advisory (Guardian/Basilisk) ──────────────────────────────────

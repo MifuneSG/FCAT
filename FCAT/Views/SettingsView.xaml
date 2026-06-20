@@ -145,6 +145,49 @@
                 <TextBox Style="{StaticResource DarkTextBox}" Width="220" HorizontalAlignment="Left"
                          Text="{Binding BoostChannelPrefix, UpdateSourceTrigger=PropertyChanged}"/>
 
+                <!-- Fleet form-up system (autocomplete) -->
+                <TextBlock Text="FLEET FORM-UP SYSTEM" Style="{StaticResource SectionLabel}" Margin="0,24,0,7"/>
+                <TextBlock Text="The system your fleet stages in. Used by the straggler check to flag pilots who aren't in it yet."
+                           Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                           TextWrapping="Wrap" Margin="0,0,0,9"/>
+                <Grid Width="300" HorizontalAlignment="Left">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <!-- The box + its suggestion dropdown share column 0 -->
+                    <StackPanel Grid.Column="0">
+                        <TextBox x:Name="FormupBox" Style="{StaticResource DarkTextBox}"
+                                 Text="{Binding FormupSystemText, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Type a system name and pick from the list"/>
+                        <!-- Suggestions dropdown -->
+                        <Border Background="#0f1622" BorderBrush="{StaticResource EveHairlineStrong}" BorderThickness="1"
+                                CornerRadius="7" Margin="0,4,0,0" Padding="4"
+                                Visibility="{Binding SystemSuggestions.Count, Converter={StaticResource CountToVisibility}}">
+                            <ItemsControl ItemsSource="{Binding SystemSuggestions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Command="{Binding DataContext.PickSystemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                                Height="28" Padding="8,0">
+                                            <TextBlock Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}"
+                                                       FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </StackPanel>
+                    <Button Grid.Column="1" Command="{Binding ClearFormupCommand}" Style="{StaticResource GhostButton}"
+                            Padding="10,0" Margin="6,0,0,0" VerticalAlignment="Top" Height="34" ToolTip="Clear">
+                        <TextBlock Text="✕" FontSize="12" Foreground="{StaticResource EveCritical}"/>
+                    </Button>
+                </Grid>
+                <TextBlock Text="Building system list…" Foreground="{StaticResource EveTextDim}"
+                           FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,5,0,0"
+                           Visibility="{Binding SystemsLoading, Converter={StaticResource BoolToVisibility}}"/>
+
                 <!-- Alerts: auto-clear -->
                 <TextBlock Text="ALERTS" Style="{StaticResource SectionLabel}" Margin="0,24,0,7"/>
                 <Grid Margin="0,0,0,4">

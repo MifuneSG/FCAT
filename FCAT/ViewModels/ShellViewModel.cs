@@ -11,9 +11,11 @@ public partial class ShellViewModel : ObservableObject
     private readonly SettingsService _settings;
     private readonly AlertHub _alertHub;
     private readonly SessionLog _sessionLog;
+    private readonly SystemSearchService _systemSearch;
 
     public ShellViewModel(EsiAuthService auth, EsiService esi, CombatLogService combatLog,
-                          SettingsService settings, AlertHub alertHub, SessionLog sessionLog)
+                          SettingsService settings, AlertHub alertHub, SessionLog sessionLog,
+                          SystemSearchService systemSearch)
     {
         _auth = auth;
         _esi = esi;
@@ -21,6 +23,7 @@ public partial class ShellViewModel : ObservableObject
         _settings = settings;
         _alertHub = alertHub;
         _sessionLog = sessionLog;
+        _systemSearch = systemSearch;
         CurrentPage = new LoginViewModel(_auth, this);
     }
 
@@ -38,12 +41,17 @@ public partial class ShellViewModel : ObservableObject
 
     public void ShowSettings()
     {
-        CurrentPage = new SettingsViewModel(_settings, _alertHub, this);
+        CurrentPage = new SettingsViewModel(_settings, _alertHub, _systemSearch, this);
     }
 
     public void ShowSessionLog()
     {
         CurrentPage = new SessionLogViewModel(_sessionLog, this);
+    }
+
+    public void ShowPing()
+    {
+        CurrentPage = new PingViewModel(_settings, _systemSearch, _esi, _auth, this);
     }
 
     // Intel tools — single combined window; reused so ESI lookups stay cached across visits.
