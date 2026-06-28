@@ -8,17 +8,20 @@
         Icon="fcat.ico"
         Height="820" Width="1280"
         MinHeight="640" MinWidth="960"
+        WindowStyle="None"
+        ResizeMode="CanResize"
         Background="#0b0e14">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="46" ResizeBorderThickness="6"
+                      GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
 
     <Grid>
         <!-- ══════════════════════════════════════
-             BACKDROP — refined space: near-black base,
-             a faint star field, and ONE soft cool glow.
-             Deliberately quiet so the data reads first.
+             BACKDROP — near-black base, faint star field, one soft cool glow.
         ══════════════════════════════════════ -->
         <Grid IsHitTestVisible="False">
-
-            <!-- Deep base + barely-there vertical depth gradient -->
             <Rectangle>
                 <Rectangle.Fill>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
@@ -28,8 +31,6 @@
                     </LinearGradientBrush>
                 </Rectangle.Fill>
             </Rectangle>
-
-            <!-- Sparse, dim star field (much fainter than before) -->
             <Rectangle Opacity="0.5">
                 <Rectangle.Fill>
                     <DrawingBrush TileMode="Tile" Viewport="0,0,360,360" ViewportUnits="Absolute">
@@ -66,8 +67,6 @@
                     </DrawingBrush>
                 </Rectangle.Fill>
             </Rectangle>
-
-            <!-- Single soft cool glow, upper-left — the only nebula -->
             <Rectangle HorizontalAlignment="Left" VerticalAlignment="Top"
                        Width="1100" Height="760" Margin="-320,-260,0,0" Opacity="0.5">
                 <Rectangle.Fill>
@@ -80,7 +79,174 @@
             </Rectangle>
         </Grid>
 
-        <!-- ══ Page content (views set their own root to Transparent) ══ -->
-        <ContentControl Content="{Binding CurrentPage}"/>
+        <!-- ══ Foreground: top bar + (nav rail | content) ══ -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="46"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- ════════ TOP BAR ════════ -->
+            <Grid Grid.Row="0" Background="#cc0a0d13">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Logo / wordmark -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="◆" Foreground="{StaticResource EveAccent}" FontSize="15"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Text="FCAT" Foreground="{StaticResource EveTextPrimary}"
+                               FontFamily="{StaticResource FontUI}" FontSize="14" FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="FLEET COMMANDER ASSISTANCE TOOL"
+                               Foreground="{StaticResource EveTextDim}"
+                               FontFamily="{StaticResource FontUI}" FontSize="9"
+                               VerticalAlignment="Center" Margin="10,2,0,0"/>
+                </StackPanel>
+
+                <!-- Right cluster: update · ESI status · EVE clock · window controls -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+
+                    <!-- Update-ready pill (click to restart into the new version) -->
+                    <Button Command="{Binding ApplyUpdateCommand}" Cursor="Hand" Margin="0,0,12,0"
+                            Visibility="{Binding UpdateReady, Converter={StaticResource BoolToVisibility}}"
+                            WindowChrome.IsHitTestVisibleInChrome="True"
+                            ToolTip="A new version is downloaded — click to restart and apply">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="ub" CornerRadius="5" Padding="9,3"
+                                        Background="#1d2c3a" BorderBrush="{StaticResource EveAccent}" BorderThickness="1">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="↻" Foreground="{StaticResource EveAccent}" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Foreground="{StaticResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center">
+                                            <Run Text="UPDATE"/><Run Text=" "/><Run Text="{Binding UpdateVersion, Mode=OneWay}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="ub" Property="Background" Value="#24384a"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+
+                    <!-- ESI LIVE chip -->
+                    <Border CornerRadius="5" Padding="9,3" Margin="0,0,12,0"
+                            Background="#16221c" BorderBrush="#27543f" BorderThickness="1"
+                            Visibility="{Binding IsLoggedIn, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="7" Height="7" Fill="{StaticResource EveGreen}" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                            <TextBlock Text="ESI LIVE" Foreground="{StaticResource EveGreen}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- EVE (UTC) clock -->
+                    <TextBlock x:Name="EveClock" Foreground="{StaticResource EveTextSecondary}"
+                               FontFamily="{StaticResource FontMono}" FontSize="12"
+                               VerticalAlignment="Center" Margin="0,0,16,0"/>
+
+                    <!-- Window controls -->
+                    <Button Style="{StaticResource WindowControlButton}" Click="OnMinimize" Content="—"/>
+                    <Button x:Name="MaxButton" Style="{StaticResource WindowControlButton}" Click="OnMaximizeRestore" Content="▢"/>
+                    <Button Style="{StaticResource WindowControlButton}" Click="OnClose" Content="✕"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ════════ BODY ════════ -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- ── NAV RAIL ── -->
+                <Border Grid.Column="0" Width="68" Background="#990a0d13"
+                        BorderBrush="{StaticResource EveHairlineSoft}" BorderThickness="0,0,1,0"
+                        Visibility="{Binding IsLoggedIn, Converter={StaticResource BoolToVisibility}}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Margin="0,8,0,0">
+                            <Button Style="{StaticResource NavRailButton}" Tag="main" Command="{Binding NavMainCommand}">
+                                <StackPanel>
+                                    <TextBlock Text="⌂" FontSize="18" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="MAIN" FontSize="8" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource NavRailButton}" Tag="fleet" Command="{Binding NavFleetCommand}">
+                                <StackPanel>
+                                    <TextBlock Text="⧉" FontSize="18" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="FLEET" FontSize="8" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource NavRailButton}" Tag="intel" Command="{Binding NavIntelCommand}">
+                                <StackPanel>
+                                    <TextBlock Text="◎" FontSize="18" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="INTEL" FontSize="8" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource NavRailButton}" Tag="ping" Command="{Binding NavPingCommand}">
+                                <StackPanel>
+                                    <TextBlock Text="◇" FontSize="18" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="PING" FontSize="8" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource NavRailButton}" Tag="alerts" Command="{Binding NavAlertsCommand}">
+                                <Grid>
+                                    <StackPanel>
+                                        <TextBlock Text="⚠" FontSize="17" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="ALERTS" FontSize="8" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                    <!-- live alert-count badge -->
+                                    <Border Background="{StaticResource EveCritical}" CornerRadius="8"
+                                            MinWidth="16" Height="16" Padding="4,0"
+                                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,12,0"
+                                            Visibility="{Binding Hub.Alerts.Count, Converter={StaticResource CountToVisibility}}">
+                                        <TextBlock Text="{Binding Hub.Alerts.Count}" Foreground="White"
+                                                   FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="Bold"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+                            </Button>
+                            <Button Style="{StaticResource NavRailButton}" Tag="setup" Command="{Binding NavSetupCommand}">
+                                <StackPanel>
+                                    <TextBlock Text="⚙" FontSize="17" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="SETUP" FontSize="8" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <!-- avatar pinned to the bottom -->
+                        <Border Grid.Row="1" Width="38" Height="38" Margin="0,12,0,16"
+                                CornerRadius="19" Background="#11304a"
+                                BorderBrush="{StaticResource EveHairlineStrong}" BorderThickness="1">
+                            <Grid>
+                                <TextBlock Text="{Binding CharacterInitials}" Foreground="{StaticResource EveAccent}"
+                                           FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border CornerRadius="19">
+                                    <Border.Background>
+                                        <ImageBrush ImageSource="{Binding ShellPortraitUrl, Converter={StaticResource UrlToImage}}"
+                                                    Stretch="UniformToFill"/>
+                                    </Border.Background>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- ── PAGE CONTENT ── -->
+                <ContentControl Grid.Column="1" Content="{Binding CurrentPage}"/>
+            </Grid>
+        </Grid>
     </Grid>
 </Window>

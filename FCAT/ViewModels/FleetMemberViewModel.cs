@@ -10,15 +10,28 @@ public partial class FleetMemberViewModel : ObservableObject
     private readonly FleetMember _member;
     private readonly Func<FleetMemberViewModel, Task>? _kickHandler;
     private readonly Action<FleetMemberViewModel>? _moveHandler;
+    private readonly Action<FleetMemberViewModel, ShipRole?>? _setRoleHandler;
 
     public FleetMemberViewModel(FleetMember member,
                                 Func<FleetMemberViewModel, Task>? kickHandler = null,
-                                Action<FleetMemberViewModel>? moveHandler = null)
+                                Action<FleetMemberViewModel>? moveHandler = null,
+                                Action<FleetMemberViewModel, ShipRole?>? setRoleHandler = null)
     {
         _member = member;
         _kickHandler = kickHandler;
         _moveHandler = moveHandler;
+        _setRoleHandler = setRoleHandler;
         UpdateFrom(member);
+    }
+
+    /// <summary>FC role override for this pilot's hull (e.g. "this fleet's Legions are logi").
+    /// "Auto" clears the override back to the hull default.</summary>
+    [RelayCommand]
+    private void SetRole(string? roleName)
+    {
+        if (string.IsNullOrEmpty(roleName)) return;
+        if (roleName.Equals("Auto", StringComparison.OrdinalIgnoreCase)) { _setRoleHandler?.Invoke(this, null); return; }
+        if (Enum.TryParse<ShipRole>(roleName, out var r)) _setRoleHandler?.Invoke(this, r);
     }
 
     /// <summary>True when this row supports kick/move actions (i.e. not the FC themselves).</summary>
@@ -95,7 +108,8 @@ public partial class FleetMemberViewModel : ObservableObject
         ShipRole.Support     => "SUPP",
         ShipRole.Industrial  => "IND",
         ShipRole.Mining      => "MINE",
-        _                    => string.Empty   // DPS and Unknown — no badge
+        ShipRole.DPS         => "DPS",
+        _                    => string.Empty   // Unknown — no badge
     };
 
     public bool RoleBadgeVisible => !string.IsNullOrEmpty(RoleBadge);
@@ -110,7 +124,8 @@ public partial class FleetMemberViewModel : ObservableObject
         ShipRole.EWAR                            => Frozen(0x9b, 0x7b, 0xd4),  // violet
         ShipRole.Support                         => Frozen(0x4d, 0xb8, 0xd4),  // cyan
         ShipRole.Industrial or ShipRole.Mining   => Frozen(0x6b, 0x76, 0x89),  // slate
-        _                                        => Brushes.Transparent          // DPS / Unknown — no accent
+        ShipRole.DPS                             => Frozen(0x8a, 0x94, 0xa6),  // light slate
+        _                                        => Brushes.Transparent          // Unknown — no accent
     };
 
     private static SolidColorBrush Frozen(byte r, byte g, byte b)

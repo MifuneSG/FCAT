@@ -31,9 +31,10 @@ public partial class SystemIntelViewModel : ObservableObject
     private readonly EsiService _esi;
     private readonly EsiAuthService _auth;
 
-    private Dictionary<int, (int ship, int pod)> _kills = [];
+    private Dictionary<int, (int ship, int pod, int npc)> _kills = [];
     private Dictionary<int, int>  _jumps = [];
     private Dictionary<int, int?> _sov   = [];
+    private Dictionary<int, int>  _prevNpc = [];   // last poll's NPC kills, for the ratting delta
     private DateTime _activityAt;
     private readonly Dictionary<int, string> _nameCache = [];
 
@@ -44,16 +45,35 @@ public partial class SystemIntelViewModel : ObservableObject
     private int _currentSystemId;
     private CancellationTokenSource? _cts;
 
+    /// <summary>Raised (with the new system id + region name) whenever the FC jumps to a new system.</summary>
+    public event Action<int, string>? SystemChanged;
+
     public SystemIntelViewModel(EsiService esi, EsiAuthService auth)
     {
         _esi = esi;
         _auth = auth;
     }
 
-    // ── Map geometry — a square canvas the constellation is projected into ──
-    public double CanvasWidth  => 320;
-    public double CanvasHeight => 320;
-    private const double Margin = 46, NodeHalfW = 42, NodeHalfH = 17;
+    // ── Map geometry — the canvas the constellation is projected into. Size is driven by the
+    //    view (it fills the available space), so large constellations get room to spread out
+    //    instead of piling up in a tiny fixed box. ──
+    [ObservableProperty] private double _canvasWidth  = 360;
+    [ObservableProperty] private double _canvasHeight = 360;
+    private const double Margin = 46, NodeHalfW = 36, NodeHalfH = 15;
+
+    // Cached so the map can re-project when the panel resizes, without re-hitting ESI.
+    private List<EsiSystem> _mapSystems = [];
+    private List<(int a, int b)> _mapLinks = [];
+
+    /// <summary>Called by the view when the map area resizes — reprojects into the new size.</summary>
+    public void SetCanvasSize(double w, double h)
+    {
+        if (w < 120 || h < 120) return;                 // ignore degenerate/initial layout passes
+        if (Math.Abs(w - CanvasWidth) < 1 && Math.Abs(h - CanvasHeight) < 1) return;
+        CanvasWidth = w;
+        CanvasHeight = h;
+        if (_mapSystems.Count > 0) BuildMap(_mapSystems, _mapLinks);
+    }
 
     [ObservableProperty] private bool   _isBusy;
     [ObservableProperty] private bool   _hasResult;
@@ -64,12 +84,15 @@ public partial class SystemIntelViewModel : ObservableObject
     [ObservableProperty] private Brush  _securityBrush = Brushes.Gray;
     [ObservableProperty] private string _locationLine = string.Empty;
     [ObservableProperty] private string _sovHolder    = string.Empty;
+    [ObservableProperty] private string _sovTicker    = string.Empty;
     [ObservableProperty] private string _killsLine    = string.Empty;
     [ObservableProperty] private string _jumpsLine    = string.Empty;
 
-    public ObservableCollection<MapNode>     MapNodes  { get; } = [];
-    public ObservableCollection<MapLink>     MapLinks  { get; } = [];
-    public ObservableCollection<NeighborRow> Neighbors { get; } = [];
+    public ObservableCollection<MapNode>     MapNodes   { get; } = [];
+    public ObservableCollection<MapLink>     MapLinks   { get; } = [];
+    public ObservableCollection<NeighborRow> Neighbors  { get; } = [];
+    public ObservableCollection<NeighborRow> HotSystems { get; } = [];
+    public bool HasHotSystems => HotSystems.Count > 0;
 
     // ── Auto-refresh lifecycle (driven by the view's load/unload) ──
     public void StartAuto()
@@ -127,6 +150,7 @@ public partial class SystemIntelViewModel : ObservableObject
         {
             var sys = await GetSystemCachedAsync(systemId);
             if (sys == null) { Status = "Couldn't load that system."; return; }
+            var jumped = systemId != _currentSystemId;
             _currentSystemId = systemId;
 
             await EnsureActivityAsync(force);
@@ -135,6 +159,7 @@ public partial class SystemIntelViewModel : ObservableObject
             var region = con != null ? await _esi.GetRegionNameAsync(con.RegionId) : null;
             LocationLine = $"{con?.Name} · {region}".Trim(' ', '·');
             SovHolder = await ResolveSovAsync(systemId);
+            SovTicker = await ResolveSovTickerAsync(systemId);
 
             // Load every system in the constellation (positions + stargates) for a Dotlan-style map.
             var conSystemIds = con?.Systems ?? [systemId];
@@ -155,12 +180,47 @@ public partial class SystemIntelViewModel : ObservableObject
 
             BuildHeader(sys);
             BuildNeighbours(neighbours);
+            BuildHotSystems(systems);
             BuildMap(systems, links);
 
             Status = $"{sys.Name} · {systems.Count} systems in {con?.Name}";
             HasResult = true;
+
+            if (jumped) SystemChanged?.Invoke(systemId, region ?? string.Empty);
         }
         finally { IsBusy = false; }
+    }
+
+    // A system is "hot" if it has a real kill rate, a high jump rate, or NPC kills rising (ratting up).
+    private const int HotKills = 2;    // ship+pod kills in 1h
+    private const int HotJumps = 40;   // jumps in 1h
+
+    /// <summary>Constellation systems flagged hot by kills / jumps / rising NPC kills, ranked by heat.</summary>
+    private void BuildHotSystems(List<EsiSystem> systems)
+    {
+        HotSystems.Clear();
+        var ranked = systems
+            .Select(s =>
+            {
+                var k = _kills.GetValueOrDefault(s.SystemId);
+                var jumps = _jumps.GetValueOrDefault(s.SystemId);
+                var npcDelta = _prevNpc.TryGetValue(s.SystemId, out var prev) ? k.npc - prev : 0;
+                return (s, kills: k.ship + k.pod, jumps, npcDelta);
+            })
+            .Where(x => x.kills >= HotKills || x.jumps >= HotJumps || x.npcDelta > 0)
+            .OrderByDescending(x => x.kills * 100 + Math.Max(0, x.npcDelta) * 5 + x.jumps)
+            .Take(8)
+            .ToList();
+
+        foreach (var (s, kills, jumps, npcDelta) in ranked)
+        {
+            var (activity, hot) =
+                kills > 0    ? ($"{kills} kills", true) :
+                npcDelta > 0 ? ($"NPC ↑{npcDelta}", true) :
+                               ($"{jumps} jumps", false);
+            HotSystems.Add(new NeighborRow(s.Name, s.SecurityStatus.ToString("0.0"), SecBrush(s.SecurityStatus), activity, hot));
+        }
+        OnPropertyChanged(nameof(HasHotSystems));
     }
 
     private async Task<EsiSystem?> GetSystemCachedAsync(int id)
@@ -201,7 +261,7 @@ public partial class SystemIntelViewModel : ObservableObject
         SecurityText  = sys.SecurityStatus.ToString("0.0");
         SecurityBrush = SecBrush(sys.SecurityStatus);
         var k = _kills.GetValueOrDefault(sys.SystemId);
-        KillsLine = $"{k.ship} ship · {k.pod} pod kills (1h)";
+        KillsLine = $"{k.ship} ship · {k.pod} pod · {k.npc} NPC kills (1h)";
         JumpsLine = $"{_jumps.GetValueOrDefault(sys.SystemId)} jumps (1h)";
     }
 
@@ -224,6 +284,9 @@ public partial class SystemIntelViewModel : ObservableObject
     /// </summary>
     private void BuildMap(List<EsiSystem> systems, List<(int a, int b)> links)
     {
+        _mapSystems = systems;   // cache so SetCanvasSize can re-project on resize
+        _mapLinks   = links;
+
         MapNodes.Clear();
         MapLinks.Clear();
         if (systems.Count == 0) return;
@@ -233,7 +296,9 @@ public partial class SystemIntelViewModel : ObservableObject
         double minX = xs.Min(), maxX = xs.Max(), minZ = zs.Min(), maxZ = zs.Max();
         double rangeX = maxX - minX, rangeZ = maxZ - minZ;
         double span = Math.Max(rangeX, rangeZ);   // uniform scale keeps the shape undistorted
-        double usable = CanvasWidth - 2 * Margin;
+        // Scale to the SMALLER dimension so the (now possibly non-square) canvas never distorts
+        // the shape or pushes nodes off an edge.
+        double usable = Math.Min(CanvasWidth, CanvasHeight) - 2 * Margin;
 
         Point Project(EsiPosition p)
         {
@@ -244,6 +309,7 @@ public partial class SystemIntelViewModel : ObservableObject
         }
 
         var centres = systems.ToDictionary(s => s.SystemId, s => Project(s.Position!));
+        RelaxOverlaps(centres);
 
         foreach (var (a, b) in links)
             if (centres.TryGetValue(a, out var pa) && centres.TryGetValue(b, out var pb))
@@ -253,6 +319,54 @@ public partial class SystemIntelViewModel : ObservableObject
         {
             var c = centres[sys.SystemId];
             MapNodes.Add(MakeNode(sys, c.X, c.Y, sys.SystemId == _currentSystemId));
+        }
+    }
+
+    /// <summary>
+    /// Many constellations have systems sitting at nearly identical coordinates, so a raw
+    /// coordinate projection plots them on top of each other no matter how big the canvas is.
+    /// This nudges any pair closer than the node footprint apart over a few iterations, then
+    /// clamps everything inside the canvas — readable layout, geography roughly preserved.
+    /// </summary>
+    private void RelaxOverlaps(Dictionary<int, Point> centres)
+    {
+        const double minDist = 74;   // a node bubble + its label need roughly this much breathing room
+        var ids = centres.Keys.ToList();
+        var rng = new Random(17);    // fixed seed → stable layout across re-projections
+
+        for (int iter = 0; iter < 80; iter++)
+        {
+            bool moved = false;
+            for (int i = 0; i < ids.Count; i++)
+                for (int j = i + 1; j < ids.Count; j++)
+                {
+                    var pi = centres[ids[i]];
+                    var pj = centres[ids[j]];
+                    double dx = pj.X - pi.X, dy = pj.Y - pi.Y;
+                    double d = Math.Sqrt(dx * dx + dy * dy);
+                    if (d >= minDist) continue;
+
+                    if (d < 0.01)   // coincident — shove apart in a random direction
+                    {
+                        double ang = rng.NextDouble() * Math.PI * 2;
+                        dx = Math.Cos(ang); dy = Math.Sin(ang); d = 1;
+                    }
+                    double push = (minDist - d) / 2;
+                    double ux = dx / d, uy = dy / d;
+                    centres[ids[i]] = new Point(pi.X - ux * push, pi.Y - uy * push);
+                    centres[ids[j]] = new Point(pj.X + ux * push, pj.Y + uy * push);
+                    moved = true;
+                }
+            if (!moved) break;
+        }
+
+        // Keep nodes inside the canvas after the pushing.
+        foreach (var id in ids)
+        {
+            var p = centres[id];
+            centres[id] = new Point(
+                Math.Clamp(p.X, Margin, CanvasWidth  - Margin),
+                Math.Clamp(p.Y, Margin, CanvasHeight - Margin));
         }
     }
 
@@ -288,6 +402,17 @@ public partial class SystemIntelViewModel : ObservableObject
         return name;
     }
 
+    private readonly Dictionary<int, string> _tickerCache = [];
+
+    private async Task<string> ResolveSovTickerAsync(int systemId)
+    {
+        if (!_sov.TryGetValue(systemId, out var allianceId) || allianceId is null or 0) return string.Empty;
+        if (_tickerCache.TryGetValue(allianceId.Value, out var cached)) return cached;
+        var ticker = (await _esi.GetAlliancePublicInfoAsync(allianceId.Value))?.Ticker ?? string.Empty;
+        if (ticker.Length > 0) _tickerCache[allianceId.Value] = ticker;
+        return ticker;
+    }
+
     private async Task EnsureActivityAsync(bool force)
     {
         if (!force && DateTime.UtcNow - _activityAt < TimeSpan.FromMinutes(2) && _kills.Count > 0) return;
@@ -297,7 +422,9 @@ public partial class SystemIntelViewModel : ObservableObject
         var sovTask   = _esi.GetSovMapAsync();
         await Task.WhenAll(killsTask, jumpsTask, sovTask);
 
-        _kills = killsTask.Result.ToDictionary(k => k.SystemId, k => (k.ShipKills, k.PodKills));
+        // Remember the previous NPC counts so we can show a ratting delta (data changes ~hourly on ESI).
+        _prevNpc = _kills.ToDictionary(k => k.Key, k => k.Value.npc);
+        _kills = killsTask.Result.ToDictionary(k => k.SystemId, k => (k.ShipKills, k.PodKills, k.NpcKills));
         _jumps = jumpsTask.Result.ToDictionary(j => j.SystemId, j => j.ShipJumps);
         _sov   = sovTask.Result.ToDictionary(s => s.SystemId, s => s.AllianceId);
         _activityAt = DateTime.UtcNow;

@@ -7,6 +7,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
 
+    <!-- Custom entry point (Program.Main) so Velopack runs before WPF; disambiguates from
+         the auto-generated App.g.cs Main. -->
+    <StartupObject>FCAT.Program</StartupObject>
+
     <!-- Branding -->
     <ApplicationIcon>fcat.ico</ApplicationIcon>
     <AssemblyTitle>FCAT — Fleet Commander Assistance Tool</AssemblyTitle>
@@ -17,18 +21,19 @@
 
   <ItemGroup>
     <!-- Embedded so the window/taskbar icon resolves at runtime -->
-    <Resource Include="fcat.ico"/>
+    <Resource Include="fcat.ico" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
+    <PackageReference Include="Velopack" Version="1.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Template file for contributors — not compiled -->
-    <Compile Remove="AppSecrets.example.cs"/>
-    <None Include="AppSecrets.example.cs"/>
+    <Compile Remove="AppSecrets.example.cs" />
+    <None Include="AppSecrets.example.cs" />
   </ItemGroup>
 
 </Project>

@@ -22,6 +22,7 @@ public partial class AlertHub : ObservableObject
     {
         _settings = settings;
         _sessionLog = sessionLog;
+        _overlayEnabled = settings.Current.OverlayEnabled;   // restore last-saved on/off state
         _overlayLocked = settings.Current.OverlayLocked;
     }
 
@@ -80,6 +81,12 @@ public partial class AlertHub : ObservableObject
     {
         try { await Task.Delay(TimeSpan.FromSeconds(seconds)); } catch { return; }
         App.Current.Dispatcher.Invoke(() => Alerts.Remove(alert));
+    }
+
+    partial void OnOverlayEnabledChanged(bool value)
+    {
+        _settings.Current.OverlayEnabled = value;
+        _settings.Save();
     }
 
     partial void OnOverlayLockedChanged(bool value)

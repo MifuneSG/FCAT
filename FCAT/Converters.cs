@@ -85,6 +85,41 @@ public class RoleToColorConverter : IValueConverter
         => throw new NotImplementedException();
 }
 
+// Nav-rail active state: compares the shell's ActiveNav string to a button's key (ConverterParameter).
+// Returns true when this nav item is the active one.
+public class NavActiveConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => string.Equals(value as string, parameter as string, StringComparison.OrdinalIgnoreCase);
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+// Same comparison, but yields the cyan accent brush when active and a dim brush otherwise —
+// used to colour the nav icon + label for the active item.
+public class NavActiveBrushConverter : IValueConverter
+{
+    public Brush ActiveBrush { get; set; } = new SolidColorBrush(Color.FromRgb(0x4d, 0xb8, 0xd4));
+    public Brush InactiveBrush { get; set; } = new SolidColorBrush(Color.FromRgb(0x5c, 0x64, 0x73));
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => string.Equals(value as string, parameter as string, StringComparison.OrdinalIgnoreCase)
+            ? ActiveBrush : InactiveBrush;
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+// Multi-binding form for use in a shared Style trigger: [0]=ActiveNav, [1]=button's Tag (its key).
+// Returns true when the button represents the active nav item.
+public class NavActiveMultiConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        => values.Length == 2
+           && string.Equals(values[0] as string, values[1] as string, StringComparison.OrdinalIgnoreCase);
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
 // Loads network images async; caches per URL so portraits don't re-download every poll tick
 public class UrlToImageConverter : IValueConverter
 {

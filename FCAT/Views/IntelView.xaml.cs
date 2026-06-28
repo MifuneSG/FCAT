@@ -8,10 +8,26 @@ public partial class IntelView : UserControl
 {
     public IntelView() => InitializeComponent();
 
-    // Drive the live current-system refresh only while this view is on screen.
+    // Drive the live current-system refresh + intel feed only while this view is on screen.
     private void OnLoaded(object sender, RoutedEventArgs e)
-        => (DataContext as IntelViewModel)?.System.StartAuto();
+    {
+        if (DataContext is not IntelViewModel vm) return;
+        vm.System.StartAuto();
+        vm.Feed.StartAuto();
+    }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
-        => (DataContext as IntelViewModel)?.System.StopAuto();
+    {
+        if (DataContext is not IntelViewModel vm) return;
+        vm.System.StopAuto();
+        vm.Feed.StopAuto();
+    }
+
+    // The constellation map fills its panel; tell the VM the real size so it re-projects the
+    // nodes to fit (prevents the pile-up seen in large constellations).
+    private void OnMapSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (DataContext is IntelViewModel vm)
+            vm.System.SetCanvasSize(e.NewSize.Width, e.NewSize.Height);
+    }
 }

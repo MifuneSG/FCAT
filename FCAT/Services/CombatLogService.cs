@@ -20,9 +20,11 @@ public partial class CombatLogService : IDisposable
     [GeneratedRegex(@"^\[ (\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2}) \] \((\w+)\) (.+)$")]
     private static partial Regex LogLineRegex();
 
-    // "Warp scramble attempt from <name> to <you/your ship>!"
+    // "Warp scramble attempt from <name> to you!" (target may be "you" or "your <ship>").
     // EVE uses identical text for warp disruptors (point) and scramblers (scram).
-    [GeneratedRegex(@"warp scramble attempt from (.+?) to ", RegexOptions.IgnoreCase)]
+    // The target MUST be "you" — the gamelog is the FC's own, and lines like
+    // "...from you to <name>!" (the FC tackling someone else) must NOT fire the alert.
+    [GeneratedRegex(@"warp scramble attempt from (.+?) to you", RegexOptions.IgnoreCase)]
     private static partial Regex TackleRegex();
 
     // "<Module> deactivates as the capacitor runs out of charge" / "...insufficient capacitor"

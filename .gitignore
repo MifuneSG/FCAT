@@ -25,3 +25,7 @@ fcat_out.txt
 
 # ─── Packaged release archives (upload these to GitHub Releases, don't commit) ───
 *.zip
+
+# ─── Velopack build output (publish folder + generated installers/release assets) ───
+publish/
+Releases/

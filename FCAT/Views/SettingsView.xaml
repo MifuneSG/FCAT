@@ -40,25 +40,20 @@
     </UserControl.Resources>
 
     <Grid Background="Transparent">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-        <Border Style="{StaticResource Card}"
-                HorizontalAlignment="Center" VerticalAlignment="Center"
-                Width="560" MaxHeight="740">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="34,30,34,28">
+        <!-- Page header -->
+        <StackPanel Grid.Row="0" Margin="34,24,34,16">
+            <TextBlock Text="CONFIGURATION" Style="{StaticResource PageEyebrow}"/>
+            <TextBlock Text="Settings" Style="{StaticResource PageTitle}"/>
+        </StackPanel>
 
-                <!-- Header -->
-                <Grid Margin="0,0,0,22">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="Settings" Foreground="{StaticResource EveTextPrimary}"
-                                   FontFamily="{StaticResource FontUI}" FontSize="22" FontWeight="Light"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <Button Command="{Binding BackCommand}" Style="{StaticResource GhostButton}"
-                            Padding="12,6" HorizontalAlignment="Right">
-                        <TextBlock Text="← Back" FontFamily="{StaticResource FontUI}" FontSize="12"/>
-                    </Button>
-                </Grid>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="34,0,34,24">
+            <Border Style="{StaticResource Card}" HorizontalAlignment="Left" MaxWidth="640">
+            <StackPanel Margin="28,24,28,24">
 
                 <!-- EVE logs folder -->
                 <TextBlock Text="EVE LOGS FOLDER" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
@@ -144,6 +139,14 @@
                            TextWrapping="Wrap" Margin="0,0,0,9"/>
                 <TextBox Style="{StaticResource DarkTextBox}" Width="220" HorizontalAlignment="Left"
                          Text="{Binding BoostChannelPrefix, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <!-- Intel channel prefix -->
+                <TextBlock Text="INTEL CHANNEL NAME" Style="{StaticResource SectionLabel}" Margin="0,18,0,7"/>
+                <TextBlock Text="Filename prefix of the in-game intel channel logs to read for the intel feed (default &quot;Intel&quot;). You must be joined to the channel in EVE."
+                           Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                           TextWrapping="Wrap" Margin="0,0,0,9"/>
+                <TextBox Style="{StaticResource DarkTextBox}" Width="220" HorizontalAlignment="Left"
+                         Text="{Binding IntelChannelPrefix, UpdateSourceTrigger=PropertyChanged}"/>
 
                 <!-- Fleet form-up system (autocomplete) -->
                 <TextBlock Text="FLEET FORM-UP SYSTEM" Style="{StaticResource SectionLabel}" Margin="0,24,0,7"/>
@@ -330,6 +333,55 @@
                 </StackPanel>
 
                 <!-- Actions -->
+                <!-- Demo / sandbox -->
+                <Rectangle Height="1" Fill="{StaticResource EveHairline}" Margin="0,24,0,18"/>
+                <TextBlock Text="DEMO / SANDBOX" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
+                <TextBlock Text="Runs FCAT on a simulated fleet so you can try Fleet Ops, the dashboard and alerts without being in a live fleet. Intel still uses your real current system. Turn off to go back to live data."
+                           Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                           TextWrapping="Wrap" Margin="0,0,0,9"/>
+                <Button Command="{Binding Shell.ToggleDemoCommand}" Style="{StaticResource SecondaryButton}"
+                        Height="34" Padding="16,0" HorizontalAlignment="Left"
+                        ToolTip="Simulate a fleet for testing / screenshots">
+                    <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="🧪 Demo mode: OFF"/>
+                                <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Shell.DemoMode}" Value="True">
+                                        <Setter Property="Text" Value="🧪 Demo mode: ON"/>
+                                        <Setter Property="Foreground" Value="{StaticResource EveAccent}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Button>
+
+                <!-- Updates -->
+                <Rectangle Height="1" Fill="{StaticResource EveHairline}" Margin="0,24,0,18"/>
+                <TextBlock Text="UPDATES" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
+                <Grid>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="FCAT checks GitHub for new versions on launch."
+                                   Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"/>
+                        <TextBlock Text="{Binding Shell.UpdateStatus}" Foreground="{StaticResource EveAccent}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,4,0,0"
+                                   Visibility="{Binding Shell.UpdateStatus, Converter={StaticResource StringToVisibility}}"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button Command="{Binding Shell.CheckForUpdatesCommand}" Style="{StaticResource SecondaryButton}"
+                                Height="34" Padding="14,0" Margin="0,0,8,0">
+                            <TextBlock Text="Check for updates" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                        </Button>
+                        <Button Command="{Binding Shell.ApplyUpdateCommand}" Style="{StaticResource PrimaryButton}"
+                                Height="34" Padding="16,0"
+                                Visibility="{Binding Shell.UpdateReady, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="Restart &amp; update" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
                 <Grid Margin="0,24,0,0">
                     <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource EveGreen}"
                                FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center"/>
@@ -339,7 +391,7 @@
                     </Button>
                 </Grid>
             </StackPanel>
-            </ScrollViewer>
-        </Border>
+            </Border>
+        </ScrollViewer>
     </Grid>
 </UserControl>

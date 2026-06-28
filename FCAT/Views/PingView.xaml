@@ -62,29 +62,23 @@
         </Grid.RowDefinitions>
 
         <!-- Top bar -->
-        <Border Grid.Row="0" Background="{StaticResource EvePanelBg}" BorderBrush="{StaticResource EveHairline}" BorderThickness="0,0,0,1">
-            <Grid Height="54" Margin="18,0">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="FCAT" Foreground="{StaticResource EveGold}" FontFamily="{StaticResource FontUI}" FontSize="17" FontWeight="Light" VerticalAlignment="Center"/>
-                    <Rectangle Width="1" Height="20" Margin="14,0" Fill="{StaticResource EveHairlineStrong}" VerticalAlignment="Center"/>
-                    <TextBlock Text="Ping / MOTD" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="13" VerticalAlignment="Center"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <TextBlock Text="PROFILE" Style="{StaticResource SectionLabel}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <ComboBox Width="150" Height="30" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}">
-                        <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}"/></DataTemplate></ComboBox.ItemTemplate>
-                    </ComboBox>
-                    <Button Command="{Binding BackToMenuCommand}" Style="{StaticResource GhostButton}" Padding="13,7" Margin="14,0,0,0">
-                        <TextBlock Text="← Menu" FontFamily="{StaticResource FontUI}" FontSize="12"/>
-                    </Button>
-                </StackPanel>
-            </Grid>
-        </Border>
+        <Grid Grid.Row="0" Margin="34,24,34,16">
+            <StackPanel VerticalAlignment="Bottom">
+                <TextBlock Text="BROADCAST" Style="{StaticResource PageEyebrow}"/>
+                <TextBlock Text="Ping / MOTD" Style="{StaticResource PageTitle}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                <TextBlock Text="PROFILE" Style="{StaticResource SectionLabel}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox Width="150" Height="30" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}">
+                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}"/></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+        </Grid>
 
-        <Grid Grid.Row="1" Margin="14,12,14,14">
+        <Grid Grid.Row="1" Margin="34,0,34,24">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="16"/>
                 <ColumnDefinition Width="420"/>
             </Grid.ColumnDefinitions>
 

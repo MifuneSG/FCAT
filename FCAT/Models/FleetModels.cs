@@ -104,6 +104,9 @@ public class CharacterPublicInfo
 
     [JsonPropertyName("alliance_id")]
     public int? AllianceId { get; set; }
+
+    [JsonPropertyName("security_status")]
+    public double SecurityStatus { get; set; }
 }
 
 public class CorporationPublicInfo
@@ -222,6 +225,33 @@ public class SovEntry
 }
 
 public class CharacterLocation { [JsonPropertyName("solar_system_id")] public int SolarSystemId { get; set; } }
+
+// ── Killmail (ESI detail, for the intel feed) ──
+public class EsiKillmail
+{
+    [JsonPropertyName("killmail_id")]    public long     KillmailId    { get; set; }
+    [JsonPropertyName("killmail_time")]  public DateTime KillmailTime  { get; set; }
+    [JsonPropertyName("solar_system_id")] public int     SolarSystemId { get; set; }
+    [JsonPropertyName("victim")]         public EsiKillmailVictim? Victim { get; set; }
+}
+
+public class EsiKillmailVictim
+{
+    [JsonPropertyName("character_id")]   public int? CharacterId { get; set; }
+    [JsonPropertyName("ship_type_id")]   public int  ShipTypeId  { get; set; }
+}
+
+/// <summary>A zKillboard list entry — id + the "zkb" envelope (hash, value). Detail comes from ESI.</summary>
+public class ZkillEntry
+{
+    [JsonPropertyName("killmail_id")] public long KillmailId { get; set; }
+    [JsonPropertyName("zkb")]         public ZkbInfo? Zkb    { get; set; }
+}
+public class ZkbInfo
+{
+    [JsonPropertyName("hash")]       public string Hash       { get; set; } = string.Empty;
+    [JsonPropertyName("totalValue")] public double TotalValue { get; set; }
+}
 
 /// <summary>Minimal type info returned by GET /v3/universe/types/{typeId}/</summary>
 public class EsiTypeInfo

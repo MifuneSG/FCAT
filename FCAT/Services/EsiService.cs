@@ -9,6 +9,9 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
 {
     private const string BaseUrl = "https://esi.evetech.net";
 
+    /// <summary>When true, fleet-related calls return a synthetic fleet (Demo / Sandbox mode).</summary>
+    public bool DemoMode { get; set; }
+
     private async Task<T?> GetAuthenticatedAsync<T>(string path)
     {
         var token = await authService.GetValidAccessTokenAsync();
@@ -47,13 +50,16 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
         => await GetPublicAsync<AlliancePublicInfo>($"/v3/alliances/{allianceId}/");
 
     public async Task<CharacterFleetInfo?> GetCharacterFleetAsync(int characterId)
-        => await GetAuthenticatedAsync<CharacterFleetInfo>($"/v1/characters/{characterId}/fleet/");
+        => DemoMode ? DemoData.Fleet()
+                    : await GetAuthenticatedAsync<CharacterFleetInfo>($"/v1/characters/{characterId}/fleet/");
 
     public async Task<List<FleetMember>?> GetFleetMembersAsync(long fleetId)
-        => await GetAuthenticatedAsync<List<FleetMember>>($"/v1/fleets/{fleetId}/members/");
+        => DemoMode ? DemoData.Members(authService.AuthenticatedCharacterId, authService.AuthenticatedCharacterName)
+                    : await GetAuthenticatedAsync<List<FleetMember>>($"/v1/fleets/{fleetId}/members/");
 
     public async Task<List<FleetWing>?> GetFleetWingsAsync(long fleetId)
-        => await GetAuthenticatedAsync<List<FleetWing>>($"/v1/fleets/{fleetId}/wings/");
+        => DemoMode ? DemoData.Wings()
+                    : await GetAuthenticatedAsync<List<FleetWing>>($"/v1/fleets/{fleetId}/wings/");
 
     public async Task<FleetInfo?> GetFleetInfoAsync(long fleetId)
         => await GetAuthenticatedAsync<FleetInfo>($"/v1/fleets/{fleetId}/");
@@ -158,6 +164,8 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
     /// </summary>
     public async Task<Dictionary<int, int>> GetShipGroupIdsAsync(IEnumerable<int> typeIds)
     {
+        if (DemoMode) return DemoData.GroupIds(typeIds);
+
         var ids = typeIds.Distinct().ToList();
         if (ids.Count == 0) return [];
 
@@ -232,6 +240,10 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
     public async Task<EsiStargate?>      GetStargateAsync(int id)      => await GetPublicAsync<EsiStargate>($"/v1/universe/stargates/{id}/");
     public async Task<EsiConstellation?> GetConstellationAsync(int id) => await GetPublicAsync<EsiConstellation>($"/v1/universe/constellations/{id}/");
     public async Task<string?>           GetRegionNameAsync(int id)    => (await GetPublicAsync<EsiNameOnly>($"/v1/universe/regions/{id}/"))?.Name;
+
+    /// <summary>Full killmail detail (public — needs the killmail id + zKill hash).</summary>
+    public async Task<EsiKillmail?> GetKillmailAsync(long killmailId, string hash)
+        => await GetPublicAsync<EsiKillmail>($"/v1/killmails/{killmailId}/{hash}/");
 
     public async Task<List<SystemKills>> GetSystemKillsAsync() => await GetPublicAsync<List<SystemKills>>("/v2/universe/system_kills/") ?? [];
     public async Task<List<SystemJumps>> GetSystemJumpsAsync() => await GetPublicAsync<List<SystemJumps>>("/v1/universe/system_jumps/") ?? [];
@@ -319,6 +331,8 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
 
     public async Task<Dictionary<int, string>> ResolveNamesAsync(IEnumerable<int> ids)
     {
+        if (DemoMode) return DemoData.Names(ids, authService.AuthenticatedCharacterId, authService.AuthenticatedCharacterName);
+
         var idList = ids.Distinct().ToList();
         if (idList.Count == 0) return [];
 

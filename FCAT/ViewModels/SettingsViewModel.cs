@@ -16,6 +16,9 @@ public partial class SettingsViewModel : ObservableObject
     /// <summary>The app-lifetime overlay/alert state — bound directly by the overlay controls.</summary>
     public AlertHub Overlay { get; }
 
+    /// <summary>The shell — exposed so the Settings "Check for updates" control can reach its commands.</summary>
+    public ShellViewModel Shell => _shell;
+
     public SettingsViewModel(SettingsService settings, AlertHub overlay,
                              SystemSearchService systemSearch, ShellViewModel shell)
     {
@@ -26,6 +29,7 @@ public partial class SettingsViewModel : ObservableObject
 
         EveLogsPath        = settings.Current.EveLogsPath;
         BoostChannelPrefix = settings.Current.BoostChannelPrefix;
+        IntelChannelPrefix = settings.Current.IntelChannelPrefix;
         _formupSystemText  = settings.Current.FormupSystem;
         _formupSystemId    = settings.Current.FormupSystemId;
 
@@ -134,6 +138,7 @@ public partial class SettingsViewModel : ObservableObject
     private string _eveLogsPath = string.Empty;
 
     [ObservableProperty] private string _boostChannelPrefix = "Boost";
+    [ObservableProperty] private string _intelChannelPrefix = "Intel";
     [ObservableProperty] private string _statusMessage = string.Empty;
 
     // Derived paths + existence indicators give the user immediate feedback
@@ -163,6 +168,8 @@ public partial class SettingsViewModel : ObservableObject
         _settings.Current.EveLogsPath        = EveLogsPath.Trim();
         _settings.Current.BoostChannelPrefix = string.IsNullOrWhiteSpace(BoostChannelPrefix)
             ? "Boost" : BoostChannelPrefix.Trim();
+        _settings.Current.IntelChannelPrefix = string.IsNullOrWhiteSpace(IntelChannelPrefix)
+            ? "Intel" : IntelChannelPrefix.Trim();
         _settings.Current.FormupSystem       = FormupSystemText.Trim();
         _settings.Current.FormupSystemId     = _formupSystemId;
 

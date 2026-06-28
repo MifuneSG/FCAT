@@ -63,6 +63,10 @@
         <local:RoleToColorConverter        x:Key="RoleColor"/>
         <local:UrlToImageConverter         x:Key="UrlToImage"/>
         <local:BoolToAccentBrushConverter  x:Key="TabAccent"/>
+        <local:NavActiveConverter          x:Key="NavActive"/>
+        <local:NavActiveBrushConverter     x:Key="NavActiveBrush"
+            ActiveBrush="#4db8d4" InactiveBrush="#5c6473"/>
+        <local:NavActiveMultiConverter     x:Key="NavActiveMulti"/>
 
         <!-- ════════════════════════════════════════════════════════════
              CARD — flat surface, hairline border, soft rounded corners
@@ -169,11 +173,126 @@
             </Setter>
         </Style>
 
+        <!-- ════════════════════════════════════════════════════════════
+             NAV RAIL BUTTON — icon over tiny label, left accent bar + fill
+             when active. Active state read via MultiBinding(ActiveNav, Tag).
+        ════════════════════════════════════════════════════════════ -->
+        <Style x:Key="NavRailButton" TargetType="Button">
+            <Setter Property="Background"       Value="Transparent"/>
+            <Setter Property="Foreground"       Value="{StaticResource EveTextDim}"/>
+            <Setter Property="Cursor"           Value="Hand"/>
+            <Setter Property="Height"           Value="58"/>
+            <Setter Property="FontFamily"       Value="{StaticResource FontUI}"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <!-- active left accent bar -->
+                            <Rectangle x:Name="bar" Width="3" HorizontalAlignment="Left"
+                                       Margin="0,12" RadiusX="2" RadiusY="2"
+                                       Fill="{StaticResource EveAccent}" Opacity="0"/>
+                            <Border x:Name="bg" Background="Transparent" CornerRadius="9" Margin="7,4"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="{StaticResource EveRaisedBg}"/>
+                                <Setter Property="Foreground" Value="{StaticResource EveTextSecondary}"/>
+                            </Trigger>
+                            <DataTrigger Value="True">
+                                <DataTrigger.Binding>
+                                    <MultiBinding Converter="{StaticResource NavActiveMulti}">
+                                        <Binding Path="DataContext.ActiveNav" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding Path="Tag" RelativeSource="{RelativeSource Self}"/>
+                                    </MultiBinding>
+                                </DataTrigger.Binding>
+                                <Setter TargetName="bar" Property="Opacity" Value="1"/>
+                                <Setter TargetName="bg" Property="Background" Value="#14202e"/>
+                                <Setter Property="Foreground" Value="{StaticResource EveAccent}"/>
+                            </DataTrigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.3"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ══ FEATURE CARD BUTTON — large clickable card with hover lift ══ -->
+        <Style x:Key="FeatureCardButton" TargetType="Button">
+            <Setter Property="Cursor"           Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment"   Value="Stretch"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="{StaticResource EvePanelBg}"
+                                BorderBrush="{StaticResource EveHairline}" BorderThickness="1"
+                                CornerRadius="10" Padding="18,16">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background"  Value="{StaticResource EveRaisedBg}"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource EveAccentDim}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ══ WINDOW CONTROL BUTTON — frameless min/max/close dots ══ -->
+        <Style x:Key="WindowControlButton" TargetType="Button">
+            <Setter Property="Background"       Value="Transparent"/>
+            <Setter Property="Cursor"           Value="Hand"/>
+            <Setter Property="Width"            Value="32"/>
+            <Setter Property="Height"           Value="28"/>
+            <Setter Property="Foreground"       Value="{StaticResource EveTextSecondary}"/>
+            <Setter Property="FontFamily"       Value="{StaticResource FontUI}"/>
+            <Setter Property="FontSize"         Value="13"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="{StaticResource EveRaisedBg}"/>
+                                <Setter Property="Foreground" Value="{StaticResource EveTextPrimary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- ══ SMALL UPPERCASE SECTION LABEL ══ -->
         <Style x:Key="SectionLabel" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
             <Setter Property="FontFamily" Value="{StaticResource FontUI}"/>
             <Setter Property="FontSize"   Value="11"/>
+        </Style>
+
+        <!-- ══ PAGE TITLE — big light-weight heading, matches the dashboard greeting ══ -->
+        <Style x:Key="PageTitle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource EveTextPrimary}"/>
+            <Setter Property="FontFamily" Value="{StaticResource FontUI}"/>
+            <Setter Property="FontSize"   Value="26"/>
+            <Setter Property="FontWeight" Value="Light"/>
+        </Style>
+
+        <!-- ══ PAGE EYEBROW — uppercase category above the title ══ -->
+        <Style x:Key="PageEyebrow" TargetType="TextBlock" BasedOn="{StaticResource SectionLabel}">
+            <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
 
         <!-- ══ SLIM SCROLLBAR ══ -->
@@ -312,6 +431,9 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:PingViewModel}">
             <views:PingView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:AlertsViewModel}">
+            <views:AlertsView/>
         </DataTemplate>
 
     </Application.Resources>

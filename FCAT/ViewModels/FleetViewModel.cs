@@ -29,6 +29,9 @@ public partial class FleetViewModel : ObservableObject
     // Persistent ship role cache — typeId → group_id from ESI
     private readonly Dictionary<int, int>    _groupIdCache = [];
 
+    // FC role overrides for this fleet, keyed by ship type (e.g. Legion → Logi). Session-only.
+    private readonly Dictionary<int, ShipRole> _typeRoleOverrides = [];
+
     // Boost channel reader + per-pilot pod-state tracking for "boost lost" detection
     private readonly BoostChannelService _boost = new();
     private readonly Dictionary<int, bool> _inCapsule = [];
@@ -318,7 +321,7 @@ public partial class FleetViewModel : ObservableObject
             var manageable = member.WingId >= 0;
             var kickHandler = manageable ? KickMemberAsync : (Func<FleetMemberViewModel, Task>?)null;
             var moveHandler = manageable ? BeginMove : (Action<FleetMemberViewModel>?)null;
-            var vm = new FleetMemberViewModel(member, kickHandler, moveHandler);
+            var vm = new FleetMemberViewModel(member, kickHandler, moveHandler, SetMemberRole);
 
             // Set ship role from group_id cache
             if (_groupIdCache.TryGetValue(member.ShipTypeId, out var groupId))
@@ -326,6 +329,9 @@ public partial class FleetViewModel : ObservableObject
                 vm.ShipRole     = ShipRoleClassifier.Classify(member.ShipTypeId, groupId);
                 vm.IsInCapsule  = ShipRoleClassifier.IsCapsule(groupId);
             }
+
+            // FC role override for this hull wins (e.g. a logi-fit Legion in a T3 fleet).
+            if (_typeRoleOverrides.TryGetValue(member.ShipTypeId, out var ovr)) vm.ShipRole = ovr;
 
             ApplyBoost(vm);
             _currentMembers.Add(vm);
@@ -356,6 +362,24 @@ public partial class FleetViewModel : ObservableObject
         UpdateCapChain();
         UpdateFormup();
         StatusMessage = $"{MemberCount} pilots";
+    }
+
+    // ── FC role override ────────────────────────────────────────────────────────────
+    // Hulls like T3 cruisers (Legion/Loki/Proteus/Tengu) can be DPS, logi or boosters depending on
+    // fit — which FCAT can't see. The FC right-clicks a pilot and picks the role; it applies to every
+    // pilot in that hull for this fleet (null = back to the hull default).
+    private void SetMemberRole(FleetMemberViewModel member, ShipRole? role)
+    {
+        var typeId = member.ShipTypeId;
+        if (role is { } r) _typeRoleOverrides[typeId] = r;
+        else _typeRoleOverrides.Remove(typeId);
+
+        foreach (var m in _currentMembers.Where(m => m.ShipTypeId == typeId))
+            m.ShipRole = role ?? (_groupIdCache.TryGetValue(typeId, out var g)
+                ? ShipRoleClassifier.Classify(typeId, g) : ShipRole.DPS);
+
+        ComputeStats();
+        UpdateCapChain();   // cap-chain ring uses hull type, not role — but recount role tallies
     }
 
     // ── Form-up / straggler tracking ───────────────────────────────────────────────
@@ -515,7 +539,8 @@ public partial class FleetViewModel : ObservableObject
         var overrideMainline = kind == FleetKind.Combat && dominantShare >= 0.6 && dominantRole != ShipRole.DPS;
 
         ShipRole EffectiveRole(FleetMemberViewModel m)
-            => overrideMainline && m.ShipTypeId == dominantType ? ShipRole.DPS : m.ShipRole;
+            => overrideMainline && m.ShipTypeId == dominantType && !_typeRoleOverrides.ContainsKey(m.ShipTypeId)
+                ? ShipRole.DPS : m.ShipRole;
 
         // ── Role tally (using effective roles) ───────────────────────────────
         void AddRole(string label, Brush color, Func<ShipRole, bool> match)
@@ -605,6 +630,9 @@ public partial class FleetViewModel : ObservableObject
 
     [RelayCommand]
     private void BackToMenu() => _shell.BackToMenu();
+
+    [RelayCommand]
+    private void OpenSessionLog() => _shell.ShowSessionLog();
 
     /// <summary>
     /// Confirms, then removes a pilot via ESI. Requires the logged-in character to be

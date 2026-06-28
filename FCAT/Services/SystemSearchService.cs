@@ -67,6 +67,39 @@ public class SystemSearchService(EsiService esi)
         return hit?.Id;
     }
 
+    private Dictionary<string, string>? _nameLookup;   // lower-case token → canonical system name
+    private static readonly char[] Delimiters = [' ', '\t', ',', '.', '!', '?', ';', ':', '(', ')', '[', ']', '"', '\'', '*', '>'];
+
+    /// <summary>
+    /// First solar system mentioned in a line of intel, or null. Handles abbreviations intel uses —
+    /// a nullsec-code token like "1-5" / "O-P" prefix-matches a real system ("1-5GBW", "O-PNSN").
+    /// </summary>
+    public string? DetectSystem(string text) => DetectSystemMatch(text)?.Name;
+
+    /// <summary>Like <see cref="DetectSystem"/> but also returns the token as it appeared in the text
+    /// (so callers can strip it out), plus the canonical system name.</summary>
+    public (string Token, string Name)? DetectSystemMatch(string text)
+    {
+        if (!IsLoaded || string.IsNullOrWhiteSpace(text)) return null;
+        _nameLookup ??= _systems
+            .GroupBy(s => s.Name.ToLowerInvariant())
+            .ToDictionary(g => g.Key, g => g.First().Name);
+
+        foreach (var token in text.Split(Delimiters, StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (token.Length < 2) continue;
+            // Exact name (covers "Jita" and full nullsec codes).
+            if (_nameLookup.TryGetValue(token.ToLowerInvariant(), out var canonical)) return (token, canonical);
+            // Abbreviated nullsec code (contains a dash) → prefix-match a real system.
+            if (token.Length >= 3 && token.Contains('-'))
+            {
+                var hit = _systems.FirstOrDefault(s => s.Name.StartsWith(token, StringComparison.OrdinalIgnoreCase));
+                if (hit != null) return (token, hit.Name);
+            }
+        }
+        return null;
+    }
+
     private bool TryLoadCache()
     {
         try

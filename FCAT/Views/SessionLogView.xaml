@@ -14,21 +14,19 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Top bar -->
-        <Border Grid.Row="0" Background="{StaticResource EvePanelBg}" BorderBrush="{StaticResource EveHairline}" BorderThickness="0,0,0,1">
-            <Grid Height="54" Margin="18,0">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="FCAT" Foreground="{StaticResource EveGold}" FontFamily="{StaticResource FontUI}" FontSize="17" FontWeight="Light" VerticalAlignment="Center"/>
-                    <Rectangle Width="1" Height="20" Margin="14,0" Fill="{StaticResource EveHairlineStrong}" VerticalAlignment="Center"/>
-                    <TextBlock Text="After-Action Report" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="13" VerticalAlignment="Center"/>
-                </StackPanel>
-                <Button Command="{Binding BackCommand}" Style="{StaticResource GhostButton}" Padding="13,7" HorizontalAlignment="Right">
-                    <TextBlock Text="← Menu" FontFamily="{StaticResource FontUI}" FontSize="12"/>
-                </Button>
-            </Grid>
-        </Border>
+        <!-- Page header -->
+        <Grid Grid.Row="0" Margin="34,24,34,16">
+            <StackPanel VerticalAlignment="Bottom">
+                <TextBlock Text="SESSION" Style="{StaticResource PageEyebrow}"/>
+                <TextBlock Text="After-Action Report" Style="{StaticResource PageTitle}"/>
+            </StackPanel>
+            <Button Command="{Binding BackCommand}" Style="{StaticResource GhostButton}" Padding="13,7"
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                <TextBlock Text="← Back" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+            </Button>
+        </Grid>
 
-        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="14,12,14,14">
+        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="34,0,34,24">
             <Grid Margin="20,16,20,16">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>

@@ -2,11 +2,39 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:FCAT.ViewModels"
+             xmlns:models="clr-namespace:FCAT.Models"
              d:DataContext="{d:DesignInstance vm:IntelViewModel}"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              Loaded="OnLoaded" Unloaded="OnUnloaded">
+
+    <UserControl.Resources>
+        <!-- Shared row for hot-systems + adjacent lists -->
+        <DataTemplate x:Key="NeighborRowTemplate" DataType="{x:Type vm:NeighborRow}">
+            <Grid Margin="0,0,4,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding Sec}" Foreground="{Binding SecColor}" FontFamily="{StaticResource FontMono}" FontSize="11" FontWeight="SemiBold" Width="30"/>
+                <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="4,0,0,0"/>
+                <TextBlock Grid.Column="2" Text="{Binding Activity}" FontFamily="{StaticResource FontUI}" FontSize="10" VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Hot}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource EveCritical}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
 
     <Grid Background="Transparent">
         <Grid.RowDefinitions>
@@ -14,27 +42,26 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Top bar -->
-        <Border Grid.Row="0" Background="{StaticResource EvePanelBg}" BorderBrush="{StaticResource EveHairline}" BorderThickness="0,0,0,1">
-            <Grid Height="54" Margin="18,0">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="FCAT" Foreground="{StaticResource EveGold}" FontFamily="{StaticResource FontUI}" FontSize="17" FontWeight="Light" VerticalAlignment="Center"/>
-                    <Rectangle Width="1" Height="20" Margin="14,0" Fill="{StaticResource EveHairlineStrong}" VerticalAlignment="Center"/>
-                    <TextBlock Text="Intel Tools" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="13" VerticalAlignment="Center"/>
-                </StackPanel>
-                <Button Command="{Binding BackToMenuCommand}" Style="{StaticResource GhostButton}" Padding="13,7" HorizontalAlignment="Right">
-                    <TextBlock Text="← Menu" FontFamily="{StaticResource FontUI}" FontSize="12"/>
-                </Button>
-            </Grid>
-        </Border>
+        <!-- Page header -->
+        <StackPanel Grid.Row="0" Margin="34,24,34,16">
+            <TextBlock Text="INTELLIGENCE" Style="{StaticResource PageEyebrow}"/>
+            <TextBlock Text="Intel Tools" Style="{StaticResource PageTitle}"/>
+        </StackPanel>
 
-        <!-- Main: Scan (left) + System (right) -->
-        <Grid Grid.Row="1" Margin="14,12,14,14">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="12"/>
-                <ColumnDefinition Width="360"/>
-            </Grid.ColumnDefinitions>
+        <!-- Main: top = Scan + System, bottom = wide intel feed -->
+        <Grid Grid.Row="1" Margin="34,0,34,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="230"/>
+            </Grid.RowDefinitions>
+
+            <!-- ── Top row: Scan (left) + System block (right, two columns) ── -->
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="500" MinWidth="420"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*" MinWidth="560"/>
+                </Grid.ColumnDefinitions>
 
             <!-- ════════ SCAN PANEL ════════ -->
             <Border Grid.Column="0" Style="{StaticResource Card}">
@@ -110,15 +137,22 @@
                 </Grid>
             </Border>
 
-            <!-- ════════ SYSTEM PANEL (current system, live) ════════ -->
+            <!-- ════════ SYSTEM PANEL (current system + hot systems, two columns) ════════ -->
             <Border Grid.Column="2" Style="{StaticResource Card}">
                 <Grid Margin="18,16,18,16">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="320"/>
+                        <ColumnDefinition Width="18"/>
+                        <ColumnDefinition Width="290"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- LEFT: current system + constellation map -->
+                    <Grid Grid.Column="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0" Margin="0,0,0,10">
                         <TextBlock Text="CURRENT SYSTEM" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
@@ -140,6 +174,8 @@
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0" Visibility="{Binding System.HasResult, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Text="{Binding System.SovHolder}" Foreground="{StaticResource EveGold}" FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center"
                                        Visibility="{Binding System.SovHolder, Converter={StaticResource StringToVisibility}}"/>
+                            <TextBlock Foreground="{StaticResource EveGoldSoft}" FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center" Margin="4,0,0,0"
+                                       Visibility="{Binding System.SovTicker, Converter={StaticResource StringToVisibility}}"><Run Text="["/><Run Text="{Binding System.SovTicker, Mode=OneWay}"/><Run Text="]"/></TextBlock>
                             <TextBlock Text="  ·  " Foreground="{StaticResource EveTextDim}" FontSize="11" VerticalAlignment="Center"
                                        Visibility="{Binding System.SovHolder, Converter={StaticResource StringToVisibility}}"/>
                             <TextBlock Text="{Binding System.KillsLine}" Foreground="{StaticResource EveCritical}" FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center"/>
@@ -148,10 +184,11 @@
                                    Visibility="{Binding System.HasResult, Converter={StaticResource BoolToVisibility}}"/>
                     </StackPanel>
 
-                    <!-- Map -->
-                    <Border Grid.Row="2" Background="#0c1018" BorderBrush="{StaticResource EveHairline}" BorderThickness="1" CornerRadius="8" Margin="0,12,0,0" HorizontalAlignment="Center"
+                    <!-- Map — fills its column; the VM re-projects on resize so big constellations spread out -->
+                    <Border Grid.Row="2" Background="#0c1018" BorderBrush="{StaticResource EveHairline}" BorderThickness="1" CornerRadius="8" Margin="0,12,0,0"
+                            Height="420" ClipToBounds="True" SizeChanged="OnMapSizeChanged"
                             Visibility="{Binding System.HasResult, Converter={StaticResource BoolToVisibility}}">
-                        <Grid Width="{Binding System.CanvasWidth}" Height="{Binding System.CanvasHeight}">
+                        <Grid>
                             <ItemsControl ItemsSource="{Binding System.MapLinks}">
                                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><Canvas/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
@@ -170,7 +207,7 @@
                                 </ItemsControl.ItemContainerStyle>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type vm:MapNode}">
-                                        <StackPanel Width="84" HorizontalAlignment="Center" Background="Transparent" Cursor="Hand"
+                                        <StackPanel Width="72" HorizontalAlignment="Center" Background="Transparent" Cursor="Hand"
                                                     Tag="{Binding DataContext.System, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     ToolTip="Right-click for Dotlan / zKillboard">
                                             <StackPanel.ContextMenu>
@@ -183,7 +220,7 @@
                                                               CommandParameter="{Binding}"/>
                                                 </ContextMenu>
                                             </StackPanel.ContextMenu>
-                                            <Grid Width="34" Height="34" HorizontalAlignment="Center">
+                                            <Grid Width="30" Height="30" HorizontalAlignment="Center">
                                                 <Ellipse Fill="{Binding SovFill}">
                                                     <Ellipse.Style>
                                                         <Style TargetType="Ellipse">
@@ -217,45 +254,142 @@
                                                     </Style>
                                                 </TextBlock.Style>
                                             </TextBlock>
-                                            <TextBlock Text="{Binding SovLabel}" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="9" HorizontalAlignment="Center" TextAlignment="Center" TextTrimming="CharacterEllipsis"
-                                                       Visibility="{Binding SovLabel, Converter={StaticResource StringToVisibility}}"/>
-                                            <Border Background="#e2574c" CornerRadius="3" Padding="4,0" HorizontalAlignment="Center" Margin="0,2,0,0" Visibility="{Binding Hot, Converter={StaticResource BoolToVisibility}}">
-                                                <TextBlock Text="{Binding KillBadge}" Foreground="#ffffff" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold"/>
-                                            </Border>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </Grid>
                     </Border>
+                    </Grid>
 
-                    <!-- Neighbour list -->
-                    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,12,0,0"
+                    <!-- RIGHT: hot systems + adjacent -->
+                    <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto"
                                   Visibility="{Binding System.HasResult, Converter={StaticResource BoolToVisibility}}">
-                        <ItemsControl ItemsSource="{Binding System.Neighbors}">
+                        <StackPanel>
+                            <StackPanel Visibility="{Binding System.HasHotSystems, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="HOT SYSTEMS" Style="{StaticResource SectionLabel}" Margin="0,0,0,6"/>
+                                <ItemsControl ItemsSource="{Binding System.HotSystems}" ItemTemplate="{StaticResource NeighborRowTemplate}"/>
+                                <Rectangle Height="1" Fill="{StaticResource EveHairline}" Margin="0,8,0,10"/>
+                            </StackPanel>
+                            <TextBlock Text="ADJACENT" Style="{StaticResource SectionLabel}" Margin="0,0,0,6"/>
+                            <ItemsControl ItemsSource="{Binding System.Neighbors}" ItemTemplate="{StaticResource NeighborRowTemplate}"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+            </Grid>
+
+            <!-- ════════ INTEL FEED (wide, bottom — zKill + in-game intel channel) ════════ -->
+            <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,12,0,0">
+                <Grid Margin="18,12,18,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="INTEL FEED" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
+                            <TextBlock Text="right-click a kill for zKillboard" Foreground="{StaticResource EveTextDim}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="10" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding Feed.ChannelStatus}" Foreground="{StaticResource EveTextDim}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                    </Grid>
+
+                    <!-- Empty state -->
+                    <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                Visibility="{Binding Feed.Entries.Count, Converter={StaticResource CountToInvisibility}}">
+                        <TextBlock Text="No intel yet" Foreground="{StaticResource EveTextSecondary}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="13" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Kills in your system + intel-channel reports for your region appear here." Foreground="{StaticResource EveTextDim}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="11" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Feed.Entries}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type vm:NeighborRow}">
-                                    <Grid Margin="0,0,4,5">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding Sec}" Foreground="{Binding SecColor}" FontFamily="{StaticResource FontMono}" FontSize="11" FontWeight="SemiBold" Width="30"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="4,0,0,0"/>
-                                        <TextBlock Grid.Column="2" Text="{Binding Activity}" FontFamily="{StaticResource FontUI}" FontSize="10" VerticalAlignment="Center">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Hot}" Value="True">
-                                                            <Setter Property="Foreground" Value="{StaticResource EveCritical}"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                    </Grid>
+                                <DataTemplate DataType="{x:Type models:IntelEntry}">
+                                    <Border Background="{StaticResource EveRaisedBg}" CornerRadius="6" Padding="10,6" Margin="0,0,4,5"
+                                            Tag="{Binding DataContext.Feed, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                        <Border.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="Open on zKillboard"
+                                                          Visibility="{Binding HasUrl, Converter={StaticResource BoolToVisibility}}"
+                                                          Command="{Binding PlacementTarget.Tag.OpenCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          CommandParameter="{Binding}"/>
+                                            </ContextMenu>
+                                        </Border.ContextMenu>
+                                        <!-- Wide columnar layout: tag · time · system · status · details · meta -->
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="52"/>
+                                                <ColumnDefinition Width="64"/>
+                                                <ColumnDefinition Width="120"/>
+                                                <ColumnDefinition Width="44"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" CornerRadius="3" Padding="5,1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="#2a3343"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsKill}" Value="True">
+                                                                <Setter Property="Background" Value="#3a1c1c"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock Text="{Binding Tag}" FontFamily="{StaticResource FontUI}" FontSize="8" FontWeight="SemiBold">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{StaticResource EveAccent}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsKill}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{StaticResource EveCritical}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="{Binding Time, StringFormat=HH:mm:ss}" Foreground="{StaticResource EveTextDim}"
+                                                       FontFamily="{StaticResource FontMono}" FontSize="11" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding System}" Foreground="{StaticResource EveGoldSoft}"
+                                                       FontFamily="{StaticResource FontMono}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
+                                            <!-- Status chip: CLR green · NV amber · INC red -->
+                                            <Border Grid.Column="3" CornerRadius="3" Padding="4,0" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,8,0"
+                                                    Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="#2a3343"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Status}" Value="Clear"><Setter Property="Background" Value="#15301f"/></DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="NoVisual"><Setter Property="Background" Value="#33280c"/></DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="Incoming"><Setter Property="Background" Value="#3a1c1c"/></DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock Text="{Binding StatusText}" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{StaticResource EveTextSecondary}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Status}" Value="Clear"><Setter Property="Foreground" Value="{StaticResource EveGreen}"/></DataTrigger>
+                                                                <DataTrigger Binding="{Binding Status}" Value="NoVisual"><Setter Property="Foreground" Value="{StaticResource EveAmber}"/></DataTrigger>
+                                                                <DataTrigger Binding="{Binding Status}" Value="Incoming"><Setter Property="Foreground" Value="{StaticResource EveCritical}"/></DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Border>
+                                            <TextBlock Grid.Column="4" Text="{Binding Detail}" Foreground="{StaticResource EveTextPrimary}"
+                                                       FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
+                                            <TextBlock Grid.Column="5" Text="{Binding Meta}" Foreground="{StaticResource EveTextDim}"
+                                                       FontFamily="{StaticResource FontUI}" FontSize="10" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

@@ -12,6 +12,9 @@ public class AppSettings
     /// <summary>Filename prefix of the boost chat channel logs (e.g. "Boost").</summary>
     public string BoostChannelPrefix { get; set; } = "Boost";
 
+    /// <summary>Filename prefix of the in-game intel chat channel logs (e.g. "Intel").</summary>
+    public string IntelChannelPrefix { get; set; } = "Intel";
+
     /// <summary>The system the fleet forms up in — used by the straggler check. Name + id.</summary>
     public string FormupSystem   { get; set; } = string.Empty;
     public int    FormupSystemId { get; set; }
@@ -30,6 +33,7 @@ public class AppSettings
     public int AlertClearSeconds { get; set; } = 60;
 
     // ── Alert overlay (on-screen, over the game) ──
+    public bool   OverlayEnabled { get; set; }
     public bool   OverlayLocked { get; set; }
     public double OverlayLeft   { get; set; } = 60;
     public double OverlayTop    { get; set; } = 220;

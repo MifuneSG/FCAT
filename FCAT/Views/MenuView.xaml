@@ -9,42 +9,44 @@
              mc:Ignorable="d">
 
     <Grid Background="Transparent">
+      <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="40,26,40,32" MaxWidth="1320" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>   <!-- greeting -->
+                <RowDefinition Height="Auto"/>   <!-- char + fleet cards -->
+                <RowDefinition Height="Auto"/>   <!-- feature cards -->
+            </Grid.RowDefinitions>
 
-        <Border Style="{StaticResource Card}"
-                HorizontalAlignment="Center" VerticalAlignment="Center"
-                Width="460">
-            <StackPanel Margin="34,30,34,30">
+            <!-- ════════ GREETING ════════ -->
+            <StackPanel Grid.Row="0" Margin="2,0,0,22">
+                <TextBlock Text="COMMAND CENTER" Style="{StaticResource SectionLabel}"
+                           Foreground="{StaticResource EveTextDim}" Margin="0,0,0,4"/>
+                <TextBlock FontFamily="{StaticResource FontUI}" FontSize="28" FontWeight="Light">
+                    <Run Text="Good hunting, " Foreground="{StaticResource EveTextPrimary}"/><Run
+                         Text="{Binding FirstName, Mode=OneWay}" Foreground="{StaticResource EveGoldSoft}" FontWeight="SemiBold"/><Run
+                         Text="." Foreground="{StaticResource EveTextPrimary}"/>
+                </TextBlock>
+            </StackPanel>
 
-                <!-- Header -->
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,22">
-                    <TextBlock Text="FCAT"
-                               Foreground="{StaticResource EveGold}"
-                               FontFamily="{StaticResource FontUI}" FontSize="22" FontWeight="Light"
-                               VerticalAlignment="Center"/>
-                    <Rectangle Width="1" Height="18" Margin="14,0" Fill="{StaticResource EveHairlineStrong}" VerticalAlignment="Center"/>
-                    <TextBlock Text="Fleet operations"
-                               Foreground="{StaticResource EveTextDim}"
-                               FontFamily="{StaticResource FontUI}" FontSize="12"
-                               VerticalAlignment="Center"/>
-                </StackPanel>
+            <!-- ════════ CHARACTER + FLEET ════════ -->
+            <Grid Grid.Row="1" Margin="0,0,0,18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="340"/>
+                    <ColumnDefinition Width="18"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-                <!-- Character panel -->
-                <Border Background="{StaticResource EveRaisedBg}" CornerRadius="8"
-                        Padding="16,14" Margin="0,0,0,14">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Rounded portrait (64) -->
-                        <Border Grid.Column="0" Width="64" Height="64" Margin="0,0,16,0"
-                                CornerRadius="10" Background="#0f1622">
+                <!-- ── Character card ── -->
+                <Border Grid.Column="0" Style="{StaticResource Card}" Padding="22,24">
+                    <StackPanel>
+                        <Border Width="92" Height="92" CornerRadius="46" Background="#0f1622"
+                                HorizontalAlignment="Center"
+                                BorderBrush="{StaticResource EveHairlineStrong}" BorderThickness="1">
                             <Grid>
-                                <TextBlock Text="◈"
-                                           Foreground="{StaticResource EveGoldDim}"
-                                           FontSize="26" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <Border CornerRadius="10">
+                                <TextBlock Text="{Binding CharacterName}" Foreground="{StaticResource EveGoldDim}"
+                                           FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Visibility="Collapsed"/>
+                                <Border CornerRadius="46">
                                     <Border.Background>
                                         <ImageBrush ImageSource="{Binding PortraitUrl, Converter={StaticResource UrlToImage}}"
                                                     Stretch="UniformToFill"/>
@@ -53,110 +55,267 @@
                             </Grid>
                         </Border>
 
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding CharacterName}"
-                                       Foreground="{StaticResource EveTextPrimary}"
-                                       FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold"/>
-                            <TextBlock Text="{Binding CharacterSubtitle}"
-                                       Foreground="{StaticResource EveTextSecondary}"
-                                       FontFamily="{StaticResource FontUI}" FontSize="11"
-                                       Margin="0,4,0,0" TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Grid>
-                </Border>
+                        <TextBlock Text="{Binding CharacterName}" Foreground="{StaticResource EveTextPrimary}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="17" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" Margin="0,14,0,0"/>
+                        <TextBlock Text="{Binding CharacterSubtitle}" Foreground="{StaticResource EveTextSecondary}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="11"
+                                   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                                   Margin="0,5,0,0"/>
 
-                <!-- Fleet status -->
-                <Border Background="{StaticResource EveRaisedBg}" CornerRadius="8"
-                        Padding="16,14" Margin="0,0,0,20">
-                    <StackPanel>
-                        <TextBlock Text="FLEET STATUS" Style="{StaticResource SectionLabel}" Margin="0,0,0,10"/>
+                        <Rectangle Height="1" Fill="{StaticResource EveHairline}" Margin="0,18,0,16"/>
 
-                        <TextBlock Text="Querying ESI…"
-                                   Foreground="{StaticResource EveTextDim}"
-                                   FontFamily="{StaticResource FontUI}" FontSize="12"
-                                   Visibility="{Binding IsCheckingFleet, Converter={StaticResource BoolToVisibility}}"/>
-
-                        <StackPanel Visibility="{Binding IsCheckingFleet, Converter={StaticResource BoolToInvisibility}}">
-                            <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="8" Height="8" Margin="0,0,9,0" VerticalAlignment="Center">
-                                    <Ellipse.Style>
-                                        <Style TargetType="Ellipse">
-                                            <Setter Property="Fill" Value="{StaticResource EveTextDim}"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsInFleet}" Value="True">
-                                                    <Setter Property="Fill" Value="{StaticResource EveGreen}"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Ellipse.Style>
-                                </Ellipse>
-                                <TextBlock Text="{Binding FleetStatusText}"
-                                           Foreground="{StaticResource EveTextPrimary}"
-                                           FontFamily="{StaticResource FontUI}" FontSize="13"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding SecurityStatusText}" Foreground="{StaticResource EveGreen}"
+                                           FontFamily="{StaticResource FontUI}" FontSize="16" FontWeight="SemiBold"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="SEC STATUS" Style="{StaticResource SectionLabel}"
+                                           HorizontalAlignment="Center" Margin="0,3,0,0"/>
                             </StackPanel>
-
-                            <StackPanel Orientation="Horizontal" Margin="0,9,0,0"
-                                        Visibility="{Binding IsInFleet, Converter={StaticResource BoolToVisibility}}">
-                                <TextBlock Text="Fleet ID  " Foreground="{StaticResource EveTextDim}"
-                                           FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding DetectedFleetId}"
-                                           Foreground="{StaticResource EveGoldSoft}"
-                                           FontFamily="{StaticResource FontMono}" FontSize="12" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding CurrentSystemName}" Foreground="{StaticResource EveTextPrimary}"
+                                           FontFamily="{StaticResource FontUI}" FontSize="16" FontWeight="SemiBold"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="CURRENT SYSTEM" Style="{StaticResource SectionLabel}"
+                                           HorizontalAlignment="Center" Margin="0,3,0,0"/>
                             </StackPanel>
-                        </StackPanel>
+                        </Grid>
                     </StackPanel>
                 </Border>
 
-                <Button Command="{Binding EnterFleetCommand}"
-                        IsEnabled="{Binding IsInFleet}"
-                        Style="{StaticResource PrimaryButton}"
-                        Height="48" Margin="0,0,0,10">
-                    <TextBlock Text="Enter fleet ops"
-                               FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
+                <!-- ── Fleet card ── -->
+                <Border Grid.Column="2" Style="{StaticResource Card}" Padding="26,22">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- status header -->
+                        <StackPanel Grid.Row="0" Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Margin="0,0,9,0" VerticalAlignment="Center">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{StaticResource EveTextDim}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsInFleet}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource EveGreen}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                            <TextBlock FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="NO FLEET DETECTED"/>
+                                        <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsInFleet}" Value="True">
+                                                <Setter Property="Text" Value="FLEET DETECTED"/>
+                                                <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsCheckingFleet}" Value="True">
+                                                <Setter Property="Text" Value="QUERYING ESI…"/>
+                                                <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+
+                        <!-- body: in-fleet detail -->
+                        <Grid Grid.Row="1" Margin="0,14,0,16"
+                              Visibility="{Binding IsInFleet, Converter={StaticResource BoolToVisibility}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Top">
+                                <TextBlock Text="{Binding PilotCount}" Foreground="{StaticResource EveTextPrimary}"
+                                           FontFamily="{StaticResource FontUI}" FontSize="46" FontWeight="Light"
+                                           VerticalAlignment="Center"/>
+                                <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="pilots in fleet" Foreground="{StaticResource EveTextSecondary}"
+                                               FontFamily="{StaticResource FontUI}" FontSize="13"/>
+                                    <TextBlock Text="{Binding FleetCompositionText}" Foreground="{StaticResource EveTextDim}"
+                                               FontFamily="{StaticResource FontUI}" FontSize="12" Margin="0,3,0,0"/>
+                                    <TextBlock Text="{Binding FormingText}" Foreground="{StaticResource EveTextDim}"
+                                               FontFamily="{StaticResource FontUI}" FontSize="12" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right">
+                                <TextBlock Text="{Binding OwnRoleText}" Foreground="{StaticResource EveGoldSoft}"
+                                           FontFamily="{StaticResource FontUI}" FontSize="14" FontWeight="SemiBold"
+                                           HorizontalAlignment="Right"/>
+                                <TextBlock Text="YOUR ROLE" Style="{StaticResource SectionLabel}"
+                                           HorizontalAlignment="Right" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- body: no-fleet hint -->
+                        <StackPanel Grid.Row="1" Margin="0,16,0,16" VerticalAlignment="Center"
+                                    Visibility="{Binding IsInFleet, Converter={StaticResource BoolToInvisibility}}">
+                            <TextBlock Text="Form your fleet in EVE, then refresh to detect it here."
+                                       Foreground="{StaticResource EveTextSecondary}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="13"/>
+                        </StackPanel>
+
+                        <!-- CTA row -->
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Command="{Binding EnterFleetCommand}" IsEnabled="{Binding IsInFleet}"
+                                    Style="{StaticResource PrimaryButton}" Height="46">
+                                <TextBlock Text="ENTER FLEET OPS  →" FontFamily="{StaticResource FontUI}"
+                                           FontSize="13" FontWeight="SemiBold"/>
+                            </Button>
+                            <Button Grid.Column="2" Command="{Binding RefreshFleetStatusCommand}"
+                                    Style="{StaticResource SecondaryButton}" Height="46" Padding="18,0">
+                                <TextBlock Text="↻  Refresh" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ════════ LIVE STATUS TILES ════════ -->
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- ── READINESS (→ Fleet Ops) ── -->
+                <Button Grid.Column="0" Style="{StaticResource FeatureCardButton}" Command="{Binding EnterFleetCommand}"
+                        IsEnabled="{Binding IsInFleet}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,12">
+                            <TextBlock Text="⧉  READINESS" Style="{StaticResource SectionLabel}"
+                                       Foreground="{StaticResource EveTextSecondary}" HorizontalAlignment="Left"/>
+                            <TextBlock Text="→" Foreground="{StaticResource EveTextDim}" FontSize="14" HorizontalAlignment="Right"/>
+                        </Grid>
+
+                        <!-- in-fleet stats -->
+                        <Grid Visibility="{Binding IsInFleet, Converter={StaticResource BoolToVisibility}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{Binding LogiText}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding LogiLow}" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource EveCritical}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="LOGI" Style="{StaticResource SectionLabel}" Margin="0,3,0,0"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{Binding TackleText}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasTackle}" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="TACKLE" Style="{StaticResource SectionLabel}" Margin="0,3,0,0"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="{Binding BoosterText}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasBoosters}" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="BOOST" Style="{StaticResource SectionLabel}" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="No fleet to assess" Foreground="{StaticResource EveTextDim}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="12"
+                                   Visibility="{Binding IsInFleet, Converter={StaticResource BoolToInvisibility}}"/>
+                    </StackPanel>
                 </Button>
 
-                <Button Command="{Binding OpenDScanCommand}"
-                        Style="{StaticResource PrimaryButton}" Height="46" Margin="0,0,0,10">
-                    <TextBlock Text="⊹  Intel Tools"
-                               FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
+                <!-- ── THREAT (→ Intel) ── -->
+                <Button Grid.Column="2" Style="{StaticResource FeatureCardButton}" Command="{Binding OpenDScanCommand}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,12">
+                            <TextBlock Text="◎  THREAT" Style="{StaticResource SectionLabel}"
+                                       Foreground="{StaticResource EveTextSecondary}" HorizontalAlignment="Left"/>
+                            <TextBlock Text="→" Foreground="{StaticResource EveTextDim}" FontSize="14" HorizontalAlignment="Right"/>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding CurrentSystemName}" Foreground="{StaticResource EveTextPrimary}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Border CornerRadius="4" Padding="6,1" Margin="9,0,0,0" VerticalAlignment="Center"
+                                    Background="{StaticResource EveRaisedBg}"
+                                    Visibility="{Binding ThreatIsHot, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="{Binding ThreatActivityText}" Foreground="{StaticResource EveCritical}"
+                                           FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="{Binding ThreatKillsText}" Foreground="{StaticResource EveTextSecondary}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="12" Margin="0,5,0,0"/>
+                    </StackPanel>
                 </Button>
 
-                <Button Command="{Binding OpenPingCommand}"
-                        Style="{StaticResource PrimaryButton}" Height="46" Margin="0,0,0,10">
-                    <TextBlock Text="📣  Ping / MOTD"
-                               FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
+                <!-- ── LAST ALERT (→ After-Action Report) ── -->
+                <Button Grid.Column="4" Style="{StaticResource FeatureCardButton}" Command="{Binding OpenSessionLogCommand}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,12">
+                            <TextBlock Text="⚠  LAST ALERT" Style="{StaticResource SectionLabel}"
+                                       Foreground="{StaticResource EveTextSecondary}" HorizontalAlignment="Left"/>
+                            <TextBlock Text="→" Foreground="{StaticResource EveTextDim}" FontSize="14" HorizontalAlignment="Right"/>
+                        </Grid>
+                        <!-- has an alert -->
+                        <StackPanel Visibility="{Binding HasAlerts, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="{Binding LatestAlert.Headline}" Foreground="{StaticResource EveTextPrimary}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding LatestAlert.SubText}" Foreground="{StaticResource EveTextSecondary}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="12" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <TextBlock Text="None this session" Foreground="{StaticResource EveTextDim}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="12"
+                                   Visibility="{Binding HasAlerts, Converter={StaticResource BoolToInvisibility}}"/>
+                    </StackPanel>
                 </Button>
-
-                <Button Command="{Binding OpenSessionLogCommand}"
-                        Style="{StaticResource SecondaryButton}" Height="40" Margin="0,0,0,10">
-                    <TextBlock Text="🗎  After-Action Report"
-                               FontFamily="{StaticResource FontUI}" FontSize="12"/>
-                </Button>
-
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="8"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Command="{Binding RefreshFleetStatusCommand}"
-                            Style="{StaticResource SecondaryButton}" Height="36">
-                        <TextBlock Text="Refresh status"
-                                   FontFamily="{StaticResource FontUI}" FontSize="12"/>
-                    </Button>
-                    <Button Grid.Column="2" Command="{Binding OpenSettingsCommand}"
-                            Style="{StaticResource SecondaryButton}" Height="36">
-                        <TextBlock Text="⚙  Settings"
-                                   FontFamily="{StaticResource FontUI}" FontSize="12"/>
-                    </Button>
-                </Grid>
-
-                <TextBlock Text="Form your fleet in EVE, then refresh"
-                           HorizontalAlignment="Center"
-                           Foreground="{StaticResource EveTextDim}"
-                           FontFamily="{StaticResource FontUI}" FontSize="11"
-                           Margin="0,14,0,0"/>
-            </StackPanel>
-        </Border>
+            </Grid>
+        </Grid>
+      </ScrollViewer>
     </Grid>
 </UserControl>

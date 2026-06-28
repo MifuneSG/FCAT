@@ -19,6 +19,24 @@
             <Setter Property="Padding"       Value="0,4"/>
             <Setter Property="Margin"        Value="6,1,8,1"/>
             <Setter Property="Cursor"        Value="Hand"/>
+            <!-- Right-click → override the role for this hull (e.g. logi-fit T3s) -->
+            <Setter Property="ContextMenu">
+                <Setter.Value>
+                    <ContextMenu>
+                        <MenuItem Header="Set role for this hull" IsEnabled="False"/>
+                        <Separator/>
+                        <MenuItem Header="DPS"        Command="{Binding SetRoleCommand}" CommandParameter="DPS"/>
+                        <MenuItem Header="Logi"       Command="{Binding SetRoleCommand}" CommandParameter="Logi"/>
+                        <MenuItem Header="Booster"    Command="{Binding SetRoleCommand}" CommandParameter="Booster"/>
+                        <MenuItem Header="Tackle"     Command="{Binding SetRoleCommand}" CommandParameter="Tackle"/>
+                        <MenuItem Header="EWAR"       Command="{Binding SetRoleCommand}" CommandParameter="EWAR"/>
+                        <MenuItem Header="Support"    Command="{Binding SetRoleCommand}" CommandParameter="Support"/>
+                        <MenuItem Header="Industrial" Command="{Binding SetRoleCommand}" CommandParameter="Industrial"/>
+                        <Separator/>
+                        <MenuItem Header="Auto (by hull)" Command="{Binding SetRoleCommand}" CommandParameter="Auto"/>
+                    </ContextMenu>
+                </Setter.Value>
+            </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="#14202e"/>
@@ -94,9 +112,7 @@
         </Grid.RowDefinitions>
 
         <!-- ════════════════════ TOP BAR ════════════════════ -->
-        <Border Grid.Row="0" Background="{StaticResource EvePanelBg}"
-                BorderBrush="{StaticResource EveHairline}" BorderThickness="0,0,0,1">
-            <Grid Height="54" Margin="18,0">
+        <Grid Grid.Row="0" Margin="34,22,34,14">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
@@ -110,10 +126,10 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="FCAT"
-                           Foreground="{StaticResource EveGold}"
-                           FontFamily="{StaticResource FontUI}" FontSize="17" FontWeight="Light"
-                           VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Text="FLEET OPERATIONS" Style="{StaticResource PageEyebrow}"/>
+                    <TextBlock Text="Fleet Ops" Style="{StaticResource PageTitle}"/>
+                </StackPanel>
 
                 <Rectangle Grid.Column="1" Width="1" Height="20" Margin="14,0"
                            Fill="{StaticResource EveHairlineStrong}" VerticalAlignment="Center"/>
@@ -166,12 +182,11 @@
 
                 <!-- Overlay controls now live in Settings (the overlay is app-wide and persists). -->
 
-                <Button Grid.Column="9" Command="{Binding BackToMenuCommand}"
-                        Style="{StaticResource GhostButton}" Padding="13,7">
-                    <TextBlock Text="← Menu" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                <Button Grid.Column="9" Command="{Binding OpenSessionLogCommand}"
+                        Style="{StaticResource SecondaryButton}" Padding="13,7" Height="32">
+                    <TextBlock Text="🗎  After-Action Report" FontFamily="{StaticResource FontUI}" FontSize="12"/>
                 </Button>
             </Grid>
-        </Border>
 
         <!-- ════════════════════ FLEET-CHANGED BANNER ════════════════════ -->
         <Border Grid.Row="1" Background="#241803" BorderBrush="{StaticResource EveAmber}"
@@ -272,7 +287,7 @@
         </Border>
 
         <!-- ════════════════════ MAIN ════════════════════ -->
-        <Grid Grid.Row="3" Margin="14,12,14,14">
+        <Grid Grid.Row="3" Margin="34,12,34,24">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="12"/>
