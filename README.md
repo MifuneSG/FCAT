@@ -38,18 +38,19 @@ FCAT is a Windows desktop tool that sits beside EVE Online and gives the FC a si
 
 ## Demos
 
-Short GIFs show the tool in motion better than stills. Drop recordings into [`docs/gifs/`](docs/gifs/)
-and uncomment the matching rows below (see [docs/gifs/README.md](docs/gifs/README.md) for how to record them).
+Short GIFs show the tool in motion better than stills.
 
-<!-- Uncomment each row once the GIF exists in docs/gifs/ -->
+### Command Center
 
-| Fleet view (live) | Intel — constellation map |
-|-------------------|---------------------------|
-<!-- | ![](docs/gifs/fleet.gif) | ![](docs/gifs/intel.gif) | -->
+![Command Center dashboard](docs/gifs/dashboard.gif)
 
-| Ping / MOTD builder | Alert overlay (over EVE) |
-|---------------------|--------------------------|
-<!-- | ![](docs/gifs/ping.gif) | ![](docs/gifs/overlay.gif) | -->
+| Intel — system map & live feed | Ping / MOTD builder |
+|:------------------------------:|:-------------------:|
+| ![Intel tools](docs/gifs/intel.gif) | ![Ping / MOTD](docs/gifs/ping.gif) |
+
+| Alerts + on-screen overlay |
+|:--------------------------:|
+| ![Alerts and overlay](docs/gifs/overlay.gif) |
 
 ---
 
