@@ -3,7 +3,7 @@
 # FCAT — Fleet Commander Assistance Tool
 
 **A desktop companion for EVE Online fleet commanders.**
-Live fleet readout, ship-role classification, boost tracking, combat alerts, and a d-scan analyzer — combining EVE's ESI API with your local game logs.
+Live fleet readout, ship-role classification, boost tracking, combat alerts, and a d-scan analyzer, combining EVE's ESI API with your local game logs.
 
 </div>
 
@@ -32,7 +32,6 @@ FCAT is a Windows desktop tool that sits beside EVE Online and gives the FC a si
 
 ## Demos
 
-Short GIFs show the tool in motion better than stills.
 
 ### Command Center
 
@@ -51,7 +50,7 @@ Short GIFs show the tool in motion better than stills.
 ## Features
 
 ### 🔐 One-click EVE SSO login
-Logs in through EVE's official OAuth2 SSO in your browser. App credentials are baked into the build, so testers never enter a client ID/secret. No passwords are stored locally.
+Logs in through EVE's official OAuth2 SSO in your browser. No passwords Stored Locally
 
 ### 🛰️ Main menu
 Shows your character portrait, corp/alliance, and live fleet-detection status. From here you can enter fleet ops, open the Intel Tools, or open Settings.
@@ -117,7 +116,7 @@ FCAT is deliberately honest about the limits of EVE's data. This matters if you'
 |------|--------|-------|
 | Fleet hierarchy, ships, systems | ESI | Live, every 5s |
 | Tackle on you | Combat log | `Warp scramble attempt …` — the **only** EWar EVE logs |
-| Boost loadouts | Boost **chat channel** | Only what pilots **drag into the channel**; the FC must be in that channel. No telemetry exists |
+| Boost loadouts | Boost **chat channel** | Only what pilots **drag into the channel**; the FC must be in that channel. |
 ---
 
 ## Download (beta)
@@ -184,16 +183,17 @@ Put the resulting Client ID and Secret into `FCAT/AppSecrets.cs`.
 ## Security & privacy
 - FCAT only talks to **EVE's official ESI API** and reads EVE's **local log files**. It does not read game memory, inject input, or automate gameplay.
 - No passwords are stored — login is via EVE SSO in your browser.
-- The **real ESI client secret is baked into the published `FCAT.exe`** (so testers don't have to register an app). This is normal for a distributed client app, but it means the exe is as sensitive as that secret. The secret is **never** committed to source — `FCAT/AppSecrets.cs` is gitignored; contributors use `AppSecrets.example.cs`.
+- The **real ESI client secret is baked into the published `FCAT.exe` This is normal for a distributed client app, but it means the exe is as sensitive as that secret. The secret is **never** committed to source — `FCAT/AppSecrets.cs` is gitignored; contributors use `AppSecrets.example.cs`.
 
 ---
 
 ## Roadmap
 Ideas under consideration (not promises):
-- Intel channel parser (system-report feed)
 - Route danger readout (kills/jumps per hop)
 - Doctrine import / fit-aware classification
 - More alert types as EVE exposes them
+- More Alliance Profiles
+- FC alt & account management
 
 ---
 
