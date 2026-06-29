@@ -1,148 +1,362 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>FCAT — Fleet Commander Assistance Tool</title>
-  <meta name="description" content="A desktop command deck for EVE Online fleet commanders. Live fleet roster, intel, pings & MOTD, and on-screen alerts — read straight from ESI and your game logs.">
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FCAT // Fleet Commander Assistance Tool</title>
+<meta name="description" content="Everything you need to FC in EVE Online, on one screen, running entirely on your machine. Live fleet, intel, pings and combat alerts. Nothing leaves your PC.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Saira:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06080c; --bg2:#0a0e14;
+  --ink:#e9eff6; --t2:#8a97a8; --t3:#566173;
+  --teal:#4fd1e6; --amber:#e3a23e; --green:#46c08a; --red:#e2574c;
+  --line:rgba(125,160,180,.14); --line-2:rgba(125,160,180,.26);
+  --disp:"Chakra Petch",system-ui,sans-serif;
+  --body:"Saira",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --maxw:1200px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--body);background:var(--bg);color:var(--ink);line-height:1.6;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
+body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    linear-gradient(rgba(125,160,180,.035) 1px,transparent 1px) 0 0/100% 64px,
+    linear-gradient(90deg,rgba(125,160,180,.035) 1px,transparent 1px) 0 0/64px 100%,
+    radial-gradient(70% 50% at 85% -10%, rgba(79,209,230,.10), transparent 60%),
+    var(--bg)}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background:radial-gradient(120% 80% at 50% 0%, transparent 60%, rgba(0,0,0,.5))}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 26px}
+a{color:inherit;text-decoration:none}
+
+h1,h2,h3,h4{font-family:var(--disp);font-weight:600;letter-spacing:-.01em;line-height:1.05}
+.mono{font-family:var(--mono)}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.22em;color:var(--teal);text-transform:uppercase}
+.kicker.block{display:block}
+
+.btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:600;font-size:14px;
+  letter-spacing:.02em;padding:13px 24px;cursor:pointer;transition:.16s ease;
+  color:#04141a;background:var(--teal);border:1px solid var(--teal);
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn:hover{background:#7ce0f2;border-color:#7ce0f2;box-shadow:0 0 0 1px rgba(79,209,230,.4),0 14px 36px rgba(79,209,230,.22)}
+.btn-lg{font-size:15px;padding:16px 30px}
+.btn-sm{padding:9px 16px;font-size:13px}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line-2)}
+.btn-ghost:hover{background:rgba(79,209,230,.06);border-color:var(--teal);box-shadow:none;color:var(--ink)}
+
+.topbar{position:sticky;top:0;z-index:40;background:rgba(6,8,12,.72);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:62px}
+.brand{font-family:var(--disp);font-weight:700;font-size:19px;letter-spacing:.06em;display:flex;align-items:center;gap:10px}
+.brand .dot{width:9px;height:9px;background:var(--teal);transform:rotate(45deg);box-shadow:0 0 10px var(--teal)}
+.topnav{display:flex;align-items:center;gap:30px;font-family:var(--mono);font-size:12.5px;letter-spacing:.05em;color:var(--t2)}
+.topnav a:hover{color:var(--ink)}
+.topnav a.btn{color:#04141a}
+
+.panel{position:relative;background:linear-gradient(180deg,rgba(125,160,180,.04),rgba(125,160,180,.015));
+  border:1px solid var(--line);transition:.18s ease}
+.panel::before,.panel::after{content:"";position:absolute;width:12px;height:12px;border:1px solid var(--teal);opacity:.55;transition:.18s}
+.panel::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.panel::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+.panel:hover{border-color:var(--line-2);transform:translateY(-3px)}
+.panel:hover::before,.panel:hover::after{opacity:1;width:18px;height:18px}
+
+section{padding:clamp(64px,8vw,104px) 0}
+h2.big{font-size:clamp(30px,4.4vw,52px);font-weight:600;letter-spacing:-.02em;max-width:18ch;margin-top:12px}
+.lead{color:var(--t2);font-size:17px;max-width:64ch;margin-top:16px}
+
+.rv{opacity:0;transform:translateY(16px);transition:.6s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+
+/* hero */
+.hero{padding:clamp(56px,8vw,96px) 0 clamp(44px,6vw,72px)}
+.hero-grid{display:grid;grid-template-columns:1.04fr 1.1fr;gap:54px;align-items:center}
+.statusline{display:flex;gap:18px;font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;color:var(--t3);
+  text-transform:uppercase;margin-bottom:22px;flex-wrap:wrap}
+.statusline span{display:flex;align-items:center;gap:7px}
+.statusline i{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.hero h1{font-size:clamp(40px,6.4vw,70px);font-weight:600;line-height:.98;letter-spacing:-.02em;text-transform:uppercase}
+.hero h1 em{font-style:normal;color:var(--teal);text-shadow:0 0 26px rgba(79,209,230,.35)}
+.hero .lead{font-size:18px;margin-top:24px;max-width:44ch}
+.cta-row{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap}
+.subnote{font-family:var(--mono);color:var(--t3);font-size:12px;margin-top:22px;letter-spacing:.04em}
+.screen{position:relative;padding:10px;background:linear-gradient(180deg,#0c121a,#080b11);border:1px solid var(--line-2)}
+.screen::before,.screen::after{content:"";position:absolute;width:16px;height:16px;border:1.5px solid var(--teal);opacity:.7}
+.screen::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.screen::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+.screen img{display:block;width:100%}
+.screenbar{display:flex;align-items:center;gap:7px;padding:7px 4px 10px}
+.screenbar b{width:8px;height:8px;border-radius:50%;background:#2a3340}
+.screenbar small{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:.15em}
+
+/* feature gif rows */
+.deep{display:grid;grid-template-columns:1.1fr 1fr;gap:48px;align-items:center;margin-top:56px}
+.deep:nth-of-type(even) .deep-media{order:2}
+.deep-media{padding:8px}
+.deep-media img{display:block;width:100%}
+.deep .tag{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--teal);text-transform:uppercase}
+.deep h3{font-size:clamp(22px,2.6vw,30px);font-weight:600;margin-top:12px;letter-spacing:-.01em}
+.deep p{color:var(--t2);font-size:15.5px;margin-top:14px}
+.deep ul{list-style:none;margin-top:20px;display:flex;flex-direction:column;gap:11px}
+.deep li{color:var(--t2);font-size:14.5px;padding-left:24px;position:relative}
+.deep li::before{content:"";position:absolute;left:2px;top:8px;width:7px;height:7px;background:var(--teal);transform:rotate(45deg)}
+@media(max-width:860px){.deep{grid-template-columns:1fr;gap:22px}.deep:nth-of-type(even) .deep-media{order:0}}
+
+.deckline{color:var(--t2);font-size:15.5px;max-width:70ch;margin:54px auto 0;text-align:center;line-height:1.8}
+.deckline b{color:var(--ink);font-weight:500}
+
+/* how it works */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:48px}
+.step{padding:30px 26px}
+.step .sn{font-family:var(--disp);font-size:40px;font-weight:700;color:var(--teal);opacity:.45;line-height:1}
+.step h3{font-size:19px;font-weight:600;margin:16px 0 9px}
+.step p{color:var(--t2);font-size:14.5px}
+@media(max-width:860px){.steps{grid-template-columns:1fr}}
+
+/* local pillars */
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:46px}
+.pillar{padding:30px 26px}
+.pillar .pk{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--teal);margin-bottom:16px}
+.pillar h3{font-size:19px;font-weight:600;margin-bottom:10px}
+.pillar p{color:var(--t2);font-size:14.5px}
+@media(max-width:860px){.pillars{grid-template-columns:1fr}}
+
+/* about */
+.about{padding:clamp(30px,5vw,52px);max-width:880px;margin:42px auto 0}
+.about p{color:var(--t2);font-size:17px;line-height:1.85}
+
+/* roadmap */
+.road{max-width:880px;margin:42px auto 0;display:grid;gap:11px}
+.ritem{display:flex;align-items:center;gap:18px;padding:18px 24px}
+.ritem .rt{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--amber);
+  border:1px solid rgba(227,162,62,.4);padding:4px 9px;white-space:nowrap}
+.ritem h4{font-family:var(--body);font-weight:600;font-size:16px}
+.ritem p{color:var(--t2);font-size:14px;margin-left:auto;text-align:right;max-width:46ch}
+.roadnote{font-family:var(--mono);font-size:11.5px;color:var(--t3);text-align:center;margin-top:18px;letter-spacing:.06em}
+@media(max-width:680px){.ritem{flex-wrap:wrap;gap:10px}.ritem p{margin-left:0;text-align:left}}
+
+/* faq */
+.faq{max-width:840px;margin:42px auto 0;display:grid;gap:12px}
+.qa{padding:22px 26px}
+.qa h4{font-size:16px;font-weight:600;margin-bottom:8px}
+.qa p{color:var(--t2);font-size:14.5px}
+
+.dl{text-align:center}
+.dl .btn{margin-top:26px}
+
+.footer{border-top:1px solid var(--line);padding:46px 0 34px;background:rgba(0,0,0,.3);margin-top:30px}
+.footer-grid{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.footer .brand{margin-bottom:6px}
+.footer .muted{color:var(--t3);font-size:13px}
+.footer-links{display:flex;gap:26px;font-family:var(--mono);font-size:12.5px;color:var(--t2)}
+.footer-links a:hover{color:var(--teal)}
+.disclaimer{color:var(--t3);font-size:12px;margin-top:28px;max-width:88ch;line-height:1.7}
+@media(max-width:860px){.hero-grid{grid-template-columns:1fr;gap:38px}.topnav a:not(.btn){display:none}}
+</style>
 </head>
 <body>
 
-  <!-- ── Top bar ── -->
-  <header class="topbar">
-    <div class="wrap">
-      <a class="brand" href="#top">
-        <span class="diamond">◆</span> FCAT
-        <span class="brand-sub">FLEET COMMANDER ASSISTANCE TOOL</span>
-      </a>
-      <nav class="topnav">
-        <a href="#features">Features</a>
-        <a href="#honest">What it reads</a>
-        <a href="https://github.com/MifuneSG/FCAT" target="_blank" rel="noopener">GitHub</a>
-        <a class="btn btn-sm" href="https://github.com/MifuneSG/FCAT/releases/latest" target="_blank" rel="noopener">Download</a>
-      </nav>
-    </div>
-  </header>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="dot"></span>FCAT</a>
+    <nav class="topnav">
+      <a href="#everything">FEATURES</a>
+      <a href="#how">HOW IT WORKS</a>
+      <a href="#about">ABOUT</a>
+      <a href="#faq">FAQ</a>
+      <a class="btn btn-sm" href="https://github.com/MifuneSG/FCAT/releases/latest" target="_blank" rel="noopener">DOWNLOAD</a>
+    </nav>
+  </div>
+</header>
 
-  <!-- ── Hero ── -->
-  <section class="hero" id="top">
-    <div class="wrap hero-grid">
-      <div class="hero-copy">
-        <p class="eyebrow">FOR EVE ONLINE FLEET COMMANDERS</p>
-        <h1>Run the fleet,<br>not the spreadsheet.</h1>
-        <p class="lead">
-          FCAT is a desktop command deck that reads your live fleet from ESI and your game logs —
-          roster &amp; roles, system intel, ping/MOTD building, and on-screen alerts when it matters.
-        </p>
-        <div class="cta-row">
-          <a class="btn btn-lg" href="https://github.com/MifuneSG/FCAT/releases/latest" target="_blank" rel="noopener">
-            Download for Windows
-          </a>
-          <a class="btn btn-ghost btn-lg" href="https://github.com/MifuneSG/FCAT" target="_blank" rel="noopener">
-            View source
-          </a>
-        </div>
-        <p class="fineprint">
-          Free &amp; open source (MIT) · Auto-updates · Unsigned beta — Windows may warn,
-          click <em>More info → Run anyway</em>.
-        </p>
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div class="rv in">
+      <div class="statusline"><span><i></i>ESI LINK</span><span>EVE ONLINE</span><span>FLEET COMMAND</span></div>
+      <h1>Run the fleet from <em>one screen.</em></h1>
+      <p class="lead">FCAT puts your live fleet, system intel, pings and combat alerts on a single command deck. It runs entirely on your machine. Nothing leaves your PC.</p>
+      <div class="cta-row">
+        <a class="btn btn-lg" href="https://github.com/MifuneSG/FCAT/releases/latest" target="_blank" rel="noopener">DOWNLOAD FOR WINDOWS</a>
+        <a class="btn btn-ghost btn-lg" href="#everything">SEE WHAT IT DOES</a>
       </div>
-      <div class="hero-shot">
-        <img src="gifs/dashboard.gif" alt="FCAT Command Center dashboard" loading="eager">
-      </div>
+      <p class="subnote">FREE &amp; OPEN SOURCE // AUTO-UPDATING // BUILT-IN DEMO MODE</p>
     </div>
-  </section>
-
-  <!-- ── Features ── -->
-  <section class="features" id="features">
-    <div class="wrap">
-      <h2 class="section-title">Everything an FC reaches for, in one window</h2>
-
-      <div class="feature-grid">
-        <article class="feature">
-          <div class="feature-shot"><img src="gifs/intel.gif" alt="Intel tools" loading="lazy"></div>
-          <h3>Intel</h3>
-          <p>Constellation map, hot-system heat (kills · jumps · ratting delta), and a live feed that
-             merges zKill kills with your in-game intel channel.</p>
-        </article>
-
-        <article class="feature">
-          <div class="feature-shot"><img src="gifs/ping.gif" alt="Ping and MOTD builder" loading="lazy"></div>
-          <h3>Ping &amp; MOTD</h3>
-          <p>Compose a clean formup ping and a fleet MOTD from shared fields — clickable channel
-             and anchor links — then push it straight to the fleet over ESI.</p>
-        </article>
-
-        <article class="feature">
-          <div class="feature-shot"><img src="gifs/overlay.gif" alt="Alerts and on-screen overlay" loading="lazy"></div>
-          <h3>Alerts &amp; overlay</h3>
-          <p>Tackle, cap-out, boost-lost and logi-chain alerts — in-app and on a draggable
-             always-on-top overlay that sits over the game.</p>
-        </article>
-
-        <article class="feature">
-          <div class="feature-icon">⧉</div>
-          <h3>Fleet Ops</h3>
-          <p>Live roster and wing/squad hierarchy, role detection by hull, composition advisories
-             (logi % · tackle · boost), a cap-chain readout, and one-click moves/kicks.</p>
-        </article>
-      </div>
+    <div class="screen rv in">
+      <div class="screenbar"><b></b><b></b><b></b><small>COMMAND CENTER</small></div>
+      <img src="gifs/dashboard.gif" alt="FCAT Command Center">
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- ── Honesty section (the differentiator) ── -->
-  <section class="honest" id="honest">
-    <div class="wrap honest-grid">
+<!-- 01 EVERYTHING -->
+<section id="everything">
+  <div class="wrap">
+    <div class="rv">
+      <div class="kicker block">01 / The whole job</div>
+      <h2 class="big">Everything you need to FC.</h2>
+      <p class="lead">No more bouncing between a map site, a killboard, your intel channels and a stack of overlays. FCAT pulls the picture into one deck.</p>
+    </div>
+
+    <div class="deep rv">
+      <div class="deep-media panel"><img src="gifs/intel.gif" alt="Intel tools"></div>
       <div>
-        <h2 class="section-title left">Honest about what EVE actually exposes</h2>
-        <p class="lead">
-          FCAT only claims what the data supports. No guessing, no fake telemetry.
-        </p>
+        <div class="tag">Intelligence</div>
+        <h3>Read the field before you commit</h3>
+        <p>Your current system rendered as a constellation map from real ESI positions, colored by sovereignty, with a live feed of what is dying nearby.</p>
+        <ul>
+          <li>Hot-system heat from kills, jumps and ratting activity</li>
+          <li>zKillboard kills merged with your in-game intel channel</li>
+          <li>Right-click any system for Dotlan or zKillboard</li>
+        </ul>
       </div>
-      <ul class="honest-list">
-        <li><span class="ok">Reads</span> your live fleet, roles by hull, locations &amp; system intel via ESI.</li>
-        <li><span class="ok">Reads</span> warp-scramble (tackle) and cap-out lines from your combat log.</li>
-        <li><span class="ok">Reads</span> boost charges from the in-game boost channel you're in.</li>
-        <li><span class="no">Can't</span> see webs, neuts, ECM, damps or paints — EVE never logs them.</li>
-        <li><span class="no">Can't</span> read Local or d-scan automatically — those are paste-driven.</li>
-      </ul>
     </div>
-  </section>
 
-  <!-- ── Download band ── -->
-  <section class="download">
-    <div class="wrap center">
-      <h2 class="section-title">Get FCAT</h2>
-      <p class="lead">Install once. It keeps itself up to date from GitHub Releases.</p>
-      <a class="btn btn-lg" href="https://github.com/MifuneSG/FCAT/releases/latest" target="_blank" rel="noopener">
-        Download for Windows
-      </a>
-      <p class="fineprint">
-        Windows 10/11 · ~70 MB · The beta is unsigned, so SmartScreen may show a warning —
-        click <em>More info → Run anyway</em>. Signing is on the roadmap.
-      </p>
-    </div>
-  </section>
-
-  <!-- ── Footer ── -->
-  <footer class="footer">
-    <div class="wrap footer-grid">
+    <div class="deep rv">
+      <div class="deep-media panel"><img src="gifs/ping.gif" alt="Ping and MOTD"></div>
       <div>
-        <span class="diamond">◆</span> <strong>FCAT</strong>
+        <div class="tag">Broadcast</div>
+        <h3>Pings and MOTD without the fuss</h3>
+        <p>Compose a formup ping and a formatted fleet MOTD from shared fields, then push the MOTD straight to your fleet over ESI.</p>
+        <ul>
+          <li>Clickable in-game channel and anchor links</li>
+          <li>Alliance profiles with their own doctrines and comms</li>
+          <li>Forming-system autocomplete shared with the staging tracker</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="deep rv">
+      <div class="deep-media panel"><img src="gifs/overlay.gif" alt="Alerts and overlay"></div>
+      <div>
+        <div class="tag">Alerts</div>
+        <h3>Calls you cannot miss</h3>
+        <p>FCAT watches your combat log and the fleet, and surfaces the moments that matter, on screen and on an overlay that floats over the game.</p>
+        <ul>
+          <li>Tackle, cap-out, boost loss and logi-chain alerts</li>
+          <li>Draggable overlay you can lock to click-through</li>
+          <li>A full session feed plus the after-action report</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="deckline rv">And the rest of the deck: a <b>live roster with roles</b>, <b>composition and cap-chain</b> readouts, <b>form-up and straggler</b> tracking, <b>boost coverage</b>, a <b>multi-character alt board</b>, and an <b>after-action report</b>.</p>
+  </div>
+</section>
+
+<!-- 02 HOW IT WORKS -->
+<section id="how">
+  <div class="wrap">
+    <div class="rv">
+      <div class="kicker block">02 / How it works</div>
+      <h2 class="big">Running in under a minute.</h2>
+    </div>
+    <div class="steps">
+      <div class="step panel rv"><div class="sn">01</div><h3>Install</h3><p>Download and run. It installs in seconds and quietly updates itself from then on.</p></div>
+      <div class="step panel rv"><div class="sn">02</div><h3>Log in</h3><p>Sign in once with EVE's official SSO in your browser. No passwords are ever stored.</p></div>
+      <div class="step panel rv"><div class="sn">03</div><h3>Take command</h3><p>Form your fleet and FCAT keeps the whole live picture on one screen. Try it first with Demo Mode.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 LOCAL -->
+<section id="local">
+  <div class="wrap">
+    <div class="rv">
+      <div class="kicker block">03 / Why local</div>
+      <h2 class="big">100% on your machine.</h2>
+      <p class="lead">FCAT aggregates the official EVE API and your own game logs into one live picture. There is no backend and no telemetry.</p>
+    </div>
+    <div class="pillars">
+      <div class="pillar panel rv"><div class="pk">LOCAL</div><h3>Runs locally</h3><p>Everything happens on your computer. No FCAT server, no cloud account, no data collection. Your fleet and your logs stay with you.</p></div>
+      <div class="pillar panel rv"><div class="pk">PRIVATE</div><h3>Your data, yours</h3><p>FCAT reads the official ESI API and the logs EVE writes to disk, then keeps the result on screen. It never sends any of it anywhere.</p></div>
+      <div class="pillar panel rv"><div class="pk">SAFE</div><h3>Safe to run</h3><p>It never touches game memory and never automates an input. Open source, so you can read exactly what it does.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 ABOUT -->
+<section id="about">
+  <div class="wrap">
+    <div class="rv">
+      <div class="kicker block">04 / About</div>
+      <h2 class="big">Built by an FC, for FCs.</h2>
+    </div>
+    <div class="about panel rv">
+      <p>FCAT started where my career did. Five years ago I moved into IT as a cybersecurity analyst, and the idea that stuck with me was aggregation: pulling scattered, noisy signals into one place until the picture becomes obvious. FCAT is that idea pointed at fleet command. It is also how I learn. I build it with AI as a partner, treating every feature as something to understand and sharpen rather than just copy. This project is my way to grow as a developer and give the EVE community a tool I wish I had behind the FC chair.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 05 ROADMAP -->
+<section id="roadmap">
+  <div class="wrap">
+    <div class="rv">
+      <div class="kicker block">05 / Roadmap</div>
+      <h2 class="big">Where it's headed.</h2>
+    </div>
+    <div class="road">
+      <div class="ritem panel rv"><span class="rt">PLANNED</span><h4>Code signing</h4><p>Clears the Windows SmartScreen warning on install.</p></div>
+      <div class="ritem panel rv"><span class="rt">PLANNED</span><h4>Route danger readout</h4><p>Kills and jumps per hop when moving the fleet.</p></div>
+      <div class="ritem panel rv"><span class="rt">EXPLORING</span><h4>Sovereignty &amp; structure timers</h4><p>Active contests and timers in your space.</p></div>
+      <div class="ritem panel rv"><span class="rt">EXPLORING</span><h4>Discord ping webhook</h4><p>Post your formup ping straight to your alliance channel.</p></div>
+    </div>
+    <p class="roadnote">IDEAS UNDER EXPLORATION, NOT PROMISES.</p>
+  </div>
+</section>
+
+<!-- 06 FAQ -->
+<section id="faq">
+  <div class="wrap">
+    <div class="rv">
+      <div class="kicker block">06 / FAQ</div>
+      <h2 class="big">Good to know.</h2>
+    </div>
+    <div class="faq">
+      <div class="qa panel rv"><h4>Is it safe to use? Will I get banned?</h4><p>FCAT only uses the official ESI API and reads the logs EVE writes to disk. It does not read game memory or automate any input, and it is fully open source so you can verify that.</p></div>
+      <div class="qa panel rv"><h4>Does my data go anywhere?</h4><p>No. FCAT runs entirely on your machine. There is no server, no account and no data collection.</p></div>
+      <div class="qa panel rv"><h4>Will Windows warn me when I install it?</h4><p>The beta is not code-signed yet, so Windows SmartScreen may show a warning. Click "More info" then "Run anyway". Code signing is on the roadmap.</p></div>
+      <div class="qa panel rv"><h4>How do updates work?</h4><p>Install once. FCAT checks for new versions on launch and updates itself in the background.</p></div>
+      <div class="qa panel rv"><h4>What does it cost? What do I need?</h4><p>Free and open source under the MIT license. Windows 10 or 11, and an EVE account to log in with.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section class="dl" id="download">
+  <div class="wrap">
+    <div class="kicker block" style="margin-bottom:14px">07 / Get started</div>
+    <h2 class="big" style="margin:0 auto;max-width:14ch">Take command.</h2>
+    <a class="btn btn-lg" href="https://github.com/MifuneSG/FCAT/releases/latest" target="_blank" rel="noopener">DOWNLOAD FOR WINDOWS</a>
+    <p class="subnote" style="margin-top:18px">Install once. It keeps itself up to date.</p>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="brand"><span class="dot"></span>FCAT</div>
         <p class="muted">Fleet Commander Assistance Tool</p>
       </div>
       <div class="footer-links">
-        <a href="https://github.com/MifuneSG/FCAT" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://github.com/MifuneSG/FCAT/releases/latest" target="_blank" rel="noopener">Releases</a>
-        <a href="https://github.com/MifuneSG/FCAT/issues" target="_blank" rel="noopener">Report a bug</a>
+        <a href="https://github.com/MifuneSG/FCAT" target="_blank" rel="noopener">GITHUB</a>
+        <a href="https://github.com/MifuneSG/FCAT/releases/latest" target="_blank" rel="noopener">RELEASES</a>
+        <a href="https://github.com/MifuneSG/FCAT/issues" target="_blank" rel="noopener">REPORT A BUG</a>
       </div>
     </div>
-    <div class="wrap disclaimer">
-      FCAT is an unofficial, third-party tool and is not affiliated with or endorsed by CCP hf.
-      EVE Online and all related logos and images are trademarks of CCP hf. Open source under the MIT license.
-    </div>
-  </footer>
+    <p class="disclaimer">FCAT is an unofficial third-party tool, not affiliated with or endorsed by CCP hf. EVE Online and all related trademarks are property of CCP hf. Open source under the MIT license.</p>
+  </div>
+</footer>
 
+<script>
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
+  document.querySelectorAll('.rv:not(.in)').forEach(el=>io.observe(el));
+</script>
 </body>
 </html>
