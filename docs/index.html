@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FCAT — Fleet Commander Assistance Tool</title>
+  <meta name="description" content="A desktop command deck for EVE Online fleet commanders. Live fleet roster, intel, pings & MOTD, and on-screen alerts — read straight from ESI and your game logs.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ── Top bar ── -->
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="#top">
+        <span class="diamond">◆</span> FCAT
+        <span class="brand-sub">FLEET COMMANDER ASSISTANCE TOOL</span>
+      </a>
+      <nav class="topnav">
+        <a href="#features">Features</a>
+        <a href="#honest">What it reads</a>
+        <a href="https://github.com/MifuneSG/FCAT" target="_blank" rel="noopener">GitHub</a>
+        <a class="btn btn-sm" href="https://github.com/MifuneSG/FCAT/releases/latest" target="_blank" rel="noopener">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ── Hero ── -->
+  <section class="hero" id="top">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">FOR EVE ONLINE FLEET COMMANDERS</p>
+        <h1>Run the fleet,<br>not the spreadsheet.</h1>
+        <p class="lead">
+          FCAT is a desktop command deck that reads your live fleet from ESI and your game logs —
+          roster &amp; roles, system intel, ping/MOTD building, and on-screen alerts when it matters.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-lg" href="https://github.com/MifuneSG/FCAT/releases/latest" target="_blank" rel="noopener">
+            Download for Windows
+          </a>
+          <a class="btn btn-ghost btn-lg" href="https://github.com/MifuneSG/FCAT" target="_blank" rel="noopener">
+            View source
+          </a>
+        </div>
+        <p class="fineprint">
+          Free &amp; open source (MIT) · Auto-updates · Unsigned beta — Windows may warn,
+          click <em>More info → Run anyway</em>.
+        </p>
+      </div>
+      <div class="hero-shot">
+        <img src="gifs/dashboard.gif" alt="FCAT Command Center dashboard" loading="eager">
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Features ── -->
+  <section class="features" id="features">
+    <div class="wrap">
+      <h2 class="section-title">Everything an FC reaches for, in one window</h2>
+
+      <div class="feature-grid">
+        <article class="feature">
+          <div class="feature-shot"><img src="gifs/intel.gif" alt="Intel tools" loading="lazy"></div>
+          <h3>Intel</h3>
+          <p>Constellation map, hot-system heat (kills · jumps · ratting delta), and a live feed that
+             merges zKill kills with your in-game intel channel.</p>
+        </article>
+
+        <article class="feature">
+          <div class="feature-shot"><img src="gifs/ping.gif" alt="Ping and MOTD builder" loading="lazy"></div>
+          <h3>Ping &amp; MOTD</h3>
+          <p>Compose a clean formup ping and a fleet MOTD from shared fields — clickable channel
+             and anchor links — then push it straight to the fleet over ESI.</p>
+        </article>
+
+        <article class="feature">
+          <div class="feature-shot"><img src="gifs/overlay.gif" alt="Alerts and on-screen overlay" loading="lazy"></div>
+          <h3>Alerts &amp; overlay</h3>
+          <p>Tackle, cap-out, boost-lost and logi-chain alerts — in-app and on a draggable
+             always-on-top overlay that sits over the game.</p>
+        </article>
+
+        <article class="feature">
+          <div class="feature-icon">⧉</div>
+          <h3>Fleet Ops</h3>
+          <p>Live roster and wing/squad hierarchy, role detection by hull, composition advisories
+             (logi % · tackle · boost), a cap-chain readout, and one-click moves/kicks.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Honesty section (the differentiator) ── -->
+  <section class="honest" id="honest">
+    <div class="wrap honest-grid">
+      <div>
+        <h2 class="section-title left">Honest about what EVE actually exposes</h2>
+        <p class="lead">
+          FCAT only claims what the data supports. No guessing, no fake telemetry.
+        </p>
+      </div>
+      <ul class="honest-list">
+        <li><span class="ok">Reads</span> your live fleet, roles by hull, locations &amp; system intel via ESI.</li>
+        <li><span class="ok">Reads</span> warp-scramble (tackle) and cap-out lines from your combat log.</li>
+        <li><span class="ok">Reads</span> boost charges from the in-game boost channel you're in.</li>
+        <li><span class="no">Can't</span> see webs, neuts, ECM, damps or paints — EVE never logs them.</li>
+        <li><span class="no">Can't</span> read Local or d-scan automatically — those are paste-driven.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ── Download band ── -->
+  <section class="download">
+    <div class="wrap center">
+      <h2 class="section-title">Get FCAT</h2>
+      <p class="lead">Install once. It keeps itself up to date from GitHub Releases.</p>
+      <a class="btn btn-lg" href="https://github.com/MifuneSG/FCAT/releases/latest" target="_blank" rel="noopener">
+        Download for Windows
+      </a>
+      <p class="fineprint">
+        Windows 10/11 · ~70 MB · The beta is unsigned, so SmartScreen may show a warning —
+        click <em>More info → Run anyway</em>. Signing is on the roadmap.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer class="footer">
+    <div class="wrap footer-grid">
+      <div>
+        <span class="diamond">◆</span> <strong>FCAT</strong>
+        <p class="muted">Fleet Commander Assistance Tool</p>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/MifuneSG/FCAT" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/MifuneSG/FCAT/releases/latest" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/MifuneSG/FCAT/issues" target="_blank" rel="noopener">Report a bug</a>
+      </div>
+    </div>
+    <div class="wrap disclaimer">
+      FCAT is an unofficial, third-party tool and is not affiliated with or endorsed by CCP hf.
+      EVE Online and all related logos and images are trademarks of CCP hf. Open source under the MIT license.
+    </div>
+  </footer>
+
+</body>
+</html>
