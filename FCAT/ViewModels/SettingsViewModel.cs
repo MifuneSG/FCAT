@@ -111,8 +111,8 @@ public partial class SettingsViewModel : ObservableObject
     public int AlertClearSeconds => _alertClearSeconds;
 
     public string AlertClearHint => _alertClearSeconds <= 0
-        ? "Off — alerts stay until the session ends."
-        : "Alerts disappear from the feed and overlay after this long.";
+        ? "Off — alerts stay on the overlay until the session ends."
+        : "Alerts disappear from the on-screen overlay after this long. The in-app Alerts list keeps them for the whole session.";
 
     private static string Cycle(string current)
     {

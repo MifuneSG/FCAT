@@ -35,6 +35,8 @@ public partial class FleetViewModel : ObservableObject
     // Boost channel reader + per-pilot pod-state tracking for "boost lost" detection
     private readonly BoostChannelService _boost = new();
     private readonly Dictionary<int, bool> _inCapsule = [];
+    // Last live (non-pod) hull seen per pilot, so the loss log can name what they actually lost.
+    private readonly Dictionary<int, string> _lastShipName = [];
     private readonly List<FleetMemberViewModel> _currentMembers = [];
 
     // Roster tracking for the after-action log (pilot joins/leaves). First poll seeds the
@@ -123,6 +125,24 @@ public partial class FleetViewModel : ObservableObject
     // not "left behind." Excluded from the left-behind check.
     private readonly HashSet<int> _poddedThisSession = [];
     private static readonly TimeSpan LeftBehindAfter = TimeSpan.FromMinutes(3);  // "long after the fleet is gone"
+
+    // ── DPS-attrition tracking ──────────────────────────────────────────────────────
+    // Warns the FC as the fleet's DPS line is whittled down by deaths, at 30% / 50% / 75% of the
+    // committed baseline. "DPS" here is a HEADCOUNT of DPS-role hulls, not real fitted damage —
+    // EVE exposes no fits — so the alert is worded "~%".
+    //
+    // The baseline is frozen only once the fleet is committed: when it leaves the form-up system,
+    // or on the first loss if no form-up system is configured. That way pilots told to swap from
+    // DPS into logi DURING form-up settle into their final role before the baseline is taken, so
+    // they're never miscounted as a loss. Losses are counted strictly from pods (ship → capsule)
+    // of pilots who were in the baseline DPS set — a voluntary re-ship or leaving fleet never counts.
+    private static readonly int[] DpsLossThresholds = { 30, 50, 75 };
+    private const int MinDpsBaseline = 5;                    // a % is meaningless on a handful of ships
+    private readonly HashSet<int> _currentDpsIds      = [];  // DPS-role char ids this tick (combat fleets only)
+    private HashSet<int>          _baselineDpsIds     = [];  // frozen committed DPS line
+    private bool                  _dpsBaselineArmed;
+    private readonly HashSet<int> _dpsLostIds         = [];  // baseline DPS pilots confirmed podded (no double-count)
+    private readonly HashSet<int> _dpsThresholdsFired = [];  // thresholds already alerted (reset when re-armed)
 
     // ── Polling ───────────────────────────────────────────────────────────────
     private void StartPolling()
@@ -252,8 +272,10 @@ public partial class FleetViewModel : ObservableObject
             if (_nameCache.TryGetValue(m.SolarSystemId,out var sys)) m.SolarSystemName = sys;
         }
 
-        // ── 4. Death detection: a booster that flipped to a pod lost their links ──
+        // ── 4. Death detection: a member that flipped to a pod lost their ship ──
         var deathAlerts = new List<FcAlert>();
+        var deathLogs   = new List<string>();   // AAR lines for every loss (category DEATH)
+        var newlyPodded = new List<int>();       // every pilot who flipped to a pod this tick (for DPS-attrition)
         foreach (var m in members)
         {
             var isCapsule = _groupIdCache.TryGetValue(m.ShipTypeId, out var g) && ShipRoleClassifier.IsCapsule(g);
@@ -261,6 +283,14 @@ public partial class FleetViewModel : ObservableObject
 
             if (isCapsule && !wasCapsule)
             {
+                newlyPodded.Add(m.CharacterId);
+
+                // Permanent AAR record of the loss. The current ship already reads "Capsule", so the
+                // hull they actually lost comes from the previous tick's snapshot.
+                var name = string.IsNullOrEmpty(m.CharacterName) ? $"#{m.CharacterId}" : m.CharacterName;
+                var lost = _lastShipName.TryGetValue(m.CharacterId, out var ship) ? ship : "ship";
+                deathLogs.Add($"{name} lost their {lost}");
+
                 var loadout = _boost.GetLoadout(m.CharacterName);
                 if (loadout.Count > 0)
                 {
@@ -275,6 +305,8 @@ public partial class FleetViewModel : ObservableObject
                 }
             }
             if (isCapsule) _poddedThisSession.Add(m.CharacterId);   // died this session — exempt from "left behind"
+            else if (!string.IsNullOrEmpty(m.ShipTypeName))
+                _lastShipName[m.CharacterId] = m.ShipTypeName;       // remember the live hull for the loss log
             _inCapsule[m.CharacterId] = isCapsule;
         }
 
@@ -294,7 +326,11 @@ public partial class FleetViewModel : ObservableObject
 
         await App.Current.Dispatcher.InvokeAsync(() =>
         {
+            foreach (var d in deathLogs) _sessionLog.Record("DEATH", d);   // permanent AAR record of every loss
             foreach (var a in deathAlerts) RaiseAlert(a);
+            // DPS-attrition: run before RebuildHierarchy so the pre-death DPS snapshot is still
+            // available to arm the baseline on first blood (RebuildHierarchy recomputes it).
+            if (TrackDpsLoss(newlyPodded) is { } dpsAlert) RaiseAlert(dpsAlert);
             foreach (var ev in rosterEvents)
             {
                 var parts = ev.Split('|', 2);
@@ -419,6 +455,7 @@ public partial class FleetViewModel : ObservableObject
                 _formupPhase = FormupPhase.Departed;
                 _departedAt  = DateTime.Now;
                 _sessionLog.Record("FORM-UP", $"Fleet departed form-up system {formup}");
+                ArmDpsBaseline();   // fleet is committed — freeze the DPS baseline now (roles have settled)
             }
         }
 
@@ -485,6 +522,59 @@ public partial class FleetViewModel : ObservableObject
     private static string RingText(List<string> names)
         => names.Count == 0 ? "" : string.Join(" → ", names) + $" → ({names[0]})";
 
+    // ── DPS-attrition logic (all on the UI thread) ──────────────────────────────────
+    /// <summary>Freezes the committed DPS line as the baseline to measure losses against.
+    /// No-op if already armed or the fleet is too small for a % to be meaningful.</summary>
+    private void ArmDpsBaseline()
+    {
+        if (_dpsBaselineArmed || _currentDpsIds.Count < MinDpsBaseline) return;
+        _baselineDpsIds   = [.. _currentDpsIds];
+        _dpsBaselineArmed = true;
+        _dpsLostIds.Clear();
+        _dpsThresholdsFired.Clear();
+    }
+
+    /// <summary>Records baseline DPS pilots podded this tick and returns a DPS-loss alert when a
+    /// 30/50/75% threshold is freshly crossed (highest new one only). Arms the baseline on the
+    /// first loss if a form-up departure hasn't already done so.</summary>
+    private FcAlert? TrackDpsLoss(IReadOnlyCollection<int> newlyPoddedIds)
+    {
+        if (newlyPoddedIds.Count == 0) return null;
+
+        if (!_dpsBaselineArmed) ArmDpsBaseline();   // no form-up departure yet → first blood arms it
+        if (!_dpsBaselineArmed || _baselineDpsIds.Count == 0) return null;
+
+        foreach (var id in newlyPoddedIds)
+            if (_baselineDpsIds.Contains(id)) _dpsLostIds.Add(id);
+
+        var pct = 100.0 * _dpsLostIds.Count / _baselineDpsIds.Count;
+
+        var crossed = 0;
+        foreach (var t in DpsLossThresholds)
+            if (pct >= t && _dpsThresholdsFired.Add(t)) crossed = t;   // Add() is true only the first time
+        if (crossed == 0) return null;
+
+        return new FcAlert
+        {
+            Timestamp        = DateTime.Now,
+            AlertType        = AlertType.DpsLoss,
+            Detail           = $"~{crossed}% of DPS lost — {_dpsLostIds.Count} of {_baselineDpsIds.Count} ships down",
+            CriticalOverride = crossed >= 75,   // red only at the worst step; 30/50 stay amber
+        };
+    }
+
+    /// <summary>Re-arms the tracker between fights: once the DPS line is rebuilt to baseline strength
+    /// (pilots reshipped / reinforcements arrived) after taking losses, the next fight is measured fresh.</summary>
+    private void EvaluateDpsRearm()
+    {
+        if (_dpsBaselineArmed && _dpsLostIds.Count > 0 && _currentDpsIds.Count >= _baselineDpsIds.Count)
+        {
+            _baselineDpsIds = [.. _currentDpsIds];
+            _dpsLostIds.Clear();
+            _dpsThresholdsFired.Clear();
+        }
+    }
+
     // ── Composition + boost coverage header ─────────────────────────────────────
     private static readonly Brush BrLogi   = Frozen(0x3f, 0xae, 0x8f);
     private static readonly Brush BrBoost  = Frozen(0x5a, 0x8f, 0xd6);
@@ -515,6 +605,7 @@ public partial class FleetViewModel : ObservableObject
         RoleStats.Clear();
         BoostStats.Clear();
         Advisories.Clear();
+        _currentDpsIds.Clear();   // repopulated below for combat fleets; left empty disables attrition
         MainlineLabel = string.Empty;
         if (total == 0) return;
 
@@ -556,6 +647,15 @@ public partial class FleetViewModel : ObservableObject
         AddRole("CAP",    BrCap,     r => r is ShipRole.Titan or ShipRole.Supercarrier or ShipRole.CapDPS);
         AddRole("INDY",   BrIndy,    r => r is ShipRole.Industrial or ShipRole.Mining);
         AddRole("DPS",    BrDps,     r => r is ShipRole.DPS or ShipRole.Unknown);
+
+        // ── DPS-attrition snapshot (combat fleets only) ──────────────────────
+        // Same definition the FC sees in the DPS tally above. Capital/mining fleets leave this
+        // empty so the loss alert never arms for them.
+        if (kind == FleetKind.Combat)
+            foreach (var m in _currentMembers)
+                if (EffectiveRole(m) is ShipRole.DPS or ShipRole.Unknown)
+                    _currentDpsIds.Add(m.CharacterId);
+        EvaluateDpsRearm();
 
         // ── Boost coverage ───────────────────────────────────────────────────
         // The boost row tracks the link types that matter for the fleet kind: combat fleets

@@ -210,8 +210,8 @@
                                     <Border Background="{StaticResource EveCritical}" CornerRadius="8"
                                             MinWidth="16" Height="16" Padding="4,0"
                                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,12,0"
-                                            Visibility="{Binding Hub.Alerts.Count, Converter={StaticResource CountToVisibility}}">
-                                        <TextBlock Text="{Binding Hub.Alerts.Count}" Foreground="White"
+                                            Visibility="{Binding Hub.UnreadCount, Converter={StaticResource CountToVisibility}}">
+                                        <TextBlock Text="{Binding Hub.UnreadCount}" Foreground="White"
                                                    FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="Bold"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
@@ -225,22 +225,39 @@
                             </Button>
                         </StackPanel>
 
-                        <!-- avatar pinned to the bottom -->
-                        <Border Grid.Row="1" Width="38" Height="38" Margin="0,12,0,16"
-                                CornerRadius="19" Background="#11304a"
-                                BorderBrush="{StaticResource EveHairlineStrong}" BorderThickness="1">
-                            <Grid>
-                                <TextBlock Text="{Binding CharacterInitials}" Foreground="{StaticResource EveAccent}"
-                                           FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <Border CornerRadius="19">
-                                    <Border.Background>
-                                        <ImageBrush ImageSource="{Binding ShellPortraitUrl, Converter={StaticResource UrlToImage}}"
-                                                    Stretch="UniformToFill"/>
-                                    </Border.Background>
-                                </Border>
-                            </Grid>
-                        </Border>
+                        <!-- avatar pinned to the bottom — opens the account / character manager -->
+                        <Button Grid.Row="1" Command="{Binding NavAccountCommand}" Cursor="Hand"
+                                Margin="0,12,0,16" HorizontalAlignment="Center"
+                                Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}"
+                                ToolTip="Account &amp; characters">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="ring" Width="40" Height="40" CornerRadius="20" Background="#11304a"
+                                            BorderBrush="{StaticResource EveHairlineStrong}" BorderThickness="1">
+                                        <Grid>
+                                            <TextBlock Text="{Binding CharacterInitials}" Foreground="{StaticResource EveAccent}"
+                                                       FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <Border CornerRadius="20">
+                                                <Border.Background>
+                                                    <ImageBrush ImageSource="{Binding ShellPortraitUrl, Converter={StaticResource UrlToImage}}"
+                                                                Stretch="UniformToFill"/>
+                                                </Border.Background>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="ring" Property="BorderBrush" Value="{StaticResource EveAccent}"/>
+                                        </Trigger>
+                                        <DataTrigger Binding="{Binding ActiveNav}" Value="account">
+                                            <Setter TargetName="ring" Property="BorderBrush" Value="{StaticResource EveAccent}"/>
+                                            <Setter TargetName="ring" Property="BorderThickness" Value="2"/>
+                                        </DataTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
                     </Grid>
                 </Border>
 

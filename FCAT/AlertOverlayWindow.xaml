@@ -19,7 +19,7 @@
 
             <!-- Most-recent alerts (newest on top; older ones clip off) -->
             <Border MaxHeight="260" ClipToBounds="True" Padding="6,6,6,6">
-                <ItemsControl ItemsSource="{Binding Alerts}">
+                <ItemsControl ItemsSource="{Binding OverlayAlerts}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type models:FcAlert}">
                             <Border Margin="0,0,0,5" CornerRadius="6" Padding="10,7">

@@ -15,11 +15,12 @@ public partial class App : Application
             Timeout = TimeSpan.FromSeconds(15)
         };
 
-        var authService = new EsiAuthService(httpClient)
+        var characterStore = new CharacterStore();
+        var authService = new EsiAuthService(httpClient, characterStore)
         {
             ClientId = AppSecrets.ClientId,
             ClientSecret = AppSecrets.ClientSecret
-        };
+        }.InitStore();
 
         var esiService = new EsiService(httpClient, authService);
         var combatLogService = new CombatLogService();

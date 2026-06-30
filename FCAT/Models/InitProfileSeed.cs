@@ -81,6 +81,9 @@ public static class InitProfileSeed
 
     public static List<DoctrinePreset> Doctrines() =>
     [
+        // Cheesy — Omen Navy Issue skirmish cruiser gang (Vagabond FC, Scalpel logi, Stork/Bifrost
+        // boosts, Hyena LR paint/web, i.Hyperspatial Sabre/Flycatcher dictors as general fits).
+        new() { Category = "Skirmish", Name = "Cheesy - Omen Navy Issue",    Ships = "Logi (Scalpel) > Boosts (Stork/Bifrost) > DPS (Omen Navy Issue) > Else", FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/187/" },
         new() { Category = "Skirmish", Name = "Daisy Cutter - Bombers",      Ships = "Purifier > Hound",                                                      FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/23/" },
         new() { Category = "Skirmish", Name = "Haunter - Svipul",            Ships = "Logi (Kirin) > Boosts (Stork/Bifrost) > DPS (Svipul) > Else",            FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/162/" },
         new() { Category = "Skirmish", Name = "Kikistuka - Kikimora",        Ships = "Logi (Kirin) > Boosts (Stork/Bifrost) > DPS (Kikimora) > Else",          FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/20/" },

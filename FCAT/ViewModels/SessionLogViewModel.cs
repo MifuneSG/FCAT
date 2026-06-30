@@ -55,6 +55,16 @@ public partial class SessionLogViewModel : ObservableObject
     [RelayCommand]
     private void Clear()
     {
+        if (Log.Entries.Count == 0) { StatusMessage = "Nothing to clear."; return; }
+
+        // The AAR now persists across fleet re-forms, so a stray click could wipe a whole op. Confirm.
+        var confirm = System.Windows.MessageBox.Show(
+            "Clear the after-action report? This wipes the whole session timeline and can't be undone.",
+            "Clear AAR",
+            System.Windows.MessageBoxButton.YesNo,
+            System.Windows.MessageBoxImage.Warning);
+        if (confirm != System.Windows.MessageBoxResult.Yes) return;
+
         Log.Clear();
         StatusMessage = "Cleared.";
     }

@@ -199,12 +199,12 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="Auto-clear after" Foreground="{StaticResource EveTextSecondary}"
+                    <TextBlock Grid.Column="0" Text="Overlay auto-clear" Foreground="{StaticResource EveTextSecondary}"
                                FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center"/>
                     <TextBox Grid.Column="1" Style="{StaticResource DarkTextBox}" Width="80"
                              TextAlignment="Center" MaxLength="5"
                              Text="{Binding AlertClearSecondsText, UpdateSourceTrigger=PropertyChanged}"
-                             ToolTip="Seconds before an alert clears. 0 = keep until the session ends."/>
+                             ToolTip="Seconds before an alert disappears from the on-screen overlay. The in-app Alerts list keeps it for the whole session. 0 = keep on the overlay too."/>
                     <TextBlock Grid.Column="2" Text="seconds  (0 = keep)" Foreground="{StaticResource EveTextDim}"
                                FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" Margin="10,0,0,0"/>
                 </Grid>

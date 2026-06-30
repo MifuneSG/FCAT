@@ -224,7 +224,24 @@ public class SovEntry
     [JsonPropertyName("faction_id")]  public int? FactionId  { get; set; }
 }
 
-public class CharacterLocation { [JsonPropertyName("solar_system_id")] public int SolarSystemId { get; set; } }
+public class CharacterLocation
+{
+    [JsonPropertyName("solar_system_id")] public int   SolarSystemId { get; set; }
+    [JsonPropertyName("station_id")]       public int?  StationId     { get; set; }   // set when docked at an NPC station
+    [JsonPropertyName("structure_id")]     public long? StructureId   { get; set; }   // set when docked at a citadel
+}
+
+public class CharacterOnline
+{
+    [JsonPropertyName("online")]     public bool      Online    { get; set; }
+    [JsonPropertyName("last_login")] public DateTime? LastLogin { get; set; }
+}
+
+public class CharacterShip
+{
+    [JsonPropertyName("ship_type_id")] public int    ShipTypeId { get; set; }
+    [JsonPropertyName("ship_name")]    public string ShipName   { get; set; } = string.Empty;
+}
 
 // ── Killmail (ESI detail, for the intel feed) ──
 public class EsiKillmail

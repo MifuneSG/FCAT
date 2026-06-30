@@ -435,6 +435,9 @@
         <DataTemplate DataType="{x:Type vm:AlertsViewModel}">
             <views:AlertsView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:AccountViewModel}">
+            <views:AccountView/>
+        </DataTemplate>
 
     </Application.Resources>
 </Application>

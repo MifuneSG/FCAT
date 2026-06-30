@@ -39,11 +39,8 @@
                 <!-- Empty state -->
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
                             Visibility="{Binding Alerts.Count, Converter={StaticResource CountToInvisibility}}">
-                    <TextBlock Text="All clear" Foreground="{StaticResource EveTextSecondary}"
+                    <TextBlock Text="Waiting for alerts" Foreground="{StaticResource EveTextSecondary}"
                                FontFamily="{StaticResource FontUI}" FontSize="14" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Tackle, cap-out, boost-lost and logi-chain alerts appear here while a fleet is monitored."
-                               Foreground="{StaticResource EveTextDim}" MaxWidth="360" TextAlignment="Center" TextWrapping="Wrap"
-                               FontFamily="{StaticResource FontUI}" FontSize="11" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                 </StackPanel>
 
                 <ScrollViewer VerticalScrollBarVisibility="Auto">

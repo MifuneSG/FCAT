@@ -16,6 +16,7 @@ public enum AlertType
     CapTrouble,     // A module shut off due to insufficient capacitor (real combat-log line)
     BoostLost,      // A booster podded out — their gang links dropped
     LogiChain,      // A cap-chain logi (Guardian/Basilisk) dropped — the ring needs re-forming
+    DpsLoss,        // The fleet has lost a chunk of its DPS line to deaths (30/50/75% of baseline)
     Info
 }
 
@@ -27,7 +28,11 @@ public class FcAlert
     public string    Detail       { get; set; } = string.Empty;
     public string    RawLogLine   { get; set; } = string.Empty;
 
-    public bool IsCritical => AlertType is AlertType.Tackled;
+    /// <summary>When set, overrides the type-based critical styling — lets a single alert type
+    /// (e.g. DPS loss) escalate to the red "critical" look only past a severity threshold.</summary>
+    public bool?     CriticalOverride { get; set; }
+
+    public bool IsCritical => CriticalOverride ?? (AlertType is AlertType.Tackled);
 
     public string AlertTag => AlertType switch
     {
@@ -35,6 +40,7 @@ public class FcAlert
         AlertType.CapTrouble => "CAP OUT",
         AlertType.BoostLost  => "BOOST LOST",
         AlertType.LogiChain  => "LOGI CHAIN",
+        AlertType.DpsLoss    => "DPS LOSS",
         _                    => "INFO"
     };
 
@@ -45,6 +51,7 @@ public class FcAlert
         AlertType.CapTrouble => "Module offline — cap",
         AlertType.BoostLost  => "Booster down",
         AlertType.LogiChain  => "Cap chain needs adjusting",
+        AlertType.DpsLoss    => "Fleet DPS dropping",
         _                    => Detail
     };
 
@@ -55,6 +62,7 @@ public class FcAlert
         AlertType.CapTrouble => Detail,
         AlertType.BoostLost  => Detail,
         AlertType.LogiChain  => Detail,
+        AlertType.DpsLoss    => Detail,
         _                    => string.Empty
     };
 }

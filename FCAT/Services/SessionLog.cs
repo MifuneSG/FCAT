@@ -24,11 +24,13 @@ public partial class SessionLog : ObservableObject
     private long _fleetId;
     private string _fc = string.Empty;
 
-    /// <summary>Begins a fresh AAR for a fleet session (clears any prior op).</summary>
+    /// <summary>Begins (or continues) the AAR for a fleet session. History is preserved across fleet
+    /// re-forms within an app run — EVE hands out a new fleet ID when an FC recreates the fleet, and
+    /// the FC still wants the whole op in one timeline. The manual Clear button (or restarting the app)
+    /// is the only thing that wipes it.</summary>
     public void StartSession(long fleetId, string fc)
     {
-        Entries.Clear();
-        SessionStart = DateTime.Now;
+        SessionStart ??= DateTime.Now;   // keep the original op start time across re-forms
         _fleetId = fleetId;
         _fc = fc;
         Record("SESSION", $"Session started — fleet {fleetId}" + (string.IsNullOrEmpty(fc) ? "" : $", FC {fc}"));

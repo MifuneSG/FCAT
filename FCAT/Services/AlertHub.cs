@@ -26,11 +26,25 @@ public partial class AlertHub : ObservableObject
         _overlayLocked = settings.Current.OverlayLocked;
     }
 
-    /// <summary>Newest-first feed shared by the in-app panel and the overlay window.</summary>
+    /// <summary>Newest-first persistent feed for the in-app panels (Alerts tab + fleet view).
+    /// Entries stay for the whole session — only the auto-clear timeout removes them, and it
+    /// removes them from <see cref="OverlayAlerts"/> only, never from here.</summary>
     public ObservableCollection<FcAlert> Alerts { get; } = [];
+
+    /// <summary>Newest-first feed the on-screen overlay binds to. Same alerts as <see cref="Alerts"/>,
+    /// but the <c>AlertClearSeconds</c> timeout expires entries from this list so the overlay stays
+    /// tidy over the game — while the in-app list keeps the full session history.</summary>
+    public ObservableCollection<FcAlert> OverlayAlerts { get; } = [];
 
     [ObservableProperty] private bool _overlayEnabled;
     [ObservableProperty] private bool _overlayLocked;
+
+    /// <summary>Unread-alert count for the nav badge. Bumped on every <see cref="Raise"/>, reset to
+    /// 0 by <see cref="MarkRead"/> when the FC opens the Alerts page.</summary>
+    [ObservableProperty] private int _unreadCount;
+
+    /// <summary>Clears the unread badge — call when the Alerts page is opened.</summary>
+    public void MarkRead() => UnreadCount = 0;
 
     public double OverlayLeft => _settings.Current.OverlayLeft;
     public double OverlayTop  => _settings.Current.OverlayTop;
@@ -55,6 +69,12 @@ public partial class AlertHub : ObservableObject
         while (Alerts.Count > 100)            // keep the feed bounded
             Alerts.RemoveAt(Alerts.Count - 1);
 
+        OverlayAlerts.Insert(0, alert);       // overlay shows the same alert, but auto-clears below
+        while (OverlayAlerts.Count > 100)
+            OverlayAlerts.RemoveAt(OverlayAlerts.Count - 1);
+
+        UnreadCount++;                        // light the nav badge until the FC opens the Alerts page
+
         // Permanent record for the after-action log (alerts auto-clear from the live feed).
         var line = string.IsNullOrEmpty(alert.SubText) ? alert.Headline : $"{alert.Headline} — {alert.SubText}";
         _sessionLog.Record(alert.AlertTag, line);
@@ -67,6 +87,7 @@ public partial class AlertHub : ObservableObject
                 AlertType.CapTrouble => _settings.Current.CapTroubleSound,
                 AlertType.BoostLost  => _settings.Current.BoostLostSound,
                 AlertType.LogiChain  => _settings.Current.BoostLostSound,  // same "a key ship dropped" cue
+                AlertType.DpsLoss    => _settings.Current.TackledSound,    // fleet-effectiveness drop — louder cue
                 _                    => "None",
             };
             // Throttle per type so repeated alerts don't machine-gun the speaker.
@@ -80,7 +101,8 @@ public partial class AlertHub : ObservableObject
     private async Task ExpireAlertAsync(FcAlert alert, int seconds)
     {
         try { await Task.Delay(TimeSpan.FromSeconds(seconds)); } catch { return; }
-        App.Current.Dispatcher.Invoke(() => Alerts.Remove(alert));
+        // Clear from the overlay only — the in-app Alerts list keeps the full session history.
+        App.Current.Dispatcher.Invoke(() => OverlayAlerts.Remove(alert));
     }
 
     partial void OnOverlayEnabledChanged(bool value)

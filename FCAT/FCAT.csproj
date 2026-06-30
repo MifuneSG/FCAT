@@ -15,8 +15,8 @@
     <ApplicationIcon>fcat.ico</ApplicationIcon>
     <AssemblyTitle>FCAT — Fleet Commander Assistance Tool</AssemblyTitle>
     <Product>FCAT</Product>
-    <Version>0.12.0-beta</Version>
-    <FileVersion>0.12.0.0</FileVersion>
+    <Version>0.13.0-beta</Version>
+    <FileVersion>0.13.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -12,9 +12,9 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
     /// <summary>When true, fleet-related calls return a synthetic fleet (Demo / Sandbox mode).</summary>
     public bool DemoMode { get; set; }
 
-    private async Task<T?> GetAuthenticatedAsync<T>(string path)
+    private async Task<T?> GetAuthenticatedAsync<T>(string path, int? asCharacterId = null)
     {
-        var token = await authService.GetValidAccessTokenAsync();
+        var token = await authService.GetValidAccessTokenAsync(asCharacterId);
         if (token == null) return default;
 
         var request = new HttpRequestMessage(HttpMethod.Get, $"{BaseUrl}{path}");
@@ -51,7 +51,11 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
 
     public async Task<CharacterFleetInfo?> GetCharacterFleetAsync(int characterId)
         => DemoMode ? DemoData.Fleet()
-                    : await GetAuthenticatedAsync<CharacterFleetInfo>($"/v1/characters/{characterId}/fleet/");
+                    : await GetAuthenticatedAsync<CharacterFleetInfo>($"/v1/characters/{characterId}/fleet/", characterId);
+
+    /// <summary>Resolve a citadel/structure name (needs esi-universe.read_structures; uses the given char's token).</summary>
+    public async Task<EsiNameOnly?> GetStructureNameAsync(long structureId, int asCharacterId)
+        => await GetAuthenticatedAsync<EsiNameOnly>($"/v2/universe/structures/{structureId}/", asCharacterId);
 
     public async Task<List<FleetMember>?> GetFleetMembersAsync(long fleetId)
         => DemoMode ? DemoData.Members(authService.AuthenticatedCharacterId, authService.AuthenticatedCharacterName)
@@ -249,9 +253,18 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
     public async Task<List<SystemJumps>> GetSystemJumpsAsync() => await GetPublicAsync<List<SystemJumps>>("/v1/universe/system_jumps/") ?? [];
     public async Task<List<SovEntry>>    GetSovMapAsync()      => await GetPublicAsync<List<SovEntry>>("/v1/sovereignty/map/") ?? [];
 
-    /// <summary>The logged-in pilot's current solar system (needs esi-location scope).</summary>
+    /// <summary>A character's current solar system, queried with that character's own token
+    /// (needs esi-location). Works for the active char and any added alt.</summary>
     public async Task<CharacterLocation?> GetCharacterLocationAsync(int characterId)
-        => await GetAuthenticatedAsync<CharacterLocation>($"/v2/characters/{characterId}/location/");
+        => await GetAuthenticatedAsync<CharacterLocation>($"/v2/characters/{characterId}/location/", characterId);
+
+    /// <summary>A character's online status (needs esi-location.read_online).</summary>
+    public async Task<CharacterOnline?> GetCharacterOnlineAsync(int characterId)
+        => await GetAuthenticatedAsync<CharacterOnline>($"/v3/characters/{characterId}/online/", characterId);
+
+    /// <summary>A character's current ship (needs esi-location.read_ship_type).</summary>
+    public async Task<CharacterShip?> GetCharacterShipAsync(int characterId)
+        => await GetAuthenticatedAsync<CharacterShip>($"/v2/characters/{characterId}/ship/", characterId);
 
     /// <summary>Resolves character names → IDs via POST /v1/universe/ids/ (public, batched).</summary>
     public async Task<Dictionary<string, int>> ResolveCharacterIdsAsync(IEnumerable<string> names)

@@ -31,10 +31,20 @@ public partial class ShellViewModel : ObservableObject
         _systemSearch = systemSearch;
         _zkill = zkill;
         _updater = updater;
+        _auth.ActiveCharacterChanged += OnActiveCharacterChanged;
         CurrentPage = new LoginViewModel(_auth, this);
+
+        // Restore the last active character from disk (no SSO needed if the refresh token is valid).
+        _ = TryRestoreSessionAsync();
 
         // Quietly check GitHub for a newer release on launch (no-op when run from source).
         _ = CheckForUpdatesAsync(silent: true);
+    }
+
+    private async Task TryRestoreSessionAsync()
+    {
+        if (await _auth.RestoreSessionAsync())
+            Application.Current.Dispatcher.Invoke(ShowMenu);
     }
 
     // ── Auto-update ──
@@ -104,6 +114,7 @@ public partial class ShellViewModel : ObservableObject
             (AlertType.Tackled,    "Vng. Hostile", ""),
             (AlertType.BoostLost,  "",             "Damnation — gang links dropped"),
             (AlertType.LogiChain,  "",             "Guardian ring lost a link — re-anchor"),
+            (AlertType.DpsLoss,    "",             "~50% of DPS lost — 8 of 16 ships down"),
             (AlertType.CapTrouble, "",             "Large Micro Jump Drive"),
         };
         foreach (var (type, attacker, detail) in script)
@@ -160,6 +171,31 @@ public partial class ShellViewModel : ObservableObject
     [RelayCommand] private void NavIntel() => ShowIntel();
     [RelayCommand] private void NavPing()  => ShowPing();
     [RelayCommand] private void NavSetup() => ShowSettings();
+    [RelayCommand] private void NavAccount() => ShowAccount();
+
+    /// <summary>The account manager — add/switch characters + the alt status board.</summary>
+    public void ShowAccount()
+    {
+        ActiveNav = "account";
+        CurrentPage = new AccountViewModel(_auth, _esi, this);
+    }
+
+    // Keep the nav-rail avatar + identity in sync when the active character changes (or is removed).
+    private void OnActiveCharacterChanged()
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            if (_auth.AuthenticatedCharacterId == 0)
+            {
+                IsLoggedIn = false;
+                CurrentPage = new LoginViewModel(_auth, this);
+            }
+            else if (IsLoggedIn)
+            {
+                PopulateShellIdentity();   // refresh avatar/name for the new active character
+            }
+        });
+    }
 
     /// <summary>Latest fleet id the dashboard detected — lets the nav rail enter ops directly.</summary>
     [ObservableProperty] private long _detectedFleetId;
@@ -188,6 +224,7 @@ public partial class ShellViewModel : ObservableObject
     public void ShowAlerts()
     {
         ActiveNav = "alerts";
+        _alertHub.MarkRead();   // opening the page clears the unread badge
         CurrentPage = new AlertsViewModel(_alertHub);
     }
 

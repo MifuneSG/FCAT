@@ -29,7 +29,8 @@ public class AppSettings
     public string CapTroubleSound    { get; set; } = "Beep";
     public string BoostLostSound     { get; set; } = "Double Beep";
 
-    /// <summary>Seconds before an alert auto-clears from the feed/overlay. 0 = never.</summary>
+    /// <summary>Seconds before an alert auto-clears from the on-screen overlay. The in-app Alerts
+    /// list always keeps the full session history regardless of this. 0 = never clear the overlay.</summary>
     public int AlertClearSeconds { get; set; } = 60;
 
     // ── Alert overlay (on-screen, over the game) ──
