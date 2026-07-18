@@ -4,7 +4,7 @@ using Velopack;
 namespace FCAT;
 
 /// <summary>
-/// Custom entry point so Velopack runs FIRST — before any WPF startup. During install,
+/// Custom entry point so Velopack runs FIRST - before any WPF startup. During install,
 /// update and uninstall, Velopack relaunches the app with hook arguments; VelopackApp.Run()
 /// handles those and exits, so the main window never flashes during those operations.
 /// </summary>

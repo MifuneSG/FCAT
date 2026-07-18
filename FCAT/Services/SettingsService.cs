@@ -26,7 +26,7 @@ public class SettingsService
         }
         catch
         {
-            Current = new();   // corrupt/unreadable — fall back to defaults
+            Current = new();   // corrupt/unreadable - fall back to defaults
         }
     }
 
@@ -39,7 +39,7 @@ public class SettingsService
         }
         catch
         {
-            // Non-fatal — settings just won't persist this run.
+            // Non-fatal - settings just won't persist this run.
         }
     }
 }

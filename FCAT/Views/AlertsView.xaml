@@ -20,7 +20,7 @@
                 <TextBlock Text="SESSION" Style="{StaticResource PageEyebrow}"/>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Session Alerts" Style="{StaticResource PageTitle}"/>
-                    <Border CornerRadius="9" Background="{StaticResource EveRaisedBg}" Padding="8,2" Margin="12,0,0,0"
+                    <Border CornerRadius="9" Background="{DynamicResource EveRaisedBg}" Padding="8,2" Margin="12,0,0,0"
                             VerticalAlignment="Center"
                             Visibility="{Binding Alerts.Count, Converter={StaticResource CountToVisibility}}">
                         <TextBlock Text="{Binding Alerts.Count}" Foreground="{StaticResource EveTextSecondary}"
@@ -50,8 +50,8 @@
                                 <Border Margin="0,0,0,8">
                                     <Border.Style>
                                         <Style TargetType="Border">
-                                            <Setter Property="Background"      Value="{StaticResource EveRaisedBg}"/>
-                                            <Setter Property="BorderBrush"     Value="{StaticResource EveHairline}"/>
+                                            <Setter Property="Background"      Value="{DynamicResource EveRaisedBg}"/>
+                                            <Setter Property="BorderBrush"     Value="{DynamicResource EveHairline}"/>
                                             <Setter Property="BorderThickness" Value="1"/>
                                             <Setter Property="CornerRadius"    Value="8"/>
                                             <Style.Triggers>

@@ -31,6 +31,7 @@ public partial class MenuViewModel : ObservableObject
         _ = LoadCharacterInfoAsync();
         _ = LoadLocationAsync();
         _ = CheckFleetStatusAsync();
+        _ = LoadAltsAsync();
     }
 
     [ObservableProperty] private string _characterName = string.Empty;
@@ -45,7 +46,7 @@ public partial class MenuViewModel : ObservableObject
     [ObservableProperty] private long _detectedFleetId;
     [ObservableProperty] private string _fleetStatusText = "Checking fleet status...";
 
-    // ── Command Center display ──
+    // Command Center display
     [ObservableProperty] private string _securityStatusText = "—";
     [ObservableProperty] private string _currentSystemName = "Unknown";
 
@@ -55,26 +56,30 @@ public partial class MenuViewModel : ObservableObject
     [ObservableProperty] private string _ownRoleText = string.Empty;           // "BOSS" / "WING CMDR" …
     [ObservableProperty] private string _formingText = string.Empty;           // "forming J5A-IX"
 
-    // ── READINESS tile (fleet composition health; only when IsInFleet) ──
+    // READINESS tile (fleet composition health; only when IsInFleet)
     [ObservableProperty] private string _logiText = "—";       // "17%"
-    [ObservableProperty] private bool   _logiLow;              // <7% → red (matches the combat-fleet advisory)
+    [ObservableProperty] private bool   _logiLow;              // <7% -> red (matches the combat-fleet advisory)
     [ObservableProperty] private string _tackleText = "—";
     [ObservableProperty] private bool   _hasTackle;
     [ObservableProperty] private string _boosterText = "—";
     [ObservableProperty] private bool   _hasBoosters;
 
-    // ── THREAT tile (current-system activity from ESI) ──
+    // THREAT tile (current-system activity from ESI)
     private int _currentSystemId;
     [ObservableProperty] private string _threatKillsText = "No recent kills";
     [ObservableProperty] private string _threatActivityText = "quiet";
     [ObservableProperty] private bool   _threatIsHot;
 
-    // ── LAST ALERT tile ──
+    // LAST ALERT tile
     public ObservableCollection<FcAlert> RecentAlerts => _shell.Hub.Alerts;
     public FcAlert? LatestAlert => RecentAlerts.Count > 0 ? RecentAlerts[0] : null;  // hub inserts newest at 0
     public bool HasAlerts => RecentAlerts.Count > 0;
 
-    /// <summary>First name only — for the "Good hunting, X." greeting.</summary>
+    // FLEET ALTS card  where the FC's alts (scout, cyno, hauler, …) are sitting for the op.
+    public ObservableCollection<CharacterRow> Alts { get; } = [];
+    public bool HasAlts => Alts.Count > 0;
+
+    /// <summary>First name only - for the "Good hunting, X." greeting.</summary>
     public string FirstName =>
         string.IsNullOrWhiteSpace(CharacterName) ? "Capsuleer" : CharacterName.Split(' ')[0];
 
@@ -114,7 +119,7 @@ public partial class MenuViewModel : ObservableObject
         OnPropertyChanged(nameof(CharacterSubtitle));
     }
 
-    // Current system — esi-location scope (held). Replaces the jump-clone stat, which would
+    // Current system - esi-location scope (held). Replaces the jump-clone stat, which would
     // need esi-clones (not in our scope set).
     private async Task LoadLocationAsync()
     {
@@ -234,11 +239,107 @@ public partial class MenuViewModel : ObservableObject
         BoosterText = boosters > 0 ? boosters.ToString() : "none";
     }
 
+    // Dashboard card: each alt (account store minus the active char) polled with its own token.
+    private async Task LoadAltsAsync()
+    {
+        if (_esi.DemoMode)
+        {
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                Alts.Clear();
+                foreach (var a in DemoData.Alts())        // synthetic alts - the store is empty in demo
+                    Alts.Add(new CharacterRow
+                    {
+                        CharacterId = a.CharacterId,
+                        Name        = a.Name,
+                        PortraitUrl = $"https://images.evetech.net/characters/{a.CharacterId}/portrait?size=64",
+                        Role        = a.Role,
+                        Online      = true,
+                        SystemName  = a.SystemName,
+                        ShipName    = a.ShipName,
+                        DockText    = a.DockText,
+                        FleetText   = a.FleetText,
+                    });
+                OnPropertyChanged(nameof(HasAlts));
+            });
+            return;
+        }
+
+        var alts = _auth.Store.Characters
+            .Where(c => c.CharacterId != _auth.AuthenticatedCharacterId)
+            .ToList();
+
+        // Seed the rows first so names/roles render while live statuses stream in.
+        App.Current.Dispatcher.Invoke(() =>
+        {
+            Alts.Clear();
+            foreach (var c in alts)
+                Alts.Add(new CharacterRow
+                {
+                    CharacterId = c.CharacterId,
+                    Name        = c.CharacterName,
+                    Role        = c.Role,
+                    PortraitUrl = $"https://images.evetech.net/characters/{c.CharacterId}/portrait?size=64",
+                });
+            OnPropertyChanged(nameof(HasAlts));
+        });
+        if (alts.Count == 0) return;
+
+        var raw = new List<(int id, bool online, int sysId, int shipId, int stationId, string structName, long fleetId)>();
+        foreach (var c in alts)
+        {
+            var online = await _esi.GetCharacterOnlineAsync(c.CharacterId);
+            int sysId = 0, shipId = 0, stationId = 0; string structName = string.Empty; long fleetId = 0;
+            if (online?.Online == true)
+            {
+                var loc   = await _esi.GetCharacterLocationAsync(c.CharacterId);
+                var ship  = await _esi.GetCharacterShipAsync(c.CharacterId);
+                var fleet = await _esi.GetCharacterFleetAsync(c.CharacterId);
+                sysId = loc?.SolarSystemId ?? 0; shipId = ship?.ShipTypeId ?? 0;
+                stationId = loc?.StationId ?? 0; fleetId = fleet?.FleetId ?? 0;
+                if (loc?.StructureId is long sid)
+                    structName = (await _esi.GetStructureNameAsync(sid, c.CharacterId))?.Name ?? "structure";
+            }
+            raw.Add((c.CharacterId, online?.Online ?? false, sysId, shipId, stationId, structName, fleetId));
+        }
+
+        var ids = raw.SelectMany(r => new[] { r.sysId, r.shipId, r.stationId }).Where(i => i > 0).Distinct().ToList();
+        var names = ids.Count > 0 ? await _esi.ResolveNamesAsync(ids) : [];
+
+        App.Current.Dispatcher.Invoke(() =>
+        {
+            foreach (var r in raw)
+            {
+                var row = Alts.FirstOrDefault(a => a.CharacterId == r.id);
+                if (row == null) continue;
+                row.Online     = r.online;
+                row.SystemName = r.sysId  > 0 && names.TryGetValue(r.sysId,  out var s)  ? s  : (r.online ? "?" : "—");
+                row.ShipName   = r.shipId > 0 && names.TryGetValue(r.shipId, out var sh) ? sh : (r.online ? "?" : "—");
+                row.DockText =
+                    !r.online                           ? "Offline" :
+                    r.stationId > 0                     ? "⚓ " + (names.TryGetValue(r.stationId, out var st) ? st : "docked") :
+                    !string.IsNullOrEmpty(r.structName) ? "⚓ " + r.structName :
+                                                          "In space";
+                row.FleetText =
+                    r.fleetId == 0                                        ? string.Empty :
+                    DetectedFleetId != 0 && r.fleetId == DetectedFleetId  ? "In your fleet" :
+                                                                            "In another fleet";
+            }
+        });
+    }
+
     [RelayCommand]
-    private async Task RefreshFleetStatusAsync() => await CheckFleetStatusAsync();
+    private async Task RefreshFleetStatusAsync()
+    {
+        await CheckFleetStatusAsync();
+        await LoadAltsAsync();
+    }
 
     [RelayCommand]
     private void OpenSettings() => _shell.ShowSettings();
+
+    [RelayCommand]
+    private void OpenAccount() => _shell.ShowAccount();
 
     [RelayCommand]
     private void OpenDScan() => _shell.ShowIntel();

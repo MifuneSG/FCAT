@@ -8,10 +8,9 @@ public record SystemMatch(int Id, string Name);
 
 /// <summary>
 /// Provides instant local autocomplete for solar-system names (used by the form-up picker).
-///
-/// EVE's API has no public prefix-search, so we build the index once from ESI (all system IDs →
+/// EVE's API has no public prefix-search, so we build the index once from ESI (all system IDs ->
 /// names) and cache it to %APPDATA%\FCAT\systems-index.json. After the first run it loads from
-/// disk, so searching is in-memory and immediate — no per-keystroke network calls, no new scope.
+/// disk, so searching is in-memory and immediate - no per-keystroke network calls, no new scope.
 /// </summary>
 public class SystemSearchService(EsiService esi)
 {
@@ -35,7 +34,7 @@ public class SystemSearchService(EsiService esi)
             if (TryLoadCache()) { IsLoaded = true; return; }
 
             var ids = await esi.GetAllSystemIdsAsync();
-            if (ids.Count == 0) return;                       // ESI hiccup — stay unloaded, retry later
+            if (ids.Count == 0) return;                       // ESI hiccup - stay unloaded, retry later
 
             var names = await esi.ResolveNamesAsync(ids);     // chunks of 1000 internally
             _systems = names.Where(kv => !string.IsNullOrEmpty(kv.Value))
@@ -49,7 +48,7 @@ public class SystemSearchService(EsiService esi)
         finally { _gate.Release(); }
     }
 
-    /// <summary>Best matches for a typed prefix — startswith first, then contains.</summary>
+    /// <summary>Best matches for a typed prefix - startswith first, then contains.</summary>
     public IReadOnlyList<SystemMatch> Search(string query, int max = 8)
     {
         if (!IsLoaded || string.IsNullOrWhiteSpace(query)) return [];
@@ -60,18 +59,18 @@ public class SystemSearchService(EsiService esi)
         return starts.Concat(contains).Take(max).ToList();
     }
 
-    /// <summary>Exact (case-insensitive) name → system id, or null if not a real system.</summary>
+    /// <summary>Exact (case-insensitive) name -> system id, or null if not a real system.</summary>
     public int? ResolveId(string name)
     {
         var hit = _systems.FirstOrDefault(s => string.Equals(s.Name, name.Trim(), StringComparison.OrdinalIgnoreCase));
         return hit?.Id;
     }
 
-    private Dictionary<string, string>? _nameLookup;   // lower-case token → canonical system name
+    private Dictionary<string, string>? _nameLookup;   // lower-case token -> canonical system name
     private static readonly char[] Delimiters = [' ', '\t', ',', '.', '!', '?', ';', ':', '(', ')', '[', ']', '"', '\'', '*', '>'];
 
     /// <summary>
-    /// First solar system mentioned in a line of intel, or null. Handles abbreviations intel uses —
+    /// First solar system mentioned in a line of intel, or null. Handles abbreviations intel uses -
     /// a nullsec-code token like "1-5" / "O-P" prefix-matches a real system ("1-5GBW", "O-PNSN").
     /// </summary>
     public string? DetectSystem(string text) => DetectSystemMatch(text)?.Name;
@@ -90,7 +89,7 @@ public class SystemSearchService(EsiService esi)
             if (token.Length < 2) continue;
             // Exact name (covers "Jita" and full nullsec codes).
             if (_nameLookup.TryGetValue(token.ToLowerInvariant(), out var canonical)) return (token, canonical);
-            // Abbreviated nullsec code (contains a dash) → prefix-match a real system.
+            // Abbreviated nullsec code (contains a dash) -> prefix-match a real system.
             if (token.Length >= 3 && token.Contains('-'))
             {
                 var hit = _systems.FirstOrDefault(s => s.Name.StartsWith(token, StringComparison.OrdinalIgnoreCase));

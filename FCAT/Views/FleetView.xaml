@@ -12,14 +12,14 @@
     <UserControl.Resources>
         <local:UrlToImageConverter x:Key="UrlToImage"/>
 
-        <!-- Row hover — rounded, calm -->
+        <!-- Row hover - rounded, calm -->
         <Style x:Key="MemberRow" TargetType="Border">
             <Setter Property="Background"    Value="Transparent"/>
             <Setter Property="CornerRadius"  Value="6"/>
             <Setter Property="Padding"       Value="0,4"/>
             <Setter Property="Margin"        Value="6,1,8,1"/>
             <Setter Property="Cursor"        Value="Hand"/>
-            <!-- Right-click → override the role for this hull (e.g. logi-fit T3s) -->
+            <!-- Right-click -> override the role for this hull (e.g. logi-fit T3s) -->
             <Setter Property="ContextMenu">
                 <Setter.Value>
                     <ContextMenu>
@@ -52,7 +52,7 @@
             <Setter Property="MinWidth"          Value="44"/>
         </Style>
 
-        <!-- Row action button (kick / move) — hidden unless the row is manageable AND hovered -->
+        <!-- Row action button (kick / move) - hidden unless the row is manageable AND hovered -->
         <Style x:Key="RowActionButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
             <Setter Property="Opacity" Value="0"/>
             <Setter Property="Padding" Value="5,2"/>
@@ -67,7 +67,7 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Header action button (wing/squad add/rename/delete) — always visible, dim until hover -->
+        <!-- Header action button (wing/squad add/rename/delete) - always visible, dim until hover -->
         <Style x:Key="HeaderActionButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
             <Setter Property="Padding" Value="6,1"/>
             <Setter Property="FontSize" Value="12"/>
@@ -78,8 +78,8 @@
         <Style x:Key="DarkTextBox" TargetType="TextBox">
             <Setter Property="Background"      Value="#0f1622"/>
             <Setter Property="Foreground"      Value="{StaticResource EveTextPrimary}"/>
-            <Setter Property="CaretBrush"      Value="{StaticResource EveAccent}"/>
-            <Setter Property="BorderBrush"     Value="{StaticResource EveHairlineStrong}"/>
+            <Setter Property="CaretBrush"      Value="{DynamicResource EveAccent}"/>
+            <Setter Property="BorderBrush"     Value="{DynamicResource EveHairlineStrong}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontFamily"      Value="{StaticResource FontUI}"/>
             <Setter Property="FontSize"        Value="12"/>
@@ -94,7 +94,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="{StaticResource EveAccent}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -111,7 +111,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- ════════════════════ TOP BAR ════════════════════ -->
+        <!-- TOP BAR -->
         <Grid Grid.Row="0" Margin="34,22,34,14">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -132,7 +132,7 @@
                 </StackPanel>
 
                 <Rectangle Grid.Column="1" Width="1" Height="20" Margin="14,0"
-                           Fill="{StaticResource EveHairlineStrong}" VerticalAlignment="Center"/>
+                           Fill="{DynamicResource EveHairlineStrong}" VerticalAlignment="Center"/>
 
                 <TextBlock Grid.Column="2" Text="FLEET" Style="{StaticResource SectionLabel}"
                            VerticalAlignment="Center" Margin="0,0,8,0"/>
@@ -142,7 +142,7 @@
                            VerticalAlignment="Center"/>
 
                 <!-- Pilot count chip -->
-                <Border Grid.Column="5" Background="{StaticResource EveRaisedBg}"
+                <Border Grid.Column="5" Background="{DynamicResource EveRaisedBg}"
                         CornerRadius="6" Padding="11,5" Margin="0,0,16,0" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Foreground="{StaticResource EveGoldSoft}"
@@ -175,7 +175,7 @@
                             </EventTrigger>
                         </Ellipse.Triggers>
                     </Ellipse>
-                    <TextBlock Text="Live" Foreground="{StaticResource EveAccent}"
+                    <TextBlock Text="Live" Foreground="{DynamicResource EveAccent}"
                                FontFamily="{StaticResource FontUI}" FontSize="12"
                                VerticalAlignment="Center"/>
                 </StackPanel>
@@ -188,7 +188,7 @@
                 </Button>
             </Grid>
 
-        <!-- ════════════════════ FLEET-CHANGED BANNER ════════════════════ -->
+        <!-- FLEET-CHANGED BANNER -->
         <Border Grid.Row="1" Background="#241803" BorderBrush="{StaticResource EveAmber}"
                 BorderThickness="0,0,0,1" Padding="18,10"
                 Visibility="{Binding FleetChangedWarning, Converter={StaticResource BoolToVisibility}}">
@@ -211,9 +211,9 @@
             </Grid>
         </Border>
 
-        <!-- ════════════════════ COMPOSITION + BOOST COVERAGE ════════════════════ -->
-        <Border Grid.Row="2" Background="{StaticResource EvePanelBg}"
-                BorderBrush="{StaticResource EveHairline}" BorderThickness="0,0,0,1"
+        <!-- COMPOSITION + BOOST COVERAGE -->
+        <Border Grid.Row="2" Background="{DynamicResource EvePanelBg}"
+                BorderBrush="{DynamicResource EveHairline}" BorderThickness="0,0,0,1"
                 Padding="18,8">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -239,7 +239,7 @@
                 </ItemsControl>
 
                 <!-- Divider -->
-                <Rectangle Width="1" Height="18" Fill="{StaticResource EveHairlineStrong}" Margin="4,0,16,0" VerticalAlignment="Center"/>
+                <Rectangle Width="1" Height="18" Fill="{DynamicResource EveHairlineStrong}" Margin="4,0,16,0" VerticalAlignment="Center"/>
                 <TextBlock Text="LINKS" Style="{StaticResource SectionLabel}" VerticalAlignment="Center" Margin="0,0,12,0"/>
 
                 <!-- Boost coverage -->
@@ -286,7 +286,7 @@
             </Grid>
         </Border>
 
-        <!-- ════════════════════ MAIN ════════════════════ -->
+        <!-- MAIN -->
         <Grid Grid.Row="3" Margin="34,12,34,24">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -294,7 +294,7 @@
                 <ColumnDefinition Width="280"/>
             </Grid.ColumnDefinitions>
 
-            <!-- ───────── FLEET HIERARCHY ───────── -->
+            <!-- FLEET HIERARCHY -->
             <Border Grid.Column="0" Style="{StaticResource Card}">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -304,7 +304,7 @@
                     </Grid.RowDefinitions>
 
                     <!-- Toolbar: invite + add wing -->
-                    <Border Grid.Row="0" BorderBrush="{StaticResource EveHairline}" BorderThickness="0,0,0,1"
+                    <Border Grid.Row="0" BorderBrush="{DynamicResource EveHairline}" BorderThickness="0,0,0,1"
                             Padding="12,9">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -332,7 +332,7 @@
                     </Border>
 
                     <!-- Column header -->
-                    <Border Grid.Row="1" BorderBrush="{StaticResource EveHairline}" BorderThickness="0,0,0,1"
+                    <Border Grid.Row="1" BorderBrush="{DynamicResource EveHairline}" BorderThickness="0,0,0,1"
                             Padding="61,11,18,11">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -352,7 +352,7 @@
                     <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,6,0,10">
                         <StackPanel>
 
-                            <!-- ░░ FLEET COMMAND ░░ -->
+                            <!-- FLEET COMMAND -->
                             <ItemsControl ItemsSource="{Binding FleetCommandLevel}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type vm:FleetMemberViewModel}">
@@ -387,8 +387,8 @@
                                                                FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,1,0,0"/>
                                                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0" ToolTip="{Binding BoostDetail}"
                                                                 Visibility="{Binding HasBoosts, Converter={StaticResource BoolToVisibility}}">
-                                                        <TextBlock Text="⚡ " Foreground="{StaticResource EveAccent}" FontSize="10" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="{Binding BoostSummary}" Foreground="{StaticResource EveAccent}"
+                                                        <TextBlock Text="⚡ " Foreground="{DynamicResource EveAccent}" FontSize="10" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding BoostSummary}" Foreground="{DynamicResource EveAccent}"
                                                                    FontFamily="{StaticResource FontUI}" FontSize="10" VerticalAlignment="Center"/>
                                                     </StackPanel>
                                                     <TextBlock Text="PODDED" Foreground="{StaticResource EveCritical}" FontFamily="{StaticResource FontUI}"
@@ -409,7 +409,7 @@
 
                                                 <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                                     <Button Command="{Binding MoveCommand}" Style="{StaticResource RowActionButton}" ToolTip="Move to squad" Margin="0,0,2,0">
-                                                        <TextBlock Text="⇄" FontSize="12" Foreground="{StaticResource EveAccent}"/>
+                                                        <TextBlock Text="⇄" FontSize="12" Foreground="{DynamicResource EveAccent}"/>
                                                     </Button>
                                                     <Button Command="{Binding KickCommand}" Style="{StaticResource RowActionButton}" ToolTip="Kick from fleet" Margin="0,0,4,0">
                                                         <TextBlock Text="✕" FontSize="12" Foreground="{StaticResource EveCritical}"/>
@@ -427,7 +427,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <!-- ░░ WINGS ░░ -->
+                            <!-- WINGS -->
                             <ItemsControl ItemsSource="{Binding Wings}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type vm:WingViewModel}">
@@ -444,7 +444,7 @@
                                                            FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"
                                                            VerticalAlignment="Center"/>
                                                 <Rectangle Grid.Column="1" Height="1" Margin="12,0,12,0" VerticalAlignment="Center"
-                                                           Fill="{StaticResource EveHairline}"/>
+                                                           Fill="{DynamicResource EveHairline}"/>
                                                 <StackPanel Grid.Column="2" Orientation="Horizontal">
                                                     <Button Style="{StaticResource HeaderActionButton}" ToolTip="Add squad to this wing"
                                                             Command="{Binding DataContext.AddSquadCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -500,8 +500,8 @@
                                                                                FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,1,0,0"/>
                                                                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0" ToolTip="{Binding BoostDetail}"
                                                                                 Visibility="{Binding HasBoosts, Converter={StaticResource BoolToVisibility}}">
-                                                                        <TextBlock Text="⚡ " Foreground="{StaticResource EveAccent}" FontSize="10" VerticalAlignment="Center"/>
-                                                                        <TextBlock Text="{Binding BoostSummary}" Foreground="{StaticResource EveAccent}"
+                                                                        <TextBlock Text="⚡ " Foreground="{DynamicResource EveAccent}" FontSize="10" VerticalAlignment="Center"/>
+                                                                        <TextBlock Text="{Binding BoostSummary}" Foreground="{DynamicResource EveAccent}"
                                                                                    FontFamily="{StaticResource FontUI}" FontSize="10" VerticalAlignment="Center"/>
                                                                     </StackPanel>
                                                                     <TextBlock Text="PODDED" Foreground="{StaticResource EveCritical}" FontFamily="{StaticResource FontUI}"
@@ -522,7 +522,7 @@
 
                                                                 <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                                                     <Button Command="{Binding MoveCommand}" Style="{StaticResource RowActionButton}" ToolTip="Move to squad" Margin="0,0,2,0">
-                                                                        <TextBlock Text="⇄" FontSize="12" Foreground="{StaticResource EveAccent}"/>
+                                                                        <TextBlock Text="⇄" FontSize="12" Foreground="{DynamicResource EveAccent}"/>
                                                                     </Button>
                                                                     <Button Command="{Binding KickCommand}" Style="{StaticResource RowActionButton}" ToolTip="Kick from fleet" Margin="0,0,4,0">
                                                                         <TextBlock Text="✕" FontSize="12" Foreground="{StaticResource EveCritical}"/>
@@ -614,8 +614,8 @@
                                                                                                Visibility="{Binding IsSquadCommander, Converter={StaticResource BoolToVisibility}}"/>
                                                                                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0" ToolTip="{Binding BoostDetail}"
                                                                                                 Visibility="{Binding HasBoosts, Converter={StaticResource BoolToVisibility}}">
-                                                                                        <TextBlock Text="⚡ " Foreground="{StaticResource EveAccent}" FontSize="10" VerticalAlignment="Center"/>
-                                                                                        <TextBlock Text="{Binding BoostSummary}" Foreground="{StaticResource EveAccent}"
+                                                                                        <TextBlock Text="⚡ " Foreground="{DynamicResource EveAccent}" FontSize="10" VerticalAlignment="Center"/>
+                                                                                        <TextBlock Text="{Binding BoostSummary}" Foreground="{DynamicResource EveAccent}"
                                                                                                    FontFamily="{StaticResource FontUI}" FontSize="10" VerticalAlignment="Center"/>
                                                                                     </StackPanel>
                                                                                     <TextBlock Text="PODDED" Foreground="{StaticResource EveCritical}" FontFamily="{StaticResource FontUI}"
@@ -636,7 +636,7 @@
 
                                                                                 <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                                                                     <Button Command="{Binding MoveCommand}" Style="{StaticResource RowActionButton}" ToolTip="Move to squad" Margin="0,0,2,0">
-                                                                                        <TextBlock Text="⇄" FontSize="12" Foreground="{StaticResource EveAccent}"/>
+                                                                                        <TextBlock Text="⇄" FontSize="12" Foreground="{DynamicResource EveAccent}"/>
                                                                                     </Button>
                                                                                     <Button Command="{Binding KickCommand}" Style="{StaticResource RowActionButton}" ToolTip="Kick from fleet" Margin="0,0,4,0">
                                                                                         <TextBlock Text="✕" FontSize="12" Foreground="{StaticResource EveCritical}"/>
@@ -668,7 +668,7 @@
                 </Grid>
             </Border>
 
-            <!-- ───────── RIGHT COLUMN: cap chain + alerts ───────── -->
+            <!-- RIGHT COLUMN: cap chain + alerts -->
             <Grid Grid.Column="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -676,7 +676,7 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- FORM-UP — who hasn't arrived yet; auto-hides once the fleet departs staging -->
+                <!-- FORM-UP - who hasn't arrived yet; auto-hides once the fleet departs staging -->
                 <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12"
                         Visibility="{Binding ShowFormupCard, Converter={StaticResource BoolToVisibility}}">
                     <StackPanel Margin="16,12,16,12">
@@ -723,7 +723,7 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" Margin="0,1">
-                                        <TextBlock Text="↓" Foreground="{StaticResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11" Width="16" VerticalAlignment="Center"/>
+                                        <TextBlock Text="↓" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11" Width="16" VerticalAlignment="Center"/>
                                         <TextBlock Text="{Binding}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </DataTemplate>
@@ -741,7 +741,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Grid.Row="0" BorderBrush="{StaticResource EveHairline}" BorderThickness="0,0,0,1"
+                    <Border Grid.Row="0" BorderBrush="{DynamicResource EveHairline}" BorderThickness="0,0,0,1"
                             Padding="16,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -754,7 +754,7 @@
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
                                         ToolTip="Boost channel being read from your EVE Chatlogs">
-                                <TextBlock Text="⚡" Foreground="{StaticResource EveAccent}" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="⚡" Foreground="{DynamicResource EveAccent}" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
                                 <TextBlock Text="{Binding BoostChannelName}" Foreground="{StaticResource EveTextDim}"
                                            FontFamily="{StaticResource FontMono}" FontSize="10" VerticalAlignment="Center"/>
                             </StackPanel>
@@ -777,8 +777,8 @@
                                     <Border Margin="0,0,0,8" Opacity="0">
                                         <Border.Style>
                                             <Style TargetType="Border">
-                                                <Setter Property="Background"      Value="{StaticResource EveRaisedBg}"/>
-                                                <Setter Property="BorderBrush"     Value="{StaticResource EveHairline}"/>
+                                                <Setter Property="Background"      Value="{DynamicResource EveRaisedBg}"/>
+                                                <Setter Property="BorderBrush"     Value="{DynamicResource EveHairline}"/>
                                                 <Setter Property="BorderThickness" Value="1,1,1,1"/>
                                                 <Setter Property="CornerRadius"    Value="8"/>
                                                 <Style.Triggers>
@@ -855,7 +855,7 @@
             </Grid>
         </Grid>
 
-        <!-- ════════════════════ MOVE PICKER OVERLAY ════════════════════ -->
+        <!-- MOVE PICKER OVERLAY -->
         <Grid Grid.Row="0" Grid.RowSpan="4" Background="#b0050810"
               Visibility="{Binding IsMovePickerOpen, Converter={StaticResource BoolToVisibility}}">
             <Border Style="{StaticResource Card}" Width="360" MaxHeight="440"
@@ -896,7 +896,7 @@
             </Border>
         </Grid>
 
-        <!-- ════════════════════ RENAME OVERLAY ════════════════════ -->
+        <!-- RENAME OVERLAY -->
         <Grid Grid.Row="0" Grid.RowSpan="4" Background="#b0050810"
               Visibility="{Binding IsRenameOpen, Converter={StaticResource BoolToVisibility}}">
             <Border Style="{StaticResource Card}" Width="340"

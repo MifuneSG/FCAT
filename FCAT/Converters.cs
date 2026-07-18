@@ -54,7 +54,7 @@ public class StringToVisibilityConverter : IValueConverter
         => throw new NotImplementedException();
 }
 
-// true → cyan accent (for active-tab underlines), false → transparent
+// true -> cyan accent (for active-tab underlines), false -> transparent
 public class BoolToAccentBrushConverter : IValueConverter
 {
     private static readonly Brush On = new SolidColorBrush(Color.FromRgb(0x4d, 0xb8, 0xd4));
@@ -95,7 +95,7 @@ public class NavActiveConverter : IValueConverter
         => throw new NotImplementedException();
 }
 
-// Same comparison, but yields the cyan accent brush when active and a dim brush otherwise —
+// Same comparison, but yields the cyan accent brush when active and a dim brush otherwise -
 // used to colour the nav icon + label for the active item.
 public class NavActiveBrushConverter : IValueConverter
 {

@@ -40,7 +40,7 @@ public partial class PingViewModel : ObservableObject
         _formupText = settings.Current.FormupSystem;
         _formupId   = settings.Current.FormupSystemId;
 
-        // The FC is normally the main anchor — prefill it (still editable). We already know the
+        // The FC is normally the main anchor - prefill it (still editable). We already know the
         // FC's own character id, so it links in the MOTD without an ESI lookup.
         _mainAnchor = auth.AuthenticatedCharacterName;
         if (auth.AuthenticatedCharacterId > 0)
@@ -91,7 +91,7 @@ public partial class PingViewModel : ObservableObject
         if (init.BoostLinks.Count == 0) init.BoostLinks.AddRange(InitProfileSeed.BoostLinks());
         if (init.LogiLinks.Count  == 0) init.LogiLinks.AddRange(InitProfileSeed.LogiLinks());
 
-        // Doctrines + comms are authoritative from the seed — replace each load so stray test/custom
+        // Doctrines + comms are authoritative from the seed - replace each load so stray test/custom
         // entries never linger (custom typed values are not persisted anywhere).
         init.Doctrines     = InitProfileSeed.Doctrines();
         init.CommsChannels = InitProfileSeed.CommsChannels();
@@ -99,7 +99,7 @@ public partial class PingViewModel : ObservableObject
         _settings.Save();
     }
 
-    // ── Profiles ──
+    // Profiles
     public ObservableCollection<PingProfile> Profiles { get; } = [];
 
     [ObservableProperty] private PingProfile? _selectedProfile;
@@ -131,7 +131,7 @@ public partial class PingViewModel : ObservableObject
         SelectedDoctrine = null;
     }
 
-    // ── Input fields (every change re-renders both outputs) ──
+    // Input fields (every change re-renders both outputs)
     [ObservableProperty] private string _hurf = string.Empty;
     [ObservableProperty] private string _fcName = string.Empty;
     [ObservableProperty] private string _formupText = string.Empty;
@@ -149,8 +149,8 @@ public partial class PingViewModel : ObservableObject
 
     private int  _formupId;
     private bool _suppressSearch;
-    private const int CharacterTypeId   = 1373;                // EVE "Character" type — for showinfo char links
-    private const int SolarSystemTypeId = 5;                   // EVE "Solar System" type — for showinfo system links
+    private const int CharacterTypeId   = 1373;                // EVE "Character" type - for showinfo char links
+    private const int SolarSystemTypeId = 5;                   // EVE "Solar System" type - for showinfo system links
     private readonly Dictionary<string, int?> _charIds = new(StringComparer.OrdinalIgnoreCase);
 
     partial void OnHurfChanged(string value)         => Refresh();
@@ -166,7 +166,7 @@ public partial class PingViewModel : ObservableObject
 
     [RelayCommand] private void ToggleImplants() => ImplantsText = ImplantsText.Equals("No", StringComparison.OrdinalIgnoreCase) ? "Yes" : "No";
 
-    // ── Form-up system (autocomplete, shared/persisted with Settings) ──
+    // Form-up system (autocomplete, shared/persisted with Settings)
     public ObservableCollection<SystemMatch> SystemSuggestions { get; } = [];
 
     partial void OnFormupTextChanged(string value)
@@ -195,7 +195,7 @@ public partial class PingViewModel : ObservableObject
         _settings.Save();
     }
 
-    // ── Comms + Doctrine dropdowns (from the profile) ──
+    // Comms + Doctrine dropdowns (from the profile)
     public ObservableCollection<string>         CommsOptions { get; } = [];   // editable combo: pick or free-type
     public ObservableCollection<DoctrinePreset> Doctrines    { get; } = [];   // pick from the profile's doctrines
 
@@ -207,7 +207,7 @@ public partial class PingViewModel : ObservableObject
         Refresh();
     }
 
-    // ── Character-link resolution for anchors (name → showinfo char link) ──
+    // Character-link resolution for anchors (name -> showinfo char link)
     private async Task ResolveAnchorAsync(string name)
     {
         name = name.Trim();
@@ -237,11 +237,11 @@ public partial class PingViewModel : ObservableObject
         return id > 0 ? $"<url=showinfo:{SolarSystemTypeId}//{id}>{name}</url>" : name;
     }
 
-    // ── Clickable channel links (seeded per profile, e.g. INIT) ──
+    // Clickable channel links (seeded per profile, e.g. INIT)
     public ObservableCollection<CapturedChannel> BoostLinks { get; } = [];
     public ObservableCollection<CapturedChannel> LogiLinks  { get; } = [];
 
-    // ── Outputs ──
+    // Outputs
     public string PingText => BuildPing();
     public string MotdText => BuildMotd();
 
@@ -267,7 +267,7 @@ public partial class PingViewModel : ObservableObject
         const string div = "----------";
         var sb = new StringBuilder();
 
-        // Alliance-specific block (doctrine/ships/implants + channel links) — omitted for Custom.
+        // Alliance-specific block (doctrine/ships/implants + channel links) - omitted for Custom.
         if (IsAlliance)
         {
             var dName = SelectedDoctrine?.Name ?? string.Empty;
@@ -298,7 +298,7 @@ public partial class PingViewModel : ObservableObject
         return sb.ToString();
     }
 
-    // ── Actions ──
+    // Actions
     [RelayCommand]
     private void CopyPing()
     {

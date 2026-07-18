@@ -14,7 +14,10 @@ public class ZkillService(HttpClient httpClient)
 {
     private const string UserAgent = "FCAT/1.1 (Fleet Commander Assistance Tool; +https://github.com/MifuneSG/FCAT)";
 
-    /// <summary>Recent killmails for a system (newest first), or empty on failure.</summary>
+    /// <summary>Recent killmails for a system (newest first), or empty on failure - the intel feed's
+    /// source (/api/systemID/ -> bare array of {killmail_id, zkb}; detail fetched from ESI by hash).
+    /// NOTE: this list is cached and lags a few hours, so it's NOT used for the battle report (which
+    /// needs the fresh fight); see <see cref="GetBattleAsync"/>.</summary>
     public async Task<List<ZkillEntry>> GetRecentSystemKillsAsync(int systemId)
     {
         try
@@ -31,7 +34,32 @@ public class ZkillService(HttpClient httpClient)
         }
         catch
         {
-            return [];   // network/parse hiccup — feed just won't update this tick
+            return [];   // network/parse hiccup - caller just gets nothing this tick
+        }
+    }
+
+    /// <summary>The grouped "battle" at a system + EVE-time (/api/related/&lt;sys&gt;/&lt;yyyyMMddHHmm&gt;/).
+    /// zKill splits the fight into two teams with pilot/ship/alliance names + the zkb ISK value per kill.
+    /// This is the source for the battle report - it has the fresh fight when the systemID list still
+    /// doesn't. Null on failure. Uses a ~1h window around the timestamp (zKill's own grouping).</summary>
+    public async Task<ZkillRelated?> GetBattleAsync(int systemId, DateTime atUtc)
+    {
+        try
+        {
+            var stamp = atUtc.ToString("yyyyMMddHHmm");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"https://zkillboard.com/api/related/{systemId}/{stamp}/");
+            request.Headers.Add("User-Agent", UserAgent);
+            request.Headers.Add("Accept-Encoding", "gzip");
+
+            var response = await httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode) return null;
+
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<ZkillRelated>(json);
+        }
+        catch
+        {
+            return null;
         }
     }
 }

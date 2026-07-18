@@ -5,7 +5,7 @@ using FCAT.Services;
 namespace FCAT.ViewModels;
 
 /// <summary>
-/// The Intel Tools window — combines the intel features on one screen (like the fleet window):
+/// The Intel Tools window - combines the intel features on one screen (like the fleet window):
 /// a Scan panel (d-scan / local), a live System panel (current system + constellation map + hot
 /// systems), and a combined intel Feed (zKill kills + in-game intel channel).
 /// </summary>

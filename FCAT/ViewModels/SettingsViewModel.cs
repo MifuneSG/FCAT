@@ -13,10 +13,10 @@ public partial class SettingsViewModel : ObservableObject
     private readonly SystemSearchService _systemSearch;
     private readonly ShellViewModel _shell;
 
-    /// <summary>The app-lifetime overlay/alert state — bound directly by the overlay controls.</summary>
+    /// <summary>The app-lifetime overlay/alert state - bound directly by the overlay controls.</summary>
     public AlertHub Overlay { get; }
 
-    /// <summary>The shell — exposed so the Settings "Check for updates" control can reach its commands.</summary>
+    /// <summary>The shell - exposed so the Settings "Check for updates" control can reach its commands.</summary>
     public ShellViewModel Shell => _shell;
 
     public SettingsViewModel(SettingsService settings, AlertHub overlay,
@@ -38,11 +38,37 @@ public partial class SettingsViewModel : ObservableObject
         CapTroubleSound    = settings.Current.CapTroubleSound;
         BoostLostSound     = settings.Current.BoostLostSound;
         _alertClearSeconds = settings.Current.AlertClearSeconds;
+        _themeName         = ThemeService.Name(ThemeService.Current);
 
         _ = LoadSystemsAsync();
     }
 
-    // ── Form-up system (autocomplete search) ──
+    // Colour theme
+    // Applies + persists immediately (no Save-button needed) so the switch is instant and remembered.
+    [ObservableProperty] private string _themeName = "Nebula";
+    public bool IsNebula => ThemeName == "Nebula";
+    public bool IsCarbon => ThemeName == "Carbon";
+    public bool IsPhoton => ThemeName == "Photon";
+    public bool IsRust   => ThemeName == "Rust";
+    partial void OnThemeNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsNebula));
+        OnPropertyChanged(nameof(IsCarbon));
+        OnPropertyChanged(nameof(IsPhoton));
+        OnPropertyChanged(nameof(IsRust));
+    }
+
+    [RelayCommand]
+    private void SelectTheme(string name)
+    {
+        var theme = ThemeService.Parse(name);
+        ThemeService.Apply(theme);
+        ThemeName = ThemeService.Name(theme);
+        _settings.Current.Theme = ThemeName;
+        _settings.Save();
+    }
+
+    // Form-up system (autocomplete search)
     [ObservableProperty] private string _formupSystemText = string.Empty;
     [ObservableProperty] private bool   _systemsLoading;
     public ObservableCollection<SystemMatch> SystemSuggestions { get; } = [];
@@ -86,13 +112,13 @@ public partial class SettingsViewModel : ObservableObject
         SystemSuggestions.Clear();
     }
 
-    // ── Alert sounds ──
+    // Alert sounds
     [ObservableProperty] private bool   _alertSoundsEnabled = true;
     [ObservableProperty] private string _tackledSound    = "Alarm";
     [ObservableProperty] private string _capTroubleSound = "Beep";
     [ObservableProperty] private string _boostLostSound  = "Double Beep";
 
-    // ── Auto-clear ──
+    // Auto-clear
     // Free-text seconds entry (like the boost-channel field). Backed by an int; non-numeric or
     // negative input is clamped to 0 (= keep alerts until the session ends).
     private int _alertClearSeconds = 60;

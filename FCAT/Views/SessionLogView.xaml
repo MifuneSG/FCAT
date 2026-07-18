@@ -8,90 +8,233 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d">
 
-    <Grid Background="Transparent">
+    <UserControl.Resources>
+        <!-- One ship line on the loss / kill lists -->
+        <DataTemplate x:Key="BrLine" DataType="{x:Type svc:BattleReportLine}">
+            <Grid Margin="0,0,0,3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding Pilot}" Foreground="{StaticResource EveTextPrimary}"
+                           FontFamily="{StaticResource FontUI}" FontSize="12" TextTrimming="CharacterEllipsis" Margin="0,0,10,0"/>
+                <TextBlock Grid.Column="1" Text="{Binding Ship}" Foreground="{StaticResource EveTextSecondary}"
+                           FontFamily="{StaticResource FontUI}" FontSize="12" TextTrimming="CharacterEllipsis" Margin="0,0,10,0"/>
+                <TextBlock Grid.Column="2" Text="{Binding IskText}" Foreground="{StaticResource EveTextSecondary}"
+                           FontFamily="{StaticResource FontMono}" FontSize="11" VerticalAlignment="Center"/>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid Margin="34,22,34,22">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- Page header -->
-        <Grid Grid.Row="0" Margin="34,24,34,16">
+        <Grid Grid.Row="0" Margin="2,0,2,14">
             <StackPanel VerticalAlignment="Bottom">
                 <TextBlock Text="SESSION" Style="{StaticResource PageEyebrow}"/>
                 <TextBlock Text="After-Action Report" Style="{StaticResource PageTitle}"/>
             </StackPanel>
-            <Button Command="{Binding BackCommand}" Style="{StaticResource GhostButton}" Padding="13,7"
+            <Button Command="{Binding BackCommand}" Style="{StaticResource SecondaryButton}" Padding="13,7"
                     HorizontalAlignment="Right" VerticalAlignment="Bottom">
                 <TextBlock Text="← Back" FontFamily="{StaticResource FontUI}" FontSize="12"/>
             </Button>
         </Grid>
 
-        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="34,0,34,24">
-            <Grid Margin="20,16,20,16">
+        <!-- Report card (flat) -->
+        <Border Grid.Row="1" Background="{DynamicResource EvePanelBg}" BorderBrush="{DynamicResource EveHairline}"
+                BorderThickness="1" CornerRadius="8">
+            <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
+                <!-- Body: battle report (left) timeline (right) -->
                 <Grid Grid.Row="0">
-                    <TextBlock Text="SESSION TIMELINE" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding Log.Summary}" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
-                               HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                </Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="340"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="1.1*" MinWidth="320"/>
+                    </Grid.ColumnDefinitions>
 
-                <Rectangle Grid.Row="1" Height="1" Fill="{StaticResource EveHairline}" Margin="0,10,0,8"/>
+                    <!-- BATTLE REPORT -->
+                    <Grid Grid.Column="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
-                <!-- Empty state -->
-                <StackPanel Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center"
-                            Visibility="{Binding Log.Entries.Count, Converter={StaticResource CountToInvisibility}}">
-                    <TextBlock Text="No events recorded yet" Foreground="{StaticResource EveTextSecondary}"
-                               FontFamily="{StaticResource FontUI}" FontSize="13" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Alerts and fleet changes appear here while a fleet is monitored." Foreground="{StaticResource EveTextDim}"
-                               FontFamily="{StaticResource FontUI}" FontSize="11" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                </StackPanel>
+                        <Border Grid.Row="0" Background="{DynamicResource EveRaisedBg}" BorderBrush="{DynamicResource EveHairline}"
+                                BorderThickness="0,0,0,1" CornerRadius="8,0,0,0" Padding="16,10">
+                            <Grid>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="BATTLE REPORT" FontFamily="{StaticResource FontMono}" FontSize="11"
+                                               Foreground="{StaticResource EveTextSecondary}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Log.BattleReportSystem}" Foreground="{StaticResource EveGoldSoft}"
+                                               FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"
+                                               VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                </StackPanel>
+                                <Button Command="{Binding LoadReportCommand}" Style="{StaticResource GhostButton}" Padding="8,3"
+                                        HorizontalAlignment="Right" IsEnabled="{Binding Log.HasBattleReport}"
+                                        ToolTip="Re-pull kills from zKillboard (they lag a few minutes)">
+                                    <TextBlock Text="↻ Refresh" FontFamily="{StaticResource FontUI}" FontSize="11" Foreground="{DynamicResource EveAccent}"/>
+                                </Button>
+                            </Grid>
+                        </Border>
 
-                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding Log.Entries}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type svc:AarEntry}">
-                                <Grid Margin="0,0,6,4">
+                        <!-- no fight anchored yet -->
+                        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24"
+                                    Visibility="{Binding Log.HasBattleReport, Converter={StaticResource BoolToInvisibility}}">
+                            <TextBlock Text="No fight recorded yet" Foreground="{StaticResource EveTextSecondary}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="13" HorizontalAlignment="Center"/>
+                            <TextBlock Text="A battle report is anchored to the op's first loss." Foreground="{StaticResource EveTextDim}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="11" HorizontalAlignment="Center" Margin="0,4,0,0" TextAlignment="Center"/>
+                        </StackPanel>
+
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="16,14,16,10"
+                                      Visibility="{Binding Log.HasBattleReport, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel>
+                                <!-- Totals -->
+                                <Grid Visibility="{Binding HasReport, Converter={StaticResource BoolToVisibility}}">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="72"/>
-                                        <ColumnDefinition Width="92"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{Binding Time, StringFormat=HH:mm:ss}" Foreground="{StaticResource EveTextDim}"
-                                               FontFamily="{StaticResource FontMono}" FontSize="11" VerticalAlignment="Top"/>
-                                    <Border Grid.Column="1" CornerRadius="4" Padding="6,1" Background="{StaticResource EveRaisedBg}"
-                                            HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,8,0">
-                                        <TextBlock Text="{Binding Category}" Foreground="{StaticResource EveGoldSoft}"
-                                                   FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold"/>
-                                    </Border>
-                                    <TextBlock Grid.Column="2" Text="{Binding Text}" Foreground="{StaticResource EveTextSecondary}"
-                                               FontFamily="{StaticResource FontUI}" FontSize="12" TextWrapping="Wrap"/>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="DESTROYED" Style="{StaticResource SectionLabel}"/>
+                                        <TextBlock Text="{Binding Report.IskDestroyedText}" Foreground="{StaticResource EveGreen}"
+                                                   FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                                        <TextBlock Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11">
+                                            <Run Text="{Binding Report.KillCount, Mode=OneWay}"/><Run Text=" kills"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="LOST" Style="{StaticResource SectionLabel}"/>
+                                        <TextBlock Text="{Binding Report.IskLostText}" Foreground="{StaticResource EveCritical}"
+                                                   FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                                        <TextBlock Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11">
+                                            <Run Text="{Binding Report.LossCount, Mode=OneWay}"/><Run Text=" losses"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="EFFICIENCY" Style="{StaticResource SectionLabel}"/>
+                                        <TextBlock Text="{Binding Report.EfficiencyText}" Foreground="{StaticResource EveGoldSoft}"
+                                                   FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                                        <ProgressBar Value="{Binding Report.Efficiency, Mode=OneWay}" Maximum="100" Height="5"
+                                                     Background="#3a1f22" Foreground="{StaticResource EveGreen}"
+                                                     BorderThickness="0" Margin="0,6,8,0"/>
+                                    </StackPanel>
                                 </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
 
-                <Grid Grid.Row="3" Margin="0,12,0,0">
-                    <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource EveGreen}"
-                               FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Command="{Binding ClearCommand}" Style="{StaticResource GhostButton}" Height="34" Padding="14,0" Margin="0,0,8,0">
-                            <TextBlock Text="Clear" FontFamily="{StaticResource FontUI}" FontSize="12"/>
-                        </Button>
-                        <Button Command="{Binding CopyCommand}" Style="{StaticResource SecondaryButton}" Height="34" Padding="14,0" Margin="0,0,8,0">
-                            <TextBlock Text="Copy" FontFamily="{StaticResource FontUI}" FontSize="12"/>
-                        </Button>
-                        <Button Command="{Binding SaveCommand}" Style="{StaticResource PrimaryButton}" Height="34" Padding="18,0">
-                            <TextBlock Text="Save .md" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
-                        </Button>
-                    </StackPanel>
+                                <!-- Losses (SRP) -->
+                                <StackPanel Margin="0,16,0,0" Visibility="{Binding Report.HasLosses, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="LOSSES · SRP" Style="{StaticResource SectionLabel}" Margin="0,0,0,5"/>
+                                    <ItemsControl ItemsSource="{Binding Report.Losses}" ItemTemplate="{StaticResource BrLine}"/>
+                                </StackPanel>
+
+                                <!-- Kills -->
+                                <StackPanel Margin="0,16,0,0" Visibility="{Binding Report.HasKills, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="KILLS" Style="{StaticResource SectionLabel}" Margin="0,0,0,5"/>
+                                    <ItemsControl ItemsSource="{Binding Report.Kills}" ItemTemplate="{StaticResource BrLine}"/>
+                                </StackPanel>
+
+                                <TextBlock Text="{Binding ReportStatus}" Foreground="{StaticResource EveTextDim}"
+                                           FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,14,0,0" TextWrapping="Wrap"
+                                           Visibility="{Binding ReportStatus, Converter={StaticResource StringToVisibility}}"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <!-- vertical divider -->
+                    <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource EveHairline}"/>
+
+                    <!-- TIMELINE -->
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Background="{DynamicResource EveRaisedBg}" BorderBrush="{DynamicResource EveHairline}"
+                                BorderThickness="0,0,0,1" CornerRadius="0,8,0,0" Padding="16,10">
+                            <Grid>
+                                <TextBlock Text="SESSION TIMELINE" FontFamily="{StaticResource FontMono}" FontSize="11"
+                                           Foreground="{StaticResource EveTextSecondary}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Log.Summary}" FontFamily="{StaticResource FontMono}" FontSize="11"
+                                           Foreground="{StaticResource EveTextDim}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Empty state -->
+                        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                    Visibility="{Binding Log.Entries.Count, Converter={StaticResource CountToInvisibility}}">
+                            <TextBlock Text="No events recorded yet" Foreground="{StaticResource EveTextSecondary}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="13" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Alerts and fleet changes are logged here while a fleet is monitored." Foreground="{StaticResource EveTextDim}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="11" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                        </StackPanel>
+
+                        <!-- Timeline: dense monospace rows -->
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,4,0,4">
+                            <ItemsControl ItemsSource="{Binding Log.Entries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type svc:AarEntry}">
+                                        <Border Padding="16,5" BorderBrush="{DynamicResource EveHairlineSoft}" BorderThickness="0,0,0,1">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="66"/>
+                                                    <ColumnDefinition Width="104"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="{Binding Time, StringFormat=HH:mm:ss}"
+                                                           FontFamily="{StaticResource FontMono}" FontSize="12"
+                                                           Foreground="{StaticResource EveTextDim}" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding Category}"
+                                                           FontFamily="{StaticResource FontMono}" FontSize="11" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource EveGold}" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding Text}"
+                                                           FontFamily="{StaticResource FontUI}" FontSize="12.5"
+                                                           Foreground="{StaticResource EveTextPrimary}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
                 </Grid>
+
+                <!-- Footer bar -->
+                <Border Grid.Row="1" Background="{DynamicResource EveRaisedBg}" BorderBrush="{DynamicResource EveHairline}"
+                        BorderThickness="0,1,0,0" CornerRadius="0,0,8,8" Padding="16,10">
+                    <Grid>
+                        <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource EveAccent}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Command="{Binding OpenBattleReportCommand}" Style="{StaticResource SecondaryButton}" Height="32" Padding="13,0" Margin="0,0,8,0"
+                                    Visibility="{Binding Log.HasBattleReport, Converter={StaticResource BoolToVisibility}}"
+                                    ToolTip="Open the zKillboard battle report for this fight (system + time)">
+                                <TextBlock Text="Battle Report ↗" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                            </Button>
+                            <Button Command="{Binding ClearCommand}" Style="{StaticResource SecondaryButton}" Height="32" Padding="14,0" Margin="0,0,8,0">
+                                <TextBlock Text="Clear" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                            </Button>
+                            <Button Command="{Binding CopyCommand}" Style="{StaticResource SecondaryButton}" Height="32" Padding="14,0" Margin="0,0,8,0"
+                                    ToolTip="Copy the AAR as plain text — pastes cleanly into Discord">
+                                <TextBlock Text="Copy" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                            </Button>
+                            <Button Command="{Binding SaveCommand}" Style="{StaticResource PrimaryButton}" Height="32" Padding="16,0">
+                                <TextBlock Text="Save .md" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
             </Grid>
         </Border>
     </Grid>

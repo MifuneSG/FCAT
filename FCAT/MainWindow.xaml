@@ -7,10 +7,13 @@
         Title="FCAT — Fleet Commander Assistance Tool"
         Icon="fcat.ico"
         Height="820" Width="1280"
-        MinHeight="640" MinWidth="960"
+        MinHeight="560" MinWidth="800"
         WindowStyle="None"
         ResizeMode="CanResize"
-        Background="#0b0e14">
+        Background="{DynamicResource EveWindowBg}"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
 
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="46" ResizeBorderThickness="6"
@@ -18,16 +21,14 @@
     </WindowChrome.WindowChrome>
 
     <Grid>
-        <!-- ══════════════════════════════════════
-             BACKDROP — near-black base, faint star field, one soft cool glow.
-        ══════════════════════════════════════ -->
+        <!-- BACKDROP - near-black base, faint star field, one soft cool glow. -->
         <Grid IsHitTestVisible="False">
             <Rectangle>
                 <Rectangle.Fill>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                        <GradientStop Color="#0b0e14" Offset="0"/>
-                        <GradientStop Color="#0a0d13" Offset="0.55"/>
-                        <GradientStop Color="#080a10" Offset="1"/>
+                        <GradientStop Color="{DynamicResource EveBackdropTopColor}" Offset="0"/>
+                        <GradientStop Color="{DynamicResource EveBackdropMidColor}" Offset="0.55"/>
+                        <GradientStop Color="{DynamicResource EveBackdropBotColor}" Offset="1"/>
                     </LinearGradientBrush>
                 </Rectangle.Fill>
             </Rectangle>
@@ -36,7 +37,7 @@
                     <DrawingBrush TileMode="Tile" Viewport="0,0,360,360" ViewportUnits="Absolute">
                         <DrawingBrush.Drawing>
                             <DrawingGroup>
-                                <GeometryDrawing Brush="#6b7593">
+                                <GeometryDrawing Brush="#6a6a90">
                                     <GeometryDrawing.Geometry>
                                         <GeometryGroup>
                                             <EllipseGeometry Center="40,28"   RadiusX="0.9" RadiusY="0.9"/>
@@ -68,26 +69,26 @@
                 </Rectangle.Fill>
             </Rectangle>
             <Rectangle HorizontalAlignment="Left" VerticalAlignment="Top"
-                       Width="1100" Height="760" Margin="-320,-260,0,0" Opacity="0.5">
+                       Width="1100" Height="760" Margin="-320,-260,0,0" Opacity="0.28">
                 <Rectangle.Fill>
                     <RadialGradientBrush GradientOrigin="0.42,0.42">
-                        <GradientStop Color="#13315f" Offset="0"/>
-                        <GradientStop Color="#0c1d3a" Offset="0.45"/>
+                        <GradientStop Color="{DynamicResource EveGlowTopColor}" Offset="0"/>
+                        <GradientStop Color="{DynamicResource EveGlowMidColor}" Offset="0.45"/>
                         <GradientStop Color="Transparent" Offset="1"/>
                     </RadialGradientBrush>
                 </Rectangle.Fill>
             </Rectangle>
         </Grid>
 
-        <!-- ══ Foreground: top bar + (nav rail | content) ══ -->
+        <!-- Foreground: top bar + (nav rail | content) -->
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="46"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- ════════ TOP BAR ════════ -->
-            <Grid Grid.Row="0" Background="#cc0a0d13">
+            <!-- TOP BAR -->
+            <Grid Grid.Row="0" Background="{DynamicResource EveTopBarBrush}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
@@ -96,7 +97,7 @@
 
                 <!-- Logo / wordmark -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
-                    <TextBlock Text="◆" Foreground="{StaticResource EveAccent}" FontSize="15"
+                    <TextBlock Text="◆" Foreground="{DynamicResource EveAccent}" FontSize="15"
                                VerticalAlignment="Center" Margin="0,0,8,0"/>
                     <TextBlock Text="FCAT" Foreground="{StaticResource EveTextPrimary}"
                                FontFamily="{StaticResource FontUI}" FontSize="14" FontWeight="SemiBold"
@@ -118,10 +119,10 @@
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border x:Name="ub" CornerRadius="5" Padding="9,3"
-                                        Background="#1d2c3a" BorderBrush="{StaticResource EveAccent}" BorderThickness="1">
+                                        Background="#1d2c3a" BorderBrush="{DynamicResource EveAccent}" BorderThickness="1">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="↻" Foreground="{StaticResource EveAccent}" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock Foreground="{StaticResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center">
+                                        <TextBlock Text="↻" Foreground="{DynamicResource EveAccent}" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center">
                                             <Run Text="UPDATE"/><Run Text=" "/><Run Text="{Binding UpdateVersion, Mode=OneWay}"/>
                                         </TextBlock>
                                     </StackPanel>
@@ -158,16 +159,16 @@
                 </StackPanel>
             </Grid>
 
-            <!-- ════════ BODY ════════ -->
+            <!-- BODY -->
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- ── NAV RAIL ── -->
-                <Border Grid.Column="0" Width="68" Background="#990a0d13"
-                        BorderBrush="{StaticResource EveHairlineSoft}" BorderThickness="0,0,1,0"
+                <!-- NAV RAIL -->
+                <Border Grid.Column="0" Width="68" Background="{DynamicResource EveNavRailBrush}"
+                        BorderBrush="{DynamicResource EveHairlineSoft}" BorderThickness="0,0,1,0"
                         Visibility="{Binding IsLoggedIn, Converter={StaticResource BoolToVisibility}}">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -179,32 +180,32 @@
                             <Button Style="{StaticResource NavRailButton}" Tag="main" Command="{Binding NavMainCommand}">
                                 <StackPanel>
                                     <TextBlock Text="⌂" FontSize="18" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="MAIN" FontSize="8" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="MAIN" FontSize="9.5" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{StaticResource EveTextSecondary}"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource NavRailButton}" Tag="fleet" Command="{Binding NavFleetCommand}">
                                 <StackPanel>
                                     <TextBlock Text="⧉" FontSize="18" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="FLEET" FontSize="8" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="FLEET" FontSize="9.5" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{StaticResource EveTextSecondary}"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource NavRailButton}" Tag="intel" Command="{Binding NavIntelCommand}">
                                 <StackPanel>
                                     <TextBlock Text="◎" FontSize="18" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="INTEL" FontSize="8" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="INTEL" FontSize="9.5" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{StaticResource EveTextSecondary}"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource NavRailButton}" Tag="ping" Command="{Binding NavPingCommand}">
                                 <StackPanel>
                                     <TextBlock Text="◇" FontSize="18" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="PING" FontSize="8" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="PING" FontSize="9.5" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{StaticResource EveTextSecondary}"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource NavRailButton}" Tag="alerts" Command="{Binding NavAlertsCommand}">
                                 <Grid>
                                     <StackPanel>
                                         <TextBlock Text="⚠" FontSize="17" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="ALERTS" FontSize="8" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="ALERTS" FontSize="9.5" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{StaticResource EveTextSecondary}"/>
                                     </StackPanel>
                                     <!-- live alert-count badge -->
                                     <Border Background="{StaticResource EveCritical}" CornerRadius="8"
@@ -220,12 +221,12 @@
                             <Button Style="{StaticResource NavRailButton}" Tag="setup" Command="{Binding NavSetupCommand}">
                                 <StackPanel>
                                     <TextBlock Text="⚙" FontSize="17" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="SETUP" FontSize="8" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="SETUP" FontSize="9.5" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{StaticResource EveTextSecondary}"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
 
-                        <!-- avatar pinned to the bottom — opens the account / character manager -->
+                        <!-- avatar pinned to the bottom - opens the account / character manager -->
                         <Button Grid.Row="1" Command="{Binding NavAccountCommand}" Cursor="Hand"
                                 Margin="0,12,0,16" HorizontalAlignment="Center"
                                 Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}"
@@ -233,9 +234,9 @@
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border x:Name="ring" Width="40" Height="40" CornerRadius="20" Background="#11304a"
-                                            BorderBrush="{StaticResource EveHairlineStrong}" BorderThickness="1">
+                                            BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1">
                                         <Grid>
-                                            <TextBlock Text="{Binding CharacterInitials}" Foreground="{StaticResource EveAccent}"
+                                            <TextBlock Text="{Binding CharacterInitials}" Foreground="{DynamicResource EveAccent}"
                                                        FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             <Border CornerRadius="20">
@@ -248,10 +249,10 @@
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="ring" Property="BorderBrush" Value="{StaticResource EveAccent}"/>
+                                            <Setter TargetName="ring" Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
                                         </Trigger>
                                         <DataTrigger Binding="{Binding ActiveNav}" Value="account">
-                                            <Setter TargetName="ring" Property="BorderBrush" Value="{StaticResource EveAccent}"/>
+                                            <Setter TargetName="ring" Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
                                             <Setter TargetName="ring" Property="BorderThickness" Value="2"/>
                                         </DataTrigger>
                                     </ControlTemplate.Triggers>
@@ -261,7 +262,7 @@
                     </Grid>
                 </Border>
 
-                <!-- ── PAGE CONTENT ── -->
+                <!-- PAGE CONTENT -->
                 <ContentControl Grid.Column="1" Content="{Binding CurrentPage}"/>
             </Grid>
         </Grid>

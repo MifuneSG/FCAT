@@ -16,11 +16,13 @@ public partial class ShellViewModel : ObservableObject
     private readonly SessionLog _sessionLog;
     private readonly SystemSearchService _systemSearch;
     private readonly ZkillService _zkill;
+    private readonly BattleReportService _battleReport;
     private readonly UpdaterService _updater;
 
     public ShellViewModel(EsiAuthService auth, EsiService esi, CombatLogService combatLog,
                           SettingsService settings, AlertHub alertHub, SessionLog sessionLog,
-                          SystemSearchService systemSearch, ZkillService zkill, UpdaterService updater)
+                          SystemSearchService systemSearch, ZkillService zkill,
+                          BattleReportService battleReport, UpdaterService updater)
     {
         _auth = auth;
         _esi = esi;
@@ -30,6 +32,7 @@ public partial class ShellViewModel : ObservableObject
         _sessionLog = sessionLog;
         _systemSearch = systemSearch;
         _zkill = zkill;
+        _battleReport = battleReport;
         _updater = updater;
         _auth.ActiveCharacterChanged += OnActiveCharacterChanged;
         CurrentPage = new LoginViewModel(_auth, this);
@@ -47,7 +50,7 @@ public partial class ShellViewModel : ObservableObject
             Application.Current.Dispatcher.Invoke(ShowMenu);
     }
 
-    // ── Auto-update ──
+    // Auto-update
     [ObservableProperty] private bool   _updateReady;     // a new version is downloaded and ready
     [ObservableProperty] private string _updateVersion = string.Empty;
     [ObservableProperty] private string _updateStatus = string.Empty;   // shown on the Settings button
@@ -85,7 +88,7 @@ public partial class ShellViewModel : ObservableObject
 
     [RelayCommand] private void ApplyUpdate() => _updater.ApplyAndRestart();
 
-    // ── Demo / Sandbox mode ──
+    // Demo / Sandbox mode
     // Runs the app against a synthetic fleet so the FC can exercise Fleet Ops, the dashboard
     // fleet card + readiness, and the alert flow without a live fleet. Intel stays real.
     [ObservableProperty] private bool _demoMode;
@@ -117,6 +120,7 @@ public partial class ShellViewModel : ObservableObject
             (AlertType.DpsLoss,    "",             "~50% of DPS lost — 8 of 16 ships down"),
             (AlertType.CapTrouble, "",             "Large Micro Jump Drive"),
         };
+        _sessionLog.MarkCombat(DemoData.StagingSystemId, DemoData.StagingName);   // give the demo AAR a battle report
         foreach (var (type, attacker, detail) in script)
         {
             await Task.Delay(1400);
@@ -131,7 +135,7 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     private ObservableObject _currentPage = null!;
 
-    // ── Persistent shell chrome (nav rail + top bar) ──
+    // Persistent shell chrome (nav rail + top bar)
     // The nav shell is hidden on the login page and shown once a character is authenticated.
     [ObservableProperty] private bool _isLoggedIn;
 
@@ -141,7 +145,7 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty] private string _shellCharacterName = string.Empty;
     [ObservableProperty] private string _shellPortraitUrl = string.Empty;
 
-    /// <summary>Two-letter avatar fallback, e.g. "Mara Voidwalker" → "MV".</summary>
+    /// <summary>Two-letter avatar fallback, e.g. "Mara Voidwalker" -> "MV".</summary>
     public string CharacterInitials
     {
         get
@@ -156,7 +160,7 @@ public partial class ShellViewModel : ObservableObject
 
     partial void OnShellCharacterNameChanged(string value) => OnPropertyChanged(nameof(CharacterInitials));
 
-    /// <summary>The alert hub — nav-rail badge binds to its live alert count.</summary>
+    /// <summary>The alert hub - nav-rail badge binds to its live alert count.</summary>
     public AlertHub Hub => _alertHub;
 
     private void PopulateShellIdentity()
@@ -166,14 +170,14 @@ public partial class ShellViewModel : ObservableObject
         ShellPortraitUrl = $"https://images.evetech.net/characters/{_auth.AuthenticatedCharacterId}/portrait?size=64";
     }
 
-    // ── Nav-rail commands ──
+    // Nav-rail commands
     [RelayCommand] private void NavMain()  => ShowMenu();
     [RelayCommand] private void NavIntel() => ShowIntel();
     [RelayCommand] private void NavPing()  => ShowPing();
     [RelayCommand] private void NavSetup() => ShowSettings();
     [RelayCommand] private void NavAccount() => ShowAccount();
 
-    /// <summary>The account manager — add/switch characters + the alt status board.</summary>
+    /// <summary>The account manager - add/switch characters + the alt status board.</summary>
     public void ShowAccount()
     {
         ActiveNav = "account";
@@ -197,7 +201,7 @@ public partial class ShellViewModel : ObservableObject
         });
     }
 
-    /// <summary>Latest fleet id the dashboard detected — lets the nav rail enter ops directly.</summary>
+    /// <summary>Latest fleet id the dashboard detected - lets the nav rail enter ops directly.</summary>
     [ObservableProperty] private long _detectedFleetId;
 
     /// <summary>True when there's something to enter: a live session or a detected fleet.</summary>
@@ -220,7 +224,7 @@ public partial class ShellViewModel : ObservableObject
     [RelayCommand]
     private void NavAlerts() => ShowAlerts();
 
-    /// <summary>The session alert feed — a standalone page over the app-lifetime AlertHub.</summary>
+    /// <summary>The session alert feed - a standalone page over the app-lifetime AlertHub.</summary>
     public void ShowAlerts()
     {
         ActiveNav = "alerts";
@@ -247,7 +251,7 @@ public partial class ShellViewModel : ObservableObject
 
     public void ShowSessionLog()
     {
-        CurrentPage = new SessionLogViewModel(_sessionLog, this);
+        CurrentPage = new SessionLogViewModel(_sessionLog, _battleReport, this);
     }
 
     public void ShowPing()
@@ -256,7 +260,7 @@ public partial class ShellViewModel : ObservableObject
         CurrentPage = new PingViewModel(_settings, _systemSearch, _esi, _auth, this);
     }
 
-    // Intel tools — single combined window; reused so ESI lookups stay cached across visits.
+    // Intel tools - single combined window; reused so ESI lookups stay cached across visits.
     private IntelViewModel? _intel;
     public void ShowIntel()
     {

@@ -14,7 +14,7 @@ public partial class AlertOverlayWindow : Window
         if (e.ButtonState == MouseButtonState.Pressed) DragMove();
     }
 
-    // ── Click-through toggle (so a locked overlay doesn't steal clicks from the game) ──
+    // Click-through toggle (so a locked overlay doesn't steal clicks from the game)
     [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hwnd, int index);
     [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hwnd, int index, int newStyle);
 

@@ -142,7 +142,7 @@ public class EsiNameResult
     public string Category { get; set; } = string.Empty;
 }
 
-/// <summary>Result of POST /v1/universe/ids/ — resolves names to typed IDs.</summary>
+/// <summary>Result of POST /v1/universe/ids/ - resolves names to typed IDs.</summary>
 public class UniverseIdsResult
 {
     [JsonPropertyName("characters")]
@@ -152,14 +152,14 @@ public class UniverseIdsResult
     public List<EsiNameResult>? InventoryTypes { get; set; }
 }
 
-/// <summary>Minimal info from GET /v1/universe/groups/{id}/ — used to tell ships from drones/structures.</summary>
+/// <summary>Minimal info from GET /v1/universe/groups/{id}/ - used to tell ships from drones/structures.</summary>
 public class EsiGroupInfo
 {
     [JsonPropertyName("category_id")]
     public int CategoryId { get; set; }   // 6 = Ship
 }
 
-/// <summary>One entry from POST /v1/characters/affiliation/ — a pilot's corp/alliance.</summary>
+/// <summary>One entry from POST /v1/characters/affiliation/ - a pilot's corp/alliance.</summary>
 public class CharAffiliation
 {
     [JsonPropertyName("character_id")]   public int  CharacterId   { get; set; }
@@ -168,7 +168,7 @@ public class CharAffiliation
     [JsonPropertyName("faction_id")]     public int? FactionId     { get; set; }
 }
 
-// ── System intel ──
+// System intel
 public class EsiSystem
 {
     [JsonPropertyName("system_id")]        public int      SystemId        { get; set; }
@@ -243,22 +243,34 @@ public class CharacterShip
     [JsonPropertyName("ship_name")]    public string ShipName   { get; set; } = string.Empty;
 }
 
-// ── Killmail (ESI detail, for the intel feed) ──
+// Killmail (ESI detail, for the intel feed + battle report)
 public class EsiKillmail
 {
     [JsonPropertyName("killmail_id")]    public long     KillmailId    { get; set; }
     [JsonPropertyName("killmail_time")]  public DateTime KillmailTime  { get; set; }
     [JsonPropertyName("solar_system_id")] public int     SolarSystemId { get; set; }
     [JsonPropertyName("victim")]         public EsiKillmailVictim? Victim { get; set; }
+    [JsonPropertyName("attackers")]      public List<EsiKillmailAttacker>? Attackers { get; set; }
 }
 
 public class EsiKillmailVictim
 {
-    [JsonPropertyName("character_id")]   public int? CharacterId { get; set; }
-    [JsonPropertyName("ship_type_id")]   public int  ShipTypeId  { get; set; }
+    [JsonPropertyName("character_id")]   public int? CharacterId   { get; set; }
+    [JsonPropertyName("corporation_id")] public int? CorporationId { get; set; }
+    [JsonPropertyName("alliance_id")]    public int? AllianceId    { get; set; }
+    [JsonPropertyName("ship_type_id")]   public int  ShipTypeId    { get; set; }
 }
 
-/// <summary>A zKillboard list entry — id + the "zkb" envelope (hash, value). Detail comes from ESI.</summary>
+/// <summary>One attacker on a killmail - used to tell which side landed the kill.</summary>
+public class EsiKillmailAttacker
+{
+    [JsonPropertyName("character_id")]   public int? CharacterId   { get; set; }
+    [JsonPropertyName("corporation_id")] public int? CorporationId { get; set; }
+    [JsonPropertyName("alliance_id")]    public int? AllianceId    { get; set; }
+    [JsonPropertyName("final_blow")]     public bool FinalBlow     { get; set; }
+}
+
+/// <summary>A zKillboard list entry - id + the "zkb" envelope (hash, value). Detail comes from ESI.</summary>
 public class ZkillEntry
 {
     [JsonPropertyName("killmail_id")] public long KillmailId { get; set; }
@@ -268,6 +280,39 @@ public class ZkbInfo
 {
     [JsonPropertyName("hash")]       public string Hash       { get; set; } = string.Empty;
     [JsonPropertyName("totalValue")] public double TotalValue { get; set; }
+}
+
+// zKill "related" battle endpoint (/api/related/<sys>/<yyyyMMddHHmm>/)
+// The reliable source for a fight's kills: zKill groups the killmails into two teams and hands back
+// pilot/ship/alliance names + the zkb ISK value per kill, all in one call. (The /api/systemID/ list
+// is cached and lags hours behind, so it misses a fresh fight - this endpoint doesn't.)
+public class ZkillRelated
+{
+    [JsonPropertyName("summary")] public ZkillBattleSummary? Summary { get; set; }
+}
+public class ZkillBattleSummary
+{
+    [JsonPropertyName("teamA")] public ZkillTeam? TeamA { get; set; }
+    [JsonPropertyName("teamB")] public ZkillTeam? TeamB { get; set; }
+}
+public class ZkillTeam
+{
+    [JsonPropertyName("list")]  public List<ZkillTeamShip>? List  { get; set; }   // every ship involved
+    [JsonPropertyName("kills")] public Dictionary<string, ZkillTeamKill>? Kills { get; set; }  // killID -> detail (value)
+}
+public class ZkillTeamShip
+{
+    [JsonPropertyName("killID")]        public long?   KillId        { get; set; }   // set only when this ship died
+    [JsonPropertyName("isVictim")]      public bool    IsVictim      { get; set; }
+    [JsonPropertyName("characterID")]   public int?    CharacterId   { get; set; }
+    [JsonPropertyName("characterName")] public string? CharacterName { get; set; }
+    [JsonPropertyName("shipName")]      public string? ShipName      { get; set; }
+    [JsonPropertyName("allianceID")]    public int?    AllianceId    { get; set; }
+    [JsonPropertyName("corporationID")] public int?    CorporationId { get; set; }
+}
+public class ZkillTeamKill
+{
+    [JsonPropertyName("zkb")] public ZkbInfo? Zkb { get; set; }   // reuses ZkbInfo (hash + totalValue)
 }
 
 /// <summary>Minimal type info returned by GET /v3/universe/types/{typeId}/</summary>

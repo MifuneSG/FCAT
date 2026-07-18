@@ -28,7 +28,7 @@ public partial class MainWindow : Window
 
         StateChanged += (_, _) => MaxButton.Content = WindowState == WindowState.Maximized ? "❐" : "▢";
 
-        // Frameless windows maximize over the taskbar by default — hook WM_GETMINMAXINFO
+        // Frameless windows maximize over the taskbar by default - hook WM_GETMINMAXINFO
         // to clamp the maximized size to the monitor's work area.
         SourceInitialized += (_, _) =>
         {
@@ -40,7 +40,7 @@ public partial class MainWindow : Window
         Loaded += (_, _) => UpdateOverlay();
     }
 
-    // ── Maximize-to-work-area (respect the taskbar) ──
+    // Maximize-to-work-area (respect the taskbar)
     private static IntPtr WindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
         const int WM_GETMINMAXINFO = 0x0024;
@@ -75,7 +75,7 @@ public partial class MainWindow : Window
     [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hwnd, int flags);
     [DllImport("user32.dll")] private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
 
-    // ── Frameless window controls ──
+    // Frameless window controls
     private void OnMinimize(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
 
     private void OnMaximizeRestore(object sender, RoutedEventArgs e) =>

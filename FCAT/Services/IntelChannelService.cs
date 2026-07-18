@@ -30,7 +30,7 @@ public partial class IntelChannelService : IDisposable
     /// <summary>Filename prefix of the intel channel to read (e.g. "Intel").</summary>
     public string ChannelPrefix { get; set; } = "Intel";
 
-    /// <summary>Current region — only an intel channel whose name matches it is read (regional channels
+    /// <summary>Current region - only an intel channel whose name matches it is read (regional channels
     /// spam constantly, so we ignore the ones for regions the fleet isn't in). Null = no region filter.</summary>
     public string? RegionFilter { get; set; }
 
@@ -72,7 +72,7 @@ public partial class IntelChannelService : IDisposable
 
         if (latest == null)
         {
-            // No intel channel for the current region — show nothing rather than another region's spam.
+            // No intel channel for the current region - show nothing rather than another region's spam.
             _watchedFile = null;
             ActiveChannel = null;
             return;
@@ -95,7 +95,7 @@ public partial class IntelChannelService : IDisposable
                  .FirstOrDefault();
 
     /// <summary>True if the channel's name matches the current region (or there's no region filter).
-    /// Handles abbreviations like "I. Ftn Intel" → "Fountain" via a subsequence check.</summary>
+    /// Handles abbreviations like "I. Ftn Intel" -> "Fountain" via a subsequence check.</summary>
     private bool MatchesRegion(string filePath)
     {
         if (string.IsNullOrWhiteSpace(RegionFilter)) return true;
@@ -107,7 +107,7 @@ public partial class IntelChannelService : IDisposable
             .Where(t => t.Length >= 2 && !t.Equals("Intel", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        if (tokens.Count == 0) return true;   // a plain "Intel" channel isn't region-specific → always read
+        if (tokens.Count == 0) return true;   // a plain "Intel" channel isn't region-specific -> always read
         return tokens.Any(t => region.Contains(t, StringComparison.OrdinalIgnoreCase) || IsSubsequence(t, region));
     }
 
@@ -157,7 +157,7 @@ public partial class IntelChannelService : IDisposable
             using var stream = new FileStream(_watchedFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
             // On first attach, start ~24 KB before the end so the feed shows recent reports immediately
-            // (not the whole — possibly huge — history). Keep the offset even for UTF-16 alignment;
+            // (not the whole - possibly huge - history). Keep the offset even for UTF-16 alignment;
             // a partial first line just fails the regex and is skipped.
             if (!_seekedToEnd)
             {
@@ -187,7 +187,7 @@ public partial class IntelChannelService : IDisposable
         if (speaker.Equals("EVE System", StringComparison.OrdinalIgnoreCase)) return;   // MOTD/system lines
 
         var raw = m.Groups[3].Value;
-        // Drop kill links people paste into intel — EVE uses a "killReport:" url tag for them.
+        // Drop kill links people paste into intel - EVE uses a "killReport:" url tag for them.
         if (raw.Contains("killReport:", StringComparison.OrdinalIgnoreCase) ||
             raw.Contains("zkillboard.com", StringComparison.OrdinalIgnoreCase))
             return;

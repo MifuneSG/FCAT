@@ -6,7 +6,7 @@ using FCAT.Services;
 
 namespace FCAT.ViewModels;
 
-/// <summary>One row on the character board — live status for one authorized character.</summary>
+/// <summary>One row on the character board - live status for one authorized character.</summary>
 public partial class CharacterRow : ObservableObject
 {
     public int    CharacterId { get; init; }
@@ -18,7 +18,7 @@ public partial class CharacterRow : ObservableObject
     [ObservableProperty] private bool   _online;
     [ObservableProperty] private string _systemName = "—";
     [ObservableProperty] private string _shipName   = "—";
-    [ObservableProperty] private string _dockText   = string.Empty;   // "⚓ Docked · X" / "In space"
+    [ObservableProperty] private string _dockText   = string.Empty;   // " Docked · X" / "In space"
     [ObservableProperty] private string _fleetText  = string.Empty;   // "In your fleet" / "In fleet"
 
     /// <summary>Set by the VM so a role change from the combo box persists to the store.</summary>
@@ -66,7 +66,7 @@ public partial class AccountViewModel : ObservableObject
         }
     }
 
-    // ── Live polling (page-scoped) ──
+    // Live polling (page-scoped)
     public void StartAuto() { _cts = new CancellationTokenSource(); _ = PollLoop(_cts.Token); }
     public void StopAuto()  { _cts?.Cancel(); }
 

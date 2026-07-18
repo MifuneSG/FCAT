@@ -68,7 +68,7 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
     public async Task<FleetInfo?> GetFleetInfoAsync(long fleetId)
         => await GetAuthenticatedAsync<FleetInfo>($"/v1/fleets/{fleetId}/");
 
-    // ── Fleet write operations (require the logged-in char to be fleet boss) ──
+    // Fleet write operations (require the logged-in char to be fleet boss)
 
     /// <summary>Removes a member from the fleet. member_id is the pilot's character_id.</summary>
     public async Task<bool> KickFleetMemberAsync(long fleetId, int characterId)
@@ -77,7 +77,7 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
 
     /// <summary>
     /// Moves a member to a new role/position. ESI requires different fields per role:
-    /// fleet_commander → none; wing_commander → wing only; squad_* → wing + squad.
+    /// fleet_commander -> none; wing_commander -> wing only; squad_* -> wing + squad.
     /// </summary>
     public async Task<bool> MoveFleetMemberAsync(long fleetId, int characterId,
                                                  string role, long? wingId, long? squadId)
@@ -193,7 +193,7 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
         return result;
     }
 
-    /// <summary>Resolves inventory type names → type IDs via POST /v1/universe/ids/ (public).</summary>
+    /// <summary>Resolves inventory type names -> type IDs via POST /v1/universe/ids/ (public).</summary>
     public async Task<Dictionary<string, int>> ResolveTypeIdsAsync(IEnumerable<string> names)
     {
         var list = names.Select(n => n.Trim()).Where(n => n.Length > 0)
@@ -219,7 +219,7 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
         return result;
     }
 
-    // ── System intel ──
+    // System intel
     public async Task<int?> ResolveSystemIdAsync(string name)
     {
         if (string.IsNullOrWhiteSpace(name)) return null;
@@ -231,7 +231,7 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
         if (!response.IsSuccessStatusCode) return null;
         var json = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<UniverseIdsResult>(json);
-        // /universe/ids/ returns systems under a "systems" array — reuse a small inline read
+        // /universe/ids/ returns systems under a "systems" array - reuse a small inline read
         using var doc = System.Text.Json.JsonDocument.Parse(json);
         if (doc.RootElement.TryGetProperty("systems", out var systems) && systems.GetArrayLength() > 0)
             return systems[0].GetProperty("id").GetInt32();
@@ -245,7 +245,7 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
     public async Task<EsiConstellation?> GetConstellationAsync(int id) => await GetPublicAsync<EsiConstellation>($"/v1/universe/constellations/{id}/");
     public async Task<string?>           GetRegionNameAsync(int id)    => (await GetPublicAsync<EsiNameOnly>($"/v1/universe/regions/{id}/"))?.Name;
 
-    /// <summary>Full killmail detail (public — needs the killmail id + zKill hash).</summary>
+    /// <summary>Full killmail detail (public - needs the killmail id + zKill hash).</summary>
     public async Task<EsiKillmail?> GetKillmailAsync(long killmailId, string hash)
         => await GetPublicAsync<EsiKillmail>($"/v1/killmails/{killmailId}/{hash}/");
 
@@ -266,7 +266,7 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
     public async Task<CharacterShip?> GetCharacterShipAsync(int characterId)
         => await GetAuthenticatedAsync<CharacterShip>($"/v2/characters/{characterId}/ship/", characterId);
 
-    /// <summary>Resolves character names → IDs via POST /v1/universe/ids/ (public, batched).</summary>
+    /// <summary>Resolves character names -> IDs via POST /v1/universe/ids/ (public, batched).</summary>
     public async Task<Dictionary<string, int>> ResolveCharacterIdsAsync(IEnumerable<string> names)
     {
         var list = names.Select(n => n.Trim()).Where(n => n.Length > 0)

@@ -9,13 +9,13 @@ using FCAT.Services;
 
 namespace FCAT.ViewModels;
 
-/// <summary>One result row — a ship type (d-scan) or an affiliation (local).</summary>
+/// <summary>One result row - a ship type (d-scan) or an affiliation (local).</summary>
 public record DScanShip(string TypeName, int Count, string RoleTag, Brush Color);
 
 /// <summary>
 /// Combined scan tool: paste a directional scan OR your Local member list into one box and
-/// Analyze. It auto-detects which it is per line — d-scan rows start with a numeric type ID,
-/// Local names don't — and shows the matching breakdown (ship roles, or corp/alliance standings).
+/// Analyze. It auto-detects which it is per line - d-scan rows start with a numeric type ID,
+/// Local names don't - and shows the matching breakdown (ship roles, or corp/alliance standings).
 /// </summary>
 public partial class DScanViewModel : ObservableObject
 {
@@ -93,7 +93,7 @@ public partial class DScanViewModel : ObservableObject
         finally { IsAnalyzing = false; }
     }
 
-    // ── D-Scan ──────────────────────────────────────────────────────────────────
+    // D-Scan
     private async Task AnalyzeShipsAsync(Dictionary<int, int> byType)
     {
         _lastWasLocal = false;
@@ -140,7 +140,7 @@ public partial class DScanViewModel : ObservableObject
         HasResult = true;
     }
 
-    // ── Local ───────────────────────────────────────────────────────────────────
+    // Local
     private async Task AnalyzeLocalAsync(List<string> names)
     {
         _lastWasLocal = true;
@@ -193,7 +193,7 @@ public partial class DScanViewModel : ObservableObject
         if (me != null) { _ownAllianceId = me.AllianceId ?? 0; _ownCorpId = me.CorporationId; }
     }
 
-    // ── Copy for comms ──────────────────────────────────────────────────────────
+    // Copy for comms
     [RelayCommand(CanExecute = nameof(HasResult))]
     private void CopySummary()
     {
@@ -204,11 +204,13 @@ public partial class DScanViewModel : ObservableObject
         sb.AppendLine("---");
         foreach (var s in Ships) sb.AppendLine($"{s.Count}x {s.TypeName} [{s.RoleTag}]");
 
-        try { Clipboard.SetText(sb.ToString()); Summary = "Copied to clipboard — paste into comms."; }
+        // Wrap in a Discord code block (```…```) so the scan pastes as fixed-width, un-mangled text.
+        var fenced = "```\n" + sb.ToString().TrimEnd() + "\n```";
+        try { Clipboard.SetText(fenced); Summary = "Copied as a Discord code block — paste into comms."; }
         catch (Exception ex) { Summary = $"Couldn't copy: {ex.Message}"; }
     }
 
-    // ── Role tag / colour / sort priority (d-scan) ──────────────────────────────
+    // Role tag / colour / sort priority (d-scan)
     private static string Tag(ShipRole r) => r switch
     {
         ShipRole.Logi => "LOGI", ShipRole.CapLogi => "FAX", ShipRole.Booster => "BOOST",

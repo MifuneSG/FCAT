@@ -23,13 +23,13 @@ public partial class FleetViewModel : ObservableObject
     // run concurrently and race the shared caches / collections.
     private readonly SemaphoreSlim _loadGate = new(1, 1);
 
-    // Persistent name cache — typeId/charId/sysId → display name, survives poll ticks
+    // Persistent name cache - typeId/charId/sysId -> display name, survives poll ticks
     private readonly Dictionary<int, string> _nameCache    = [];
 
-    // Persistent ship role cache — typeId → group_id from ESI
+    // Persistent ship role cache - typeId -> group_id from ESI
     private readonly Dictionary<int, int>    _groupIdCache = [];
 
-    // FC role overrides for this fleet, keyed by ship type (e.g. Legion → Logi). Session-only.
+    // FC role overrides for this fleet, keyed by ship type (e.g. Legion -> Logi). Session-only.
     private readonly Dictionary<int, ShipRole> _typeRoleOverrides = [];
 
     // Boost channel reader + per-pilot pod-state tracking for "boost lost" detection
@@ -43,6 +43,9 @@ public partial class FleetViewModel : ObservableObject
     // baseline silently so we don't log the whole fleet as "joined" at startup.
     private Dictionary<int, string> _rosterNames = [];
     private bool _rosterInitialized;
+
+    // FC's alliance id for the battle report's friend/foe split - fetched once (−1 = not yet).
+    private int _fcAllianceId = -1;
 
     public long SessionFleetId { get; }
 
@@ -69,7 +72,7 @@ public partial class FleetViewModel : ObservableObject
 
         _boost.Updated += OnBoostUpdated;
         _boost.StartWatching(_settings.Current.ChatlogsPath, _settings.Current.BoostChannelPrefix);
-        BoostChannelName = _boost.ActiveChannel ?? "not found";
+        BoostChannelName = _esi.DemoMode ? "Boost III (demo)" : _boost.ActiveChannel ?? "not found";
 
         StartPolling();
     }
@@ -121,21 +124,20 @@ public partial class FleetViewModel : ObservableObject
     private bool _everStaged;                 // true once a majority actually gathered in the form-up system
     private DateTime? _departedAt;
     private readonly HashSet<int> _leftBehindLogged = [];
-    // Pilots podded at any point this session — they respawn at staging, so being there is expected,
+    // Pilots podded at any point this session - they respawn at staging, so being there is expected,
     // not "left behind." Excluded from the left-behind check.
     private readonly HashSet<int> _poddedThisSession = [];
     private static readonly TimeSpan LeftBehindAfter = TimeSpan.FromMinutes(3);  // "long after the fleet is gone"
 
-    // ── DPS-attrition tracking ──────────────────────────────────────────────────────
+    // DPS-attrition tracking
     // Warns the FC as the fleet's DPS line is whittled down by deaths, at 30% / 50% / 75% of the
-    // committed baseline. "DPS" here is a HEADCOUNT of DPS-role hulls, not real fitted damage —
-    // EVE exposes no fits — so the alert is worded "~%".
-    //
+    // committed baseline. "DPS" here is a HEADCOUNT of DPS-role hulls, not real fitted damage -
+    // EVE exposes no fits - so the alert is worded "~%".
     // The baseline is frozen only once the fleet is committed: when it leaves the form-up system,
     // or on the first loss if no form-up system is configured. That way pilots told to swap from
     // DPS into logi DURING form-up settle into their final role before the baseline is taken, so
-    // they're never miscounted as a loss. Losses are counted strictly from pods (ship → capsule)
-    // of pilots who were in the baseline DPS set — a voluntary re-ship or leaving fleet never counts.
+    // they're never miscounted as a loss. Losses are counted strictly from pods (ship -> capsule)
+    // of pilots who were in the baseline DPS set - a voluntary re-ship or leaving fleet never counts.
     private static readonly int[] DpsLossThresholds = { 30, 50, 75 };
     private const int MinDpsBaseline = 5;                    // a % is meaningless on a handful of ships
     private readonly HashSet<int> _currentDpsIds      = [];  // DPS-role char ids this tick (combat fleets only)
@@ -144,7 +146,7 @@ public partial class FleetViewModel : ObservableObject
     private readonly HashSet<int> _dpsLostIds         = [];  // baseline DPS pilots confirmed podded (no double-count)
     private readonly HashSet<int> _dpsThresholdsFired = [];  // thresholds already alerted (reset when re-armed)
 
-    // ── Polling ───────────────────────────────────────────────────────────────
+    // Polling
     private void StartPolling()
     {
         _pollCts = new CancellationTokenSource();
@@ -236,7 +238,7 @@ public partial class FleetViewModel : ObservableObject
         // Re-read the boost channel each tick (FileSystemWatcher is unreliable on open files).
         _boost.Refresh();
 
-        // ── 1. Resolve uncached names (character / ship / system) ─────────────
+        // 1. Resolve uncached names (character / ship / system)
         var uncachedNameIds = members
             .SelectMany(m => new[] { m.CharacterId, m.ShipTypeId, m.SolarSystemId })
             .Where(id => id > 0 && !_nameCache.ContainsKey(id))
@@ -250,7 +252,7 @@ public partial class FleetViewModel : ObservableObject
                 _nameCache[id] = name;
         }
 
-        // ── 2. Fetch group_ids for any ship types we haven't seen yet ─────────
+        // 2. Fetch group_ids for any ship types we haven't seen yet
         var uncachedTypeIds = members
             .Select(m => m.ShipTypeId)
             .Where(id => id > 0 && !_groupIdCache.ContainsKey(id))
@@ -264,7 +266,7 @@ public partial class FleetViewModel : ObservableObject
                 _groupIdCache[typeId] = groupId;
         }
 
-        // ── 3. Apply cached names to every member every tick ──────────────────
+        // 3. Apply cached names to every member every tick
         foreach (var m in members)
         {
             if (_nameCache.TryGetValue(m.CharacterId,  out var cn))  m.CharacterName   = cn;
@@ -272,7 +274,11 @@ public partial class FleetViewModel : ObservableObject
             if (_nameCache.TryGetValue(m.SolarSystemId,out var sys)) m.SolarSystemName = sys;
         }
 
-        // ── 4. Death detection: a member that flipped to a pod lost their ship ──
+        // 4. Death detection: a member that flipped to a pod lost their ship
+        // A capsule reading for a pilot sitting in the STAGING system is a ship swap in station
+        // (ESI briefly reports the pod between hulls during form-up), not a combat loss - you don't
+        // die at home. Those are skipped so reshipping doesn't spam false DEATH / DPS-loss entries.
+        var formupSys   = _settings.Current.FormupSystem?.Trim() ?? string.Empty;
         var deathAlerts = new List<FcAlert>();
         var deathLogs   = new List<string>();   // AAR lines for every loss (category DEATH)
         var newlyPodded = new List<int>();       // every pilot who flipped to a pod this tick (for DPS-attrition)
@@ -281,7 +287,14 @@ public partial class FleetViewModel : ObservableObject
             var isCapsule = _groupIdCache.TryGetValue(m.ShipTypeId, out var g) && ShipRoleClassifier.IsCapsule(g);
             var wasCapsule = _inCapsule.TryGetValue(m.CharacterId, out var prev) && prev;
 
-            if (isCapsule && !wasCapsule)
+            // A capsule in the staging system is only a station reship DURING form-up. Once the fleet
+            // has DEPARTED, a capsule in staging is a real pod respawning home, so we still count it -
+            // this catches deaths the 5s poll only sees after the pilot has already respawned.
+            var stagingReship = formupSys.Length > 0
+                             && _formupPhase == FormupPhase.Forming
+                             && string.Equals(m.SolarSystemName, formupSys, StringComparison.OrdinalIgnoreCase);
+
+            if (isCapsule && !wasCapsule && !stagingReship)
             {
                 newlyPodded.Add(m.CharacterId);
 
@@ -304,13 +317,15 @@ public partial class FleetViewModel : ObservableObject
                     _boost.ClearPilot(m.CharacterName);   // links are gone with the ship
                 }
             }
-            if (isCapsule) _poddedThisSession.Add(m.CharacterId);   // died this session — exempt from "left behind"
-            else if (!string.IsNullOrEmpty(m.ShipTypeName))
+            // A real pod (incl. a post-departure respawn in staging) exempts a pilot from "left behind";
+            // a form-up reship does not.
+            if (isCapsule && !stagingReship) _poddedThisSession.Add(m.CharacterId);
+            if (!isCapsule && !string.IsNullOrEmpty(m.ShipTypeName))
                 _lastShipName[m.CharacterId] = m.ShipTypeName;       // remember the live hull for the loss log
             _inCapsule[m.CharacterId] = isCapsule;
         }
 
-        // ── 5. Roster diff for the AAR (joins / leaves) ───────────────────────
+        // 5. Roster diff for the AAR (joins / leaves)
         var roster = members.ToDictionary(m => m.CharacterId,
                                           m => string.IsNullOrEmpty(m.CharacterName) ? $"#{m.CharacterId}" : m.CharacterName);
         var rosterEvents = new List<string>();
@@ -324,9 +339,27 @@ public partial class FleetViewModel : ObservableObject
         _rosterNames = roster;
         _rosterInitialized = true;
 
+        // Where the fight is: the FC is on grid, so their system anchors the battle report.
+        var fcMember  = members.FirstOrDefault(m => m.CharacterId == _auth.AuthenticatedCharacterId);
+        var fcSysId   = fcMember?.SolarSystemId ?? 0;
+        var fcSysName = fcMember?.SolarSystemName ?? string.Empty;
+
+        // On the first combat tick, capture our side for the battle report (fleet roster + FC alliance).
+        var friendlyIds = deathLogs.Count > 0 ? members.Select(m => m.CharacterId).ToList() : null;
+        if (friendlyIds != null && _fcAllianceId < 0)
+        {
+            var info = await _esi.GetCharacterPublicInfoAsync(_auth.AuthenticatedCharacterId);
+            _fcAllianceId = info?.AllianceId ?? 0;
+        }
+
         await App.Current.Dispatcher.InvokeAsync(() =>
         {
             foreach (var d in deathLogs) _sessionLog.Record("DEATH", d);   // permanent AAR record of every loss
+            if (deathLogs.Count > 0)
+            {
+                _sessionLog.MarkCombat(fcSysId, fcSysName);   // anchor the battle report
+                _sessionLog.SetBattleSides(friendlyIds!, _fcAllianceId);
+            }
             foreach (var a in deathAlerts) RaiseAlert(a);
             // DPS-attrition: run before RebuildHierarchy so the pre-death DPS snapshot is still
             // available to arm the baseline on first blood (RebuildHierarchy recomputes it).
@@ -353,7 +386,7 @@ public partial class FleetViewModel : ObservableObject
         // Squad commanders first so each squad lead sits at the top of its squad.
         foreach (var member in members.OrderBy(m => m.Role == "squad_commander" ? 0 : 1))
         {
-            // FC command level (WingId < 0) is the boss running the tool — no self-kick/move.
+            // FC command level (WingId < 0) is the boss running the tool - no self-kick/move.
             var manageable = member.WingId >= 0;
             var kickHandler = manageable ? KickMemberAsync : (Func<FleetMemberViewModel, Task>?)null;
             var moveHandler = manageable ? BeginMove : (Action<FleetMemberViewModel>?)null;
@@ -372,7 +405,7 @@ public partial class FleetViewModel : ObservableObject
             ApplyBoost(vm);
             _currentMembers.Add(vm);
 
-            // WingId < 0  →  fleet command level (FC / fleet boss)
+            // WingId < 0  ->  fleet command level (FC / fleet boss)
             if (member.WingId < 0)
             {
                 FleetCommandLevel.Add(vm);
@@ -382,7 +415,7 @@ public partial class FleetViewModel : ObservableObject
             var wingVm = Wings.FirstOrDefault(w => w.WingId == member.WingId)
                          ?? CreateWing(member.WingId);
 
-            // SquadId < 0  →  wing commander (at wing level, not in any squad)
+            // SquadId < 0  ->  wing commander (at wing level, not in any squad)
             if (member.SquadId < 0)
             {
                 wingVm.WingCommanders.Add(vm);
@@ -400,9 +433,9 @@ public partial class FleetViewModel : ObservableObject
         StatusMessage = $"{MemberCount} pilots";
     }
 
-    // ── FC role override ────────────────────────────────────────────────────────────
+    // FC role override
     // Hulls like T3 cruisers (Legion/Loki/Proteus/Tengu) can be DPS, logi or boosters depending on
-    // fit — which FCAT can't see. The FC right-clicks a pilot and picks the role; it applies to every
+    // fit - which FCAT can't see. The FC right-clicks a pilot and picks the role; it applies to every
     // pilot in that hull for this fleet (null = back to the hull default).
     private void SetMemberRole(FleetMemberViewModel member, ShipRole? role)
     {
@@ -415,14 +448,14 @@ public partial class FleetViewModel : ObservableObject
                 ? ShipRoleClassifier.Classify(typeId, g) : ShipRole.DPS);
 
         ComputeStats();
-        UpdateCapChain();   // cap-chain ring uses hull type, not role — but recount role tallies
+        UpdateCapChain();   // cap-chain ring uses hull type, not role - but recount role tallies
     }
 
-    // ── Form-up / straggler tracking ───────────────────────────────────────────────
-    // Phase 1 (Forming): the FORM-UP card lists who hasn't reached the staging system yet — quiet,
+    // Form-up / straggler tracking
+    // Phase 1 (Forming): the FORM-UP card lists who hasn't reached the staging system yet - quiet,
     // no alerts. Phase 2 (Departed): once a majority of the fleet leaves staging, the card hides and
     // a silent listener logs anyone STILL parked in staging "long after" departure to the AAR.
-    // All comparisons are by system NAME (already resolved per member) — no extra ESI calls.
+    // All comparisons are by system NAME (already resolved per member) - no extra ESI calls.
     private void UpdateFormup()
     {
         var formup = _settings.Current.FormupSystem?.Trim() ?? string.Empty;
@@ -440,22 +473,38 @@ public partial class FleetViewModel : ObservableObject
         bool InFormup(FleetMemberViewModel m) =>
             string.Equals(m.SolarSystemName, formup, StringComparison.OrdinalIgnoreCase);
 
-        var known = _currentMembers.Where(m => !string.IsNullOrEmpty(m.SolarSystemName)).ToList();
+        // The FC's own utility alts (scout, cyno, hauler, etc.) are deliberately positioned away from
+        // staging - never treat them as stragglers or count them in the form-up gather. The active
+        // character (the FC flying with the fleet) still counts as a normal member.
+        var fcAltIds = _auth.Store.Characters
+            .Where(c => c.CharacterId != _auth.AuthenticatedCharacterId)
+            .Select(c => c.CharacterId)
+            .ToHashSet();
+
+        var known = _currentMembers
+            .Where(m => !string.IsNullOrEmpty(m.SolarSystemName) && !fcAltIds.Contains(m.CharacterId))
+            .ToList();
         if (known.Count == 0) { ShowFormupCard = _formupPhase == FormupPhase.Forming; return; }
 
         var inCount = known.Count(InFormup);
         var share   = (double)inCount / known.Count;
 
-        // Detect the fleet leaving staging: it must first have actually gathered there.
+        // Redundancy check: the FC (the character running FCAT) is the fleet's anchor. If the FC is
+        // still sitting in the staging system, form-up ISN'T done, whatever the share says. This stops
+        // a false "departed" when the share only dips because pilots are still trickling INTO staging
+        // mid-route (which used to unlock bogus LEFT BEHIND / DEATH spam).
+        var fcInFormup = _currentMembers.Any(m => m.CharacterId == _auth.AuthenticatedCharacterId && InFormup(m));
+
+        // Detect the fleet leaving staging: it must first have gathered there, AND the FC must have left.
         if (_formupPhase == FormupPhase.Forming)
         {
             if (!_everStaged && inCount >= 2 && share >= 0.5) _everStaged = true;
-            if (_everStaged && share < 0.5)
+            if (_everStaged && share < 0.5 && !fcInFormup)
             {
                 _formupPhase = FormupPhase.Departed;
                 _departedAt  = DateTime.Now;
                 _sessionLog.Record("FORM-UP", $"Fleet departed form-up system {formup}");
-                ArmDpsBaseline();   // fleet is committed — freeze the DPS baseline now (roles have settled)
+                ArmDpsBaseline();   // fleet is committed - freeze the DPS baseline now (roles have settled)
             }
         }
 
@@ -469,12 +518,14 @@ public partial class FleetViewModel : ObservableObject
             StragglerSummary = Stragglers.Count == 0 ? $"All pilots in {formup}" : $"{Stragglers.Count} not in {formup}";
             ShowFormupCard = true;
         }
-        else // Departed — card gone; quietly note anyone left behind in staging.
+        else // Departed - card gone; quietly note anyone left behind in staging.
         {
             Stragglers.Clear();
             ShowFormupCard = false;
             if (_departedAt is { } dep && DateTime.Now - dep >= LeftBehindAfter)
-                foreach (var m in known.Where(m => InFormup(m) && !_poddedThisSession.Contains(m.CharacterId)))
+                foreach (var m in known.Where(m => InFormup(m)
+                                                   && m.CharacterId != _auth.AuthenticatedCharacterId   // never flag the FC
+                                                   && !_poddedThisSession.Contains(m.CharacterId)))
                     if (_leftBehindLogged.Add(m.CharacterId))
                         _sessionLog.Record("LEFT BEHIND",
                             $"{m.CharacterName} still in {formup} ~{(int)(DateTime.Now - dep).TotalMinutes}m after the fleet moved out");
@@ -483,11 +534,11 @@ public partial class FleetViewModel : ObservableObject
         OnPropertyChanged(nameof(HasStragglers));
     }
 
-    // ── Cap-chain advisory (Guardian/Basilisk) ──────────────────────────────────
+    // Cap-chain advisory (Guardian/Basilisk)
     // We build our OWN ordered ring from the authorized ESI fleet list (alphabetical, so every
     // logi pilot derives the same order independently) and alert the FC when a chain member is
     // lost so the ring can be re-formed. We can see a logi leave / swap hull / get podded via
-    // ESI — we cannot see who is actually transferring to whom (that isn't exposed), so this is
+    // ESI - we cannot see who is actually transferring to whom (that isn't exposed), so this is
     // an advisory "membership changed" signal, not a live "the chain is broken in space" reading.
     private List<string> _lastChain = [];
 
@@ -518,11 +569,11 @@ public partial class FleetViewModel : ObservableObject
         _lastChain = chain;
     }
 
-    /// <summary>"A → B → C → (A)" — shows the closed loop the cap chain should form.</summary>
+    /// <summary>"A -> B -> C -> (A)" - shows the closed loop the cap chain should form.</summary>
     private static string RingText(List<string> names)
         => names.Count == 0 ? "" : string.Join(" → ", names) + $" → ({names[0]})";
 
-    // ── DPS-attrition logic (all on the UI thread) ──────────────────────────────────
+    // DPS-attrition logic (all on the UI thread)
     /// <summary>Freezes the committed DPS line as the baseline to measure losses against.
     /// No-op if already armed or the fleet is too small for a % to be meaningful.</summary>
     private void ArmDpsBaseline()
@@ -541,7 +592,7 @@ public partial class FleetViewModel : ObservableObject
     {
         if (newlyPoddedIds.Count == 0) return null;
 
-        if (!_dpsBaselineArmed) ArmDpsBaseline();   // no form-up departure yet → first blood arms it
+        if (!_dpsBaselineArmed) ArmDpsBaseline();   // no form-up departure yet -> first blood arms it
         if (!_dpsBaselineArmed || _baselineDpsIds.Count == 0) return null;
 
         foreach (var id in newlyPoddedIds)
@@ -575,7 +626,7 @@ public partial class FleetViewModel : ObservableObject
         }
     }
 
-    // ── Composition + boost coverage header ─────────────────────────────────────
+    // Composition + boost coverage header
     private static readonly Brush BrLogi   = Frozen(0x3f, 0xae, 0x8f);
     private static readonly Brush BrBoost  = Frozen(0x5a, 0x8f, 0xd6);
     private static readonly Brush BrTackle = Frozen(0xd4, 0x6a, 0x6a);
@@ -583,10 +634,10 @@ public partial class FleetViewModel : ObservableObject
     private static readonly Brush BrSupport = Frozen(0x4d, 0xb8, 0xd4);
     private static readonly Brush BrCap     = Frozen(0xd4, 0xa4, 0x49);
     private static readonly Brush BrIndy   = Frozen(0x8a, 0x96, 0xab);
-    private static readonly Brush BrDps    = Frozen(0xc6, 0xce, 0xdb);   // brightened — was a dim slate, hard to read
+    private static readonly Brush BrDps    = Frozen(0xc6, 0xce, 0xdb);   // brightened - was a dim slate, hard to read
     private static readonly Brush BrAccent   = Frozen(0x4d, 0xb8, 0xd4);
     private static readonly Brush BrDim      = Frozen(0x5c, 0x64, 0x73);
-    private static readonly Brush BrUncovered = Frozen(0x80, 0x8a, 0x9b); // muted but legible — for boost links with 0 coverage
+    private static readonly Brush BrUncovered = Frozen(0x80, 0x8a, 0x9b); // muted but legible - for boost links with 0 coverage
     private static readonly Brush BrCritical = Frozen(0xe2, 0x57, 0x4c);
     private static readonly Brush BrAmber    = Frozen(0xc9, 0x88, 0x3e);
 
@@ -609,7 +660,7 @@ public partial class FleetViewModel : ObservableObject
         MainlineLabel = string.Empty;
         if (total == 0) return;
 
-        // ── Dominant hull + fleet kind ───────────────────────────────────────
+        // Dominant hull + fleet kind
         var dominant      = _currentMembers.GroupBy(m => m.ShipTypeId)
                                             .OrderByDescending(g => g.Count()).First();
         var dominantShare = (double)dominant.Count() / total;
@@ -625,7 +676,7 @@ public partial class FleetViewModel : ObservableObject
                  : FleetKind.Combat;
 
         // Mainline override: in a combat fleet, if one non-DPS hull is the clear body of the
-        // fleet (e.g. a Nighthawk doctrine — a Command Ship used as mainline DPS), count those
+        // fleet (e.g. a Nighthawk doctrine - a Command Ship used as mainline DPS), count those
         // pilots as DPS rather than as boosters/ewar/etc.
         var overrideMainline = kind == FleetKind.Combat && dominantShare >= 0.6 && dominantRole != ShipRole.DPS;
 
@@ -633,7 +684,7 @@ public partial class FleetViewModel : ObservableObject
             => overrideMainline && m.ShipTypeId == dominantType && !_typeRoleOverrides.ContainsKey(m.ShipTypeId)
                 ? ShipRole.DPS : m.ShipRole;
 
-        // ── Role tally (using effective roles) ───────────────────────────────
+        // Role tally (using effective roles)
         void AddRole(string label, Brush color, Func<ShipRole, bool> match)
         {
             var n = _currentMembers.Count(m => match(EffectiveRole(m)));
@@ -648,7 +699,7 @@ public partial class FleetViewModel : ObservableObject
         AddRole("INDY",   BrIndy,    r => r is ShipRole.Industrial or ShipRole.Mining);
         AddRole("DPS",    BrDps,     r => r is ShipRole.DPS or ShipRole.Unknown);
 
-        // ── DPS-attrition snapshot (combat fleets only) ──────────────────────
+        // DPS-attrition snapshot (combat fleets only)
         // Same definition the FC sees in the DPS tally above. Capital/mining fleets leave this
         // empty so the loss alert never arms for them.
         if (kind == FleetKind.Combat)
@@ -657,7 +708,7 @@ public partial class FleetViewModel : ObservableObject
                     _currentDpsIds.Add(m.CharacterId);
         EvaluateDpsRearm();
 
-        // ── Boost coverage ───────────────────────────────────────────────────
+        // Boost coverage
         // The boost row tracks the link types that matter for the fleet kind: combat fleets
         // care about Shield/Armor/Skirmish/Info; mining fleets about the Mining Foreman bursts.
         // The FC is usually the booster, so these come from the boost channel (Chatlogs).
@@ -680,7 +731,7 @@ public partial class FleetViewModel : ObservableObject
             AddBoost("Info",     BoostCategory.Info,     BrEwar);
         }
 
-        // ── Mainline / fleet-kind label ──────────────────────────────────────
+        // Mainline / fleet-kind label
         var sharePct = (int)Math.Round(dominantShare * 100);
         MainlineLabel = kind switch
         {
@@ -690,7 +741,7 @@ public partial class FleetViewModel : ObservableObject
             _ => string.Empty
         };
 
-        // ── Composition advisories (combat fleets only; ratios need a real fleet) ──
+        // Composition advisories (combat fleets only; ratios need a real fleet)
         if (kind != FleetKind.Combat || total < 8) return;
 
         var logi   = _currentMembers.Count(m => EffectiveRole(m) is ShipRole.Logi or ShipRole.CapLogi);
@@ -720,7 +771,7 @@ public partial class FleetViewModel : ObservableObject
         return s;
     }
 
-    // ── Commands ──────────────────────────────────────────────────────────────
+    // Commands
     [RelayCommand]
     private void SwitchToNewFleet()
     {
@@ -736,7 +787,7 @@ public partial class FleetViewModel : ObservableObject
 
     /// <summary>
     /// Confirms, then removes a pilot via ESI. Requires the logged-in character to be
-    /// fleet boss — ESI rejects the call otherwise, which we surface as a status message.
+    /// fleet boss - ESI rejects the call otherwise, which we surface as a status message.
     /// </summary>
     private async Task KickMemberAsync(FleetMemberViewModel member)
     {
@@ -764,7 +815,7 @@ public partial class FleetViewModel : ObservableObject
         }
     }
 
-    // ── Move pilot ──────────────────────────────────────────────────────────────
+    // Move pilot
     /// <summary>Opens the move picker, listing every role/position the pilot can move to.</summary>
     private void BeginMove(FleetMemberViewModel member)
     {
@@ -807,7 +858,7 @@ public partial class FleetViewModel : ObservableObject
         if (ok) await LoadFleetDataAsync();
     }
 
-    // ── Rename wing / squad ─────────────────────────────────────────────────────
+    // Rename wing / squad
     private long _renameWingId;
     private long _renameSquadId;
 
@@ -855,7 +906,7 @@ public partial class FleetViewModel : ObservableObject
         if (ok) await LoadFleetDataAsync();
     }
 
-    // ── Invite ──────────────────────────────────────────────────────────────────
+    // Invite
     [RelayCommand]
     private async Task Invite()
     {
@@ -883,7 +934,7 @@ public partial class FleetViewModel : ObservableObject
         if (ok) InviteName = string.Empty;
     }
 
-    // ── Wing / squad structure ────────────────────────────────────────────────────
+    // Wing / squad structure
     [RelayCommand]
     private async Task AddWing()
     {
@@ -931,11 +982,14 @@ public partial class FleetViewModel : ObservableObject
         if (ok) await LoadFleetDataAsync();
     }
 
-    // ── Boost loadouts ──────────────────────────────────────────────────────────
+    // Boost loadouts
     /// <summary>Attaches a pilot's posted boost charges (from the boost channel) to their row.</summary>
     private void ApplyBoost(FleetMemberViewModel vm)
     {
         var loadout = _boost.GetLoadout(vm.CharacterName);
+        // Demo mode can't read the boost channel, so stand in synthetic loadouts for the demo booster(s).
+        if (loadout.Count == 0 && _esi.DemoMode)
+            loadout = DemoData.BoostLoadout(vm.CharacterName);
         if (loadout.Count == 0)
         {
             vm.BoostSummary    = string.Empty;
@@ -955,12 +1009,12 @@ public partial class FleetViewModel : ObservableObject
     {
         App.Current.Dispatcher.Invoke(() =>
         {
-            BoostChannelName = _boost.ActiveChannel ?? "not found";
+            BoostChannelName = _esi.DemoMode ? "Boost III (demo)" : _boost.ActiveChannel ?? "not found";
             foreach (var vm in _currentMembers) ApplyBoost(vm);
         });
     }
 
-    // ── Alert handler ─────────────────────────────────────────────────────────
+    // Alert handler
     // All alerts flow through the app-lifetime AlertHub (sound, auto-clear, overlay) so they
     // persist regardless of which page is open.
     private void OnAlertRaised(FcAlert alert) => App.Current.Dispatcher.Invoke(() => _alertHub.Raise(alert));

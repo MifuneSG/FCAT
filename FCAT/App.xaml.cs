@@ -25,13 +25,17 @@ public partial class App : Application
         var esiService = new EsiService(httpClient, authService);
         var combatLogService = new CombatLogService();
         var settingsService = new SettingsService();
+
+        // Paint the saved colour theme before any window renders.
+        ThemeService.Apply(ThemeService.Parse(settingsService.Current.Theme));
         var sessionLog = new SessionLog();
         var alertHub = new AlertHub(settingsService, sessionLog);
         var systemSearch = new SystemSearchService(esiService);
         var zkillService = new ZkillService(httpClient);
+        var battleReport = new BattleReportService(zkillService, esiService);
         var updater = new UpdaterService();
 
-        var shell = new ShellViewModel(authService, esiService, combatLogService, settingsService, alertHub, sessionLog, systemSearch, zkillService, updater);
+        var shell = new ShellViewModel(authService, esiService, combatLogService, settingsService, alertHub, sessionLog, systemSearch, zkillService, battleReport, updater);
 
         var window = new MainWindow(alertHub) { DataContext = shell };
         window.Show();

@@ -12,8 +12,8 @@
         <Style x:Key="DarkTextBox" TargetType="TextBox">
             <Setter Property="Background"      Value="#0f1622"/>
             <Setter Property="Foreground"      Value="{StaticResource EveTextPrimary}"/>
-            <Setter Property="CaretBrush"      Value="{StaticResource EveAccent}"/>
-            <Setter Property="BorderBrush"     Value="{StaticResource EveHairlineStrong}"/>
+            <Setter Property="CaretBrush"      Value="{DynamicResource EveAccent}"/>
+            <Setter Property="BorderBrush"     Value="{DynamicResource EveHairlineStrong}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontFamily"      Value="{StaticResource FontUI}"/>
             <Setter Property="FontSize"        Value="12"/>
@@ -28,7 +28,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="{StaticResource EveAccent}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -47,7 +47,7 @@
         <!-- Suggestions dropdown container -->
         <Style x:Key="SuggestBox" TargetType="Border">
             <Setter Property="Background"      Value="#0f1622"/>
-            <Setter Property="BorderBrush"     Value="{StaticResource EveHairlineStrong}"/>
+            <Setter Property="BorderBrush"     Value="{DynamicResource EveHairlineStrong}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius"    Value="7"/>
             <Setter Property="Margin"          Value="0,4,0,0"/>
@@ -82,7 +82,7 @@
                 <ColumnDefinition Width="420"/>
             </Grid.ColumnDefinitions>
 
-            <!-- ════════ INPUTS ════════ -->
+            <!-- INPUTS -->
             <Border Grid.Column="0" Style="{StaticResource Card}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,16,20,16">
                     <StackPanel>
@@ -115,12 +115,12 @@
                             </ItemsControl>
                         </Border>
 
-                        <!-- Comms — editable dropdown (pick from the profile or type your own) -->
+                        <!-- Comms - editable dropdown (pick from the profile or type your own) -->
                         <TextBlock Text="Comms" Style="{StaticResource FieldLabel}"/>
                         <ComboBox IsEditable="True" StaysOpenOnEdit="True" ItemsSource="{Binding CommsOptions}"
                                   Text="{Binding CommsText, UpdateSourceTrigger=PropertyChanged}"/>
 
-                        <!-- Doctrine / Ships / Implants — alliance-specific (hidden on Custom) -->
+                        <!-- Doctrine / Ships / Implants - alliance-specific (hidden on Custom) -->
                         <StackPanel Visibility="{Binding IsAlliance, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Text="Doctrine" Style="{StaticResource FieldLabel}"/>
                             <ComboBox ItemsSource="{Binding Doctrines}" SelectedItem="{Binding SelectedDoctrine}">
@@ -162,7 +162,7 @@
                         <TextBox Style="{StaticResource DarkTextBox}" Height="48" AcceptsReturn="True" TextWrapping="Wrap"
                                  VerticalContentAlignment="Top" Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"/>
 
-                        <!-- Channel links — alliance-specific (hidden on Custom) -->
+                        <!-- Channel links - alliance-specific (hidden on Custom) -->
                         <StackPanel Visibility="{Binding IsAlliance, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Text="CHANNEL LINKS (clickable in MOTD)" Style="{StaticResource SectionLabel}" Margin="0,18,0,4"/>
                             <TextBlock Text="Pick the boost / logi channel for this fleet — the clickable link drops into the MOTD."
@@ -191,7 +191,7 @@
                 </ScrollViewer>
             </Border>
 
-            <!-- ════════ OUTPUTS ════════ -->
+            <!-- OUTPUTS -->
             <Border Grid.Column="2" Style="{StaticResource Card}">
                 <Grid Margin="18,16,18,16">
                     <Grid.RowDefinitions>
@@ -209,7 +209,7 @@
                             <TextBlock Text="Copy ping" FontFamily="{StaticResource FontUI}" FontSize="11"/>
                         </Button>
                     </Grid>
-                    <Border Grid.Row="1" Background="#0c1018" BorderBrush="{StaticResource EveHairlineStrong}" BorderThickness="1" CornerRadius="7" Margin="0,6,0,12">
+                    <Border Grid.Row="1" Background="#0c1018" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="7" Margin="0,6,0,12">
                         <TextBox Text="{Binding PingText, Mode=OneWay}" IsReadOnly="True" Background="Transparent" BorderThickness="0"
                                  Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontMono}" FontSize="12"
                                  Padding="10,8" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
@@ -228,7 +228,7 @@
                             </Button>
                         </StackPanel>
                     </Grid>
-                    <Border Grid.Row="3" Background="#0c1018" BorderBrush="{StaticResource EveHairlineStrong}" BorderThickness="1" CornerRadius="7" Margin="0,6,0,0">
+                    <Border Grid.Row="3" Background="#0c1018" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="7" Margin="0,6,0,0">
                         <TextBox Text="{Binding MotdText, Mode=OneWay}" IsReadOnly="True" Background="Transparent" BorderThickness="0"
                                  Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontMono}" FontSize="12"
                                  Padding="10,8" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>

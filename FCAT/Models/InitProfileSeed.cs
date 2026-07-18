@@ -7,7 +7,7 @@ namespace FCAT.Models;
 /// </summary>
 public static class InitProfileSeed
 {
-    /// <summary>The Initiative. alliance ID — the INIT profile is locked to members of this alliance.</summary>
+    /// <summary>The Initiative. alliance ID - the INIT profile is locked to members of this alliance.</summary>
     public const int AllianceId = 1900696668;
 
     public static List<CapturedChannel> BoostLinks() =>
@@ -48,7 +48,7 @@ public static class InitProfileSeed
         new() { Label = "I. Logistics FD",   Markup = "<url=joinChannel:player_4ecd39de8c5711ee8a5e00109bd0f828>I. Logistics FD</url>" },
     ];
 
-    // INIT Mumble comms channels (plain text in the MOTD — Mumble isn't an in-game channel link).
+    // INIT Mumble comms channels (plain text in the MOTD - Mumble isn't an in-game channel link).
     public static List<string> CommsChannels() =>
     [
         "Actually Inactive Main",
@@ -81,7 +81,7 @@ public static class InitProfileSeed
 
     public static List<DoctrinePreset> Doctrines() =>
     [
-        // Cheesy — Omen Navy Issue skirmish cruiser gang (Vagabond FC, Scalpel logi, Stork/Bifrost
+        // Cheesy - Omen Navy Issue skirmish cruiser gang (Vagabond FC, Scalpel logi, Stork/Bifrost
         // boosts, Hyena LR paint/web, i.Hyperspatial Sabre/Flycatcher dictors as general fits).
         new() { Category = "Skirmish", Name = "Cheesy - Omen Navy Issue",    Ships = "Logi (Scalpel) > Boosts (Stork/Bifrost) > DPS (Omen Navy Issue) > Else", FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/187/" },
         new() { Category = "Skirmish", Name = "Daisy Cutter - Bombers",      Ships = "Purifier > Hound",                                                      FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/23/" },

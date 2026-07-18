@@ -2,10 +2,10 @@ namespace FCAT.Models;
 
 public enum IntelKind { Kill, Report }
 
-/// <summary>Normalised report status — clear / no-visual / incoming — for colour-coding.</summary>
+/// <summary>Normalised report status - clear / no-visual / incoming - for colour-coding.</summary>
 public enum IntelStatus { None, Clear, NoVisual, Incoming }
 
-/// <summary>One row in the combined intel feed — a killmail (zKill) or an intel-channel report,
+/// <summary>One row in the combined intel feed - a killmail (zKill) or an intel-channel report,
 /// parsed into columns: system · status · details.</summary>
 public class IntelEntry
 {

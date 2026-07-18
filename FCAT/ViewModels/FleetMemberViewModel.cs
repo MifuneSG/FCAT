@@ -68,16 +68,16 @@ public partial class FleetMemberViewModel : ObservableObject
     public string Role        => _member.Role;
     public int    ShipTypeId  => _member.ShipTypeId;
 
-    /// <summary>True for the squad's commander (ESI role "squad_commander") — highlighted in the list.</summary>
+    /// <summary>True for the squad's commander (ESI role "squad_commander") - highlighted in the list.</summary>
     public bool IsSquadCommander => _member.Role == "squad_commander";
 
-    // ── Boost loadout (from the boost channel) ───────────────────────────────
+    // Boost loadout (from the boost channel)
     /// <summary>Compact category summary, e.g. "Shield · Skirmish". Empty if not a known booster.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasBoosts))]
     private string _boostSummary = string.Empty;
 
-    /// <summary>Full charge detail for the tooltip, e.g. "Shield Harmonizing Charge — Shield resist".</summary>
+    /// <summary>Full charge detail for the tooltip, e.g. "Shield Harmonizing Charge - Shield resist".</summary>
     [ObservableProperty] private string _boostDetail = string.Empty;
 
     public bool HasBoosts => !string.IsNullOrEmpty(BoostSummary);
@@ -88,12 +88,12 @@ public partial class FleetMemberViewModel : ObservableObject
     /// <summary>True when the pilot is currently sitting in a pod (ship lost).</summary>
     [ObservableProperty] private bool _isInCapsule;
 
-    // ── EVE image server URLs ─────────────────────────────────────────────────
+    // EVE image server URLs
     public string PortraitUrl => $"https://images.evetech.net/characters/{_member.CharacterId}/portrait?size=64";
     public string ShipIconUrl => $"https://images.evetech.net/types/{_member.ShipTypeId}/icon?size=32";
 
-    // ── Role badge ────────────────────────────────────────────────────────────
-    /// <summary>Short label shown on the fleet row — empty string means no badge (DPS / Unknown).</summary>
+    // Role badge
+    /// <summary>Short label shown on the fleet row - empty string means no badge (DPS / Unknown).</summary>
     public string RoleBadge => ShipRole switch
     {
         ShipRole.Logi        => "LOGI",
@@ -109,7 +109,7 @@ public partial class FleetMemberViewModel : ObservableObject
         ShipRole.Industrial  => "IND",
         ShipRole.Mining      => "MINE",
         ShipRole.DPS         => "DPS",
-        _                    => string.Empty   // Unknown — no badge
+        _                    => string.Empty   // Unknown - no badge
     };
 
     public bool RoleBadgeVisible => !string.IsNullOrEmpty(RoleBadge);
@@ -125,7 +125,7 @@ public partial class FleetMemberViewModel : ObservableObject
         ShipRole.Support                         => Frozen(0x4d, 0xb8, 0xd4),  // cyan
         ShipRole.Industrial or ShipRole.Mining   => Frozen(0x6b, 0x76, 0x89),  // slate
         ShipRole.DPS                             => Frozen(0x8a, 0x94, 0xa6),  // light slate
-        _                                        => Brushes.Transparent          // Unknown — no accent
+        _                                        => Brushes.Transparent          // Unknown - no accent
     };
 
     private static SolidColorBrush Frozen(byte r, byte g, byte b)
@@ -135,7 +135,7 @@ public partial class FleetMemberViewModel : ObservableObject
         return brush;
     }
 
-    // ── Data update ───────────────────────────────────────────────────────────
+    // Data update
     public void UpdateFrom(FleetMember member)
     {
         CharacterName   = member.CharacterName   ?? string.Empty;

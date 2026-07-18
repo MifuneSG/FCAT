@@ -12,8 +12,8 @@
         <Style x:Key="DarkTextBox" TargetType="TextBox">
             <Setter Property="Background"      Value="#0f1622"/>
             <Setter Property="Foreground"      Value="{StaticResource EveTextPrimary}"/>
-            <Setter Property="CaretBrush"      Value="{StaticResource EveAccent}"/>
-            <Setter Property="BorderBrush"     Value="{StaticResource EveHairlineStrong}"/>
+            <Setter Property="CaretBrush"      Value="{DynamicResource EveAccent}"/>
+            <Setter Property="BorderBrush"     Value="{DynamicResource EveHairlineStrong}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontFamily"      Value="{StaticResource FontMono}"/>
             <Setter Property="FontSize"        Value="12"/>
@@ -30,7 +30,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="{StaticResource EveAccent}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -54,6 +54,120 @@
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="34,0,34,24">
             <Border Style="{StaticResource Card}" HorizontalAlignment="Left" MaxWidth="640">
             <StackPanel Margin="28,24,28,24">
+
+                <!-- Colour theme -->
+                <TextBlock Text="THEME" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
+                <TextBlock Text="Recolours the whole app instantly. Your pick is remembered."
+                           Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                           TextWrapping="Wrap" Margin="0,0,0,10"/>
+                <WrapPanel>
+                    <Grid Width="176" Height="52" Margin="0,0,10,10">
+                        <Border CornerRadius="8" Background="{DynamicResource EveRaisedBg}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="{DynamicResource EveHairlineStrong}"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsNebula}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
+                                            <Setter Property="BorderThickness" Value="2"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0">
+                                <Border Width="24" Height="24" CornerRadius="6" Background="#a98ce0" Margin="0,0,10,0"/>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Nebula" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Violet · default" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,1,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Button Command="{Binding SelectThemeCommand}" CommandParameter="Nebula" Cursor="Hand" FocusVisualStyle="{x:Null}">
+                            <Button.Template><ControlTemplate TargetType="Button"><Border Background="Transparent"/></ControlTemplate></Button.Template>
+                        </Button>
+                    </Grid>
+                    <Grid Width="176" Height="52" Margin="0,0,10,10">
+                        <Border CornerRadius="8" Background="{DynamicResource EveRaisedBg}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="{DynamicResource EveHairlineStrong}"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCarbon}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
+                                            <Setter Property="BorderThickness" Value="2"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0">
+                                <Border Width="24" Height="24" CornerRadius="6" Background="#d99a3f" Margin="0,0,10,0"/>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Carbon" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Amber · gold" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,1,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Button Command="{Binding SelectThemeCommand}" CommandParameter="Carbon" Cursor="Hand" FocusVisualStyle="{x:Null}">
+                            <Button.Template><ControlTemplate TargetType="Button"><Border Background="Transparent"/></ControlTemplate></Button.Template>
+                        </Button>
+                    </Grid>
+                    <Grid Width="176" Height="52" Margin="0,0,10,10">
+                        <Border CornerRadius="8" Background="{DynamicResource EveRaisedBg}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="{DynamicResource EveHairlineStrong}"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsPhoton}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
+                                            <Setter Property="BorderThickness" Value="2"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0">
+                                <Border Width="24" Height="24" CornerRadius="6" Background="#4d9be0" Margin="0,0,10,0"/>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Photon" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Blue · EVE UI" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,1,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Button Command="{Binding SelectThemeCommand}" CommandParameter="Photon" Cursor="Hand" FocusVisualStyle="{x:Null}">
+                            <Button.Template><ControlTemplate TargetType="Button"><Border Background="Transparent"/></ControlTemplate></Button.Template>
+                        </Button>
+                    </Grid>
+                    <Grid Width="176" Height="52" Margin="0,0,10,10">
+                        <Border CornerRadius="8" Background="{DynamicResource EveRaisedBg}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="{DynamicResource EveHairlineStrong}"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsRust}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
+                                            <Setter Property="BorderThickness" Value="2"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0">
+                                <Border Width="24" Height="24" CornerRadius="6" Background="#c06544" Margin="0,0,10,0"/>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Rust" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Rust red" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,1,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Button Command="{Binding SelectThemeCommand}" CommandParameter="Rust" Cursor="Hand" FocusVisualStyle="{x:Null}">
+                            <Button.Template><ControlTemplate TargetType="Button"><Border Background="Transparent"/></ControlTemplate></Button.Template>
+                        </Button>
+                    </Grid>
+                </WrapPanel>
+
+                <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,18,0,18"/>
 
                 <!-- EVE logs folder -->
                 <TextBlock Text="EVE LOGS FOLDER" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
@@ -80,7 +194,7 @@
                 </Grid>
 
                 <!-- Derived path checks -->
-                <Border Background="{StaticResource EveRaisedBg}" CornerRadius="8" Padding="14,12" Margin="0,0,0,20">
+                <Border Background="{DynamicResource EveRaisedBg}" CornerRadius="8" Padding="14,12" Margin="0,0,0,20">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -164,7 +278,7 @@
                                  Text="{Binding FormupSystemText, UpdateSourceTrigger=PropertyChanged}"
                                  ToolTip="Type a system name and pick from the list"/>
                         <!-- Suggestions dropdown -->
-                        <Border Background="#0f1622" BorderBrush="{StaticResource EveHairlineStrong}" BorderThickness="1"
+                        <Border Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1"
                                 CornerRadius="7" Margin="0,4,0,0" Padding="4"
                                 Visibility="{Binding SystemSuggestions.Count, Converter={StaticResource CountToVisibility}}">
                             <ItemsControl ItemsSource="{Binding SystemSuggestions}">
@@ -227,7 +341,7 @@
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding Overlay.OverlayEnabled}" Value="True">
                                             <Setter Property="Text" Value="⧉ Overlay: ON"/>
-                                            <Setter Property="Foreground" Value="{StaticResource EveAccent}"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource EveAccent}"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -293,7 +407,7 @@
                             <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12"><Run Text="♪  "/><Run Text="{Binding TackledSound}"/></TextBlock>
                         </Button>
                         <Button Grid.Column="2" Command="{Binding TestTackledCommand}" Style="{StaticResource GhostButton}" Height="32" Padding="10,0" ToolTip="Preview">
-                            <TextBlock Text="▶" FontSize="12" Foreground="{StaticResource EveAccent}"/>
+                            <TextBlock Text="▶" FontSize="12" Foreground="{DynamicResource EveAccent}"/>
                         </Button>
                     </Grid>
                     <!-- Cap out -->
@@ -310,7 +424,7 @@
                             <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12"><Run Text="♪  "/><Run Text="{Binding CapTroubleSound}"/></TextBlock>
                         </Button>
                         <Button Grid.Column="2" Command="{Binding TestCapTroubleCommand}" Style="{StaticResource GhostButton}" Height="32" Padding="10,0" ToolTip="Preview">
-                            <TextBlock Text="▶" FontSize="12" Foreground="{StaticResource EveAccent}"/>
+                            <TextBlock Text="▶" FontSize="12" Foreground="{DynamicResource EveAccent}"/>
                         </Button>
                     </Grid>
                     <!-- Boost lost -->
@@ -327,14 +441,14 @@
                             <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12"><Run Text="♪  "/><Run Text="{Binding BoostLostSound}"/></TextBlock>
                         </Button>
                         <Button Grid.Column="2" Command="{Binding TestBoostLostCommand}" Style="{StaticResource GhostButton}" Height="32" Padding="10,0" ToolTip="Preview">
-                            <TextBlock Text="▶" FontSize="12" Foreground="{StaticResource EveAccent}"/>
+                            <TextBlock Text="▶" FontSize="12" Foreground="{DynamicResource EveAccent}"/>
                         </Button>
                     </Grid>
                 </StackPanel>
 
                 <!-- Actions -->
                 <!-- Demo / sandbox -->
-                <Rectangle Height="1" Fill="{StaticResource EveHairline}" Margin="0,24,0,18"/>
+                <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,24,0,18"/>
                 <TextBlock Text="DEMO / SANDBOX" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
                 <TextBlock Text="Runs FCAT on a simulated fleet so you can try Fleet Ops, the dashboard and alerts without being in a live fleet. Intel still uses your real current system. Turn off to go back to live data."
                            Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
@@ -350,7 +464,7 @@
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding Shell.DemoMode}" Value="True">
                                         <Setter Property="Text" Value="🧪 Demo mode: ON"/>
-                                        <Setter Property="Foreground" Value="{StaticResource EveAccent}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource EveAccent}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -359,13 +473,13 @@
                 </Button>
 
                 <!-- Updates -->
-                <Rectangle Height="1" Fill="{StaticResource EveHairline}" Margin="0,24,0,18"/>
+                <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,24,0,18"/>
                 <TextBlock Text="UPDATES" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
                 <Grid>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="FCAT checks GitHub for new versions on launch."
                                    Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"/>
-                        <TextBlock Text="{Binding Shell.UpdateStatus}" Foreground="{StaticResource EveAccent}"
+                        <TextBlock Text="{Binding Shell.UpdateStatus}" Foreground="{DynamicResource EveAccent}"
                                    FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,4,0,0"
                                    Visibility="{Binding Shell.UpdateStatus, Converter={StaticResource StringToVisibility}}"/>
                     </StackPanel>

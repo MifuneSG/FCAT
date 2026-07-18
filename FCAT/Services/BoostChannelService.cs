@@ -8,8 +8,7 @@ namespace FCAT.Services;
 /// Tails the fleet's boost channel (EVE Chatlogs) and tracks which command-burst charges
 /// each booster has "dragged" into the channel. EVE only logs channels the local character
 /// is in, so the FC must be joined to the matching "Boost N" channel for this to see anything.
-///
-/// Unlike the combat log we read each boost file from the BEGINNING — boosters typically post
+/// Unlike the combat log we read each boost file from the BEGINNING - boosters typically post
 /// their loadout once at form-up, possibly before FCAT was opened.
 /// </summary>
 public partial class BoostChannelService : IDisposable
@@ -22,7 +21,7 @@ public partial class BoostChannelService : IDisposable
     private string?            _watchedFile;
     private long               _lastFilePosition;
 
-    // Speaker (character name) → distinct charges they've posted this session
+    // Speaker (character name) -> distinct charges they've posted this session
     private readonly Dictionary<string, HashSet<BoostChargeInfo>> _loadouts =
         new(StringComparer.OrdinalIgnoreCase);
 
@@ -72,7 +71,7 @@ public partial class BoostChannelService : IDisposable
     }
 
     /// <summary>
-    /// Re-reads the boost log. Call this on a timer — EVE holds the log file open while writing,
+    /// Re-reads the boost log. Call this on a timer - EVE holds the log file open while writing,
     /// so the FileSystemWatcher doesn't fire reliably; polling guarantees we see new posts.
     /// Switches to a newer session file if one has appeared.
     /// </summary>
@@ -88,7 +87,7 @@ public partial class BoostChannelService : IDisposable
         if (!string.Equals(latest, _watchedFile, StringComparison.OrdinalIgnoreCase))
         {
             _watchedFile      = latest;
-            _lastFilePosition = 0;                       // new session file — read from the top
+            _lastFilePosition = 0;                       // new session file - read from the top
             ActiveChannel     = ChannelNameFromFile(latest);
         }
         ReadNewLines();
@@ -103,7 +102,7 @@ public partial class BoostChannelService : IDisposable
                 : [];
     }
 
-    /// <summary>Forget a pilot's loadout (e.g. when they pod out — boost is gone).</summary>
+    /// <summary>Forget a pilot's loadout (e.g. when they pod out - boost is gone).</summary>
     public void ClearPilot(string characterName)
     {
         lock (_lock)
@@ -114,7 +113,7 @@ public partial class BoostChannelService : IDisposable
     private void AttachToLatestBoostLog()
     {
         // EVE names chat logs "<Channel>_<date>_<time>_<charId>.txt". Match the prefix ANYWHERE
-        // in the name — channels are often named like "I. Boost FD", not just "Boost".
+        // in the name - channels are often named like "I. Boost FD", not just "Boost".
         var latest = Directory.GetFiles(LogDirectory, $"*{ChannelPrefix}*.txt")
             .OrderByDescending(File.GetLastWriteTime)
             .FirstOrDefault();
@@ -126,14 +125,14 @@ public partial class BoostChannelService : IDisposable
         }
 
         _watchedFile      = latest;
-        _lastFilePosition = 0;   // read whole file — capture loadouts posted before launch
+        _lastFilePosition = 0;   // read whole file - capture loadouts posted before launch
         ActiveChannel     = ChannelNameFromFile(latest);
         ReadNewLines();
     }
 
     private static string ChannelNameFromFile(string path)
     {
-        // "Boost IV_20240115_203045_90000001.txt" → "Boost IV"
+        // "Boost IV_20240115_203045_90000001.txt" -> "Boost IV"
         var name = Path.GetFileNameWithoutExtension(path);
         var m = Regex.Match(name, @"^(.*)_\d{8}_\d{6}_\d+$");
         return m.Success ? m.Groups[1].Value : name;
@@ -141,7 +140,7 @@ public partial class BoostChannelService : IDisposable
 
     private void OnFileChanged(object sender, FileSystemEventArgs e)
     {
-        // A brand-new, more recent boost channel file means a new fleet/session — switch to it.
+        // A brand-new, more recent boost channel file means a new fleet/session - switch to it.
         if (e.FullPath != _watchedFile &&
             Path.GetFileName(e.FullPath).Contains(ChannelPrefix, StringComparison.OrdinalIgnoreCase))
         {
@@ -177,7 +176,7 @@ public partial class BoostChannelService : IDisposable
 
     private bool ParseLine(string line)
     {
-        // EVE prepends a BOM (U+FEFF) to every chat-log line — strip it so the line starts with '['.
+        // EVE prepends a BOM (U+FEFF) to every chat-log line - strip it so the line starts with '['.
         line = line.TrimStart('﻿', '￾');
 
         var m = ChatLineRegex().Match(line);
@@ -185,7 +184,7 @@ public partial class BoostChannelService : IDisposable
 
         var speaker = m.Groups[1].Value.Trim();
 
-        // The channel MOTD is "spoken" by EVE System and lists every charge — ignore it.
+        // The channel MOTD is "spoken" by EVE System and lists every charge - ignore it.
         if (speaker.Equals("EVE System", StringComparison.OrdinalIgnoreCase)) return false;
 
         var message = Regex.Replace(m.Groups[2].Value, "<[^>]+>", "");   // strip item-link markup
@@ -195,8 +194,8 @@ public partial class BoostChannelService : IDisposable
 
         lock (_lock)
         {
-            // Last message wins — a fresh post replaces the pilot's previous loadout, so
-            // swapping links (e.g. shield → armor) is reflected immediately. Boosters drag
+            // Last message wins - a fresh post replaces the pilot's previous loadout, so
+            // swapping links (e.g. shield -> armor) is reflected immediately. Boosters drag
             // all their charges in a single chat message, so one message = full loadout.
             _loadouts[speaker] = [.. charges];
             return true;

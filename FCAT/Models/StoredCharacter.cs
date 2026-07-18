@@ -1,6 +1,6 @@
 namespace FCAT.Models;
 
-/// <summary>One authorized EVE character FCAT knows about. The refresh token is sensitive —
+/// <summary>One authorized EVE character FCAT knows about. The refresh token is sensitive -
 /// the whole list is DPAPI-encrypted on disk (see CharacterStore).</summary>
 public class StoredCharacter
 {

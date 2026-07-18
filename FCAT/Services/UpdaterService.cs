@@ -6,8 +6,7 @@ namespace FCAT.Services;
 
 /// <summary>
 /// In-app auto-update against the project's GitHub Releases (Velopack).
-///
-/// Only works in an INSTALLED build (one produced by `vpk pack` and installed via Setup.exe) —
+/// Only works in an INSTALLED build (one produced by `vpk pack` and installed via Setup.exe) -
 /// when running from `dotnet run` / a loose build, <see cref="UpdateManager.IsInstalled"/> is
 /// false and every call is a safe no-op. Prerelease is ON because releases are tagged "-beta".
 /// </summary>
@@ -22,7 +21,7 @@ public class UpdaterService
     public UpdaterService()
         => _mgr = new UpdateManager(new GithubSource(RepoUrl, accessToken: null, prerelease: true));
 
-    /// <summary>False when running from source — guards the UI so we don't offer updates that can't apply.</summary>
+    /// <summary>False when running from source - guards the UI so we don't offer updates that can't apply.</summary>
     public bool IsInstalled => _mgr.IsInstalled;
 
     /// <summary>The version string of a downloaded, ready-to-apply update (null if none).</summary>

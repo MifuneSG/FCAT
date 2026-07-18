@@ -6,7 +6,7 @@ using FCAT.Models;
 namespace FCAT.Services;
 
 /// <summary>
-/// Persists the FC's authorized characters — including their ESI refresh tokens — encrypted with
+/// Persists the FC's authorized characters - including their ESI refresh tokens - encrypted with
 /// Windows DPAPI (CurrentUser) at %APPDATA%/FCAT/characters.dat. The file is never plaintext and
 /// is bound to the logged-in Windows account, so copying it to another machine/user won't decrypt.
 /// </summary>
@@ -30,7 +30,7 @@ public class CharacterStore
             var json = ProtectedData.Unprotect(enc, null, DataProtectionScope.CurrentUser);
             Characters = JsonSerializer.Deserialize<List<StoredCharacter>>(json) ?? [];
         }
-        catch { Characters = []; }   // corrupt/unreadable → start clean; the FC just re-adds characters
+        catch { Characters = []; }   // corrupt/unreadable -> start clean; the FC just re-adds characters
     }
 
     public void Save()

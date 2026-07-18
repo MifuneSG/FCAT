@@ -55,7 +55,7 @@
                 <RowDefinition Height="230"/>
             </Grid.RowDefinitions>
 
-            <!-- ── Top row: Scan (left) + System block (right, two columns) ── -->
+            <!-- Top row: Scan (left) + System block (right, two columns) -->
             <Grid Grid.Row="0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="500" MinWidth="420"/>
@@ -63,7 +63,7 @@
                     <ColumnDefinition Width="*" MinWidth="560"/>
                 </Grid.ColumnDefinitions>
 
-            <!-- ════════ SCAN PANEL ════════ -->
+            <!-- SCAN PANEL -->
             <Border Grid.Column="0" Style="{StaticResource Card}">
                 <Grid Margin="20,18,20,18">
                     <Grid.RowDefinitions>
@@ -77,9 +77,9 @@
 
                     <TextBlock Grid.Row="0" Text="SCAN" Style="{StaticResource SectionLabel}" Margin="0,0,0,10"/>
 
-                    <Border Grid.Row="1" Background="#0f1622" BorderBrush="{StaticResource EveHairlineStrong}" BorderThickness="1" CornerRadius="7" Height="120">
+                    <Border Grid.Row="1" Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="7" Height="120">
                         <TextBox Text="{Binding Scan.Input, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0"
-                                 Foreground="{StaticResource EveTextPrimary}" CaretBrush="{StaticResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11"
+                                 Foreground="{StaticResource EveTextPrimary}" CaretBrush="{DynamicResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11"
                                  Padding="10,8" AcceptsReturn="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/>
                     </Border>
 
@@ -109,7 +109,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Border Grid.Row="5" BorderBrush="{StaticResource EveHairline}" BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="0,10,0,0"
+                    <Border Grid.Row="5" BorderBrush="{DynamicResource EveHairline}" BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="0,10,0,0"
                             Visibility="{Binding Scan.HasResult, Converter={StaticResource BoolToVisibility}}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding Scan.Ships}">
@@ -137,7 +137,7 @@
                 </Grid>
             </Border>
 
-            <!-- ════════ SYSTEM PANEL (current system + hot systems, two columns) ════════ -->
+            <!-- SYSTEM PANEL (current system + hot systems, two columns) -->
             <Border Grid.Column="2" Style="{StaticResource Card}">
                 <Grid Margin="18,16,18,16">
                     <Grid.ColumnDefinitions>
@@ -157,7 +157,7 @@
                     <Grid Grid.Row="0" Margin="0,0,0,10">
                         <TextBlock Text="CURRENT SYSTEM" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
                         <Button Command="{Binding System.RefreshCommand}" Style="{StaticResource GhostButton}" Padding="8,3" HorizontalAlignment="Right" ToolTip="Refresh">
-                            <TextBlock Text="↻" Foreground="{StaticResource EveAccent}" FontSize="13"/>
+                            <TextBlock Text="↻" Foreground="{DynamicResource EveAccent}" FontSize="13"/>
                         </Button>
                     </Grid>
 
@@ -184,8 +184,8 @@
                                    Visibility="{Binding System.HasResult, Converter={StaticResource BoolToVisibility}}"/>
                     </StackPanel>
 
-                    <!-- Map — fills its column; the VM re-projects on resize so big constellations spread out -->
-                    <Border Grid.Row="2" Background="#0c1018" BorderBrush="{StaticResource EveHairline}" BorderThickness="1" CornerRadius="8" Margin="0,12,0,0"
+                    <!-- Map - fills its column; the VM re-projects on resize so big constellations spread out -->
+                    <Border Grid.Row="2" Background="#0c1018" BorderBrush="{DynamicResource EveHairline}" BorderThickness="1" CornerRadius="8" Margin="0,12,0,0"
                             Height="420" ClipToBounds="True" SizeChanged="OnMapSizeChanged"
                             Visibility="{Binding System.HasResult, Converter={StaticResource BoolToVisibility}}">
                         <Grid>
@@ -269,7 +269,7 @@
                             <StackPanel Visibility="{Binding System.HasHotSystems, Converter={StaticResource BoolToVisibility}}">
                                 <TextBlock Text="HOT SYSTEMS" Style="{StaticResource SectionLabel}" Margin="0,0,0,6"/>
                                 <ItemsControl ItemsSource="{Binding System.HotSystems}" ItemTemplate="{StaticResource NeighborRowTemplate}"/>
-                                <Rectangle Height="1" Fill="{StaticResource EveHairline}" Margin="0,8,0,10"/>
+                                <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,8,0,10"/>
                             </StackPanel>
                             <TextBlock Text="ADJACENT" Style="{StaticResource SectionLabel}" Margin="0,0,0,6"/>
                             <ItemsControl ItemsSource="{Binding System.Neighbors}" ItemTemplate="{StaticResource NeighborRowTemplate}"/>
@@ -279,7 +279,7 @@
             </Border>
             </Grid>
 
-            <!-- ════════ INTEL FEED (wide, bottom — zKill + in-game intel channel) ════════ -->
+            <!-- INTEL FEED (wide, bottom - zKill + in-game intel channel) -->
             <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,12,0,0">
                 <Grid Margin="18,12,18,12">
                     <Grid.RowDefinitions>
@@ -310,7 +310,7 @@
                         <ItemsControl ItemsSource="{Binding Feed.Entries}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type models:IntelEntry}">
-                                    <Border Background="{StaticResource EveRaisedBg}" CornerRadius="6" Padding="10,6" Margin="0,0,4,5"
+                                    <Border Background="{DynamicResource EveRaisedBg}" CornerRadius="6" Padding="10,6" Margin="0,0,4,5"
                                             Tag="{Binding DataContext.Feed, RelativeSource={RelativeSource AncestorType=UserControl}}">
                                         <Border.ContextMenu>
                                             <ContextMenu>
@@ -344,7 +344,7 @@
                                                 <TextBlock Text="{Binding Tag}" FontFamily="{StaticResource FontUI}" FontSize="8" FontWeight="SemiBold">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
-                                                            <Setter Property="Foreground" Value="{StaticResource EveAccent}"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource EveAccent}"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsKill}" Value="True">
                                                                     <Setter Property="Foreground" Value="{StaticResource EveCritical}"/>

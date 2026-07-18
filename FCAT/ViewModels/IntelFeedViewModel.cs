@@ -23,7 +23,7 @@ public partial class IntelFeedViewModel : ObservableObject
     private CancellationTokenSource? _cts;
     private int _currentSystemId;
     private readonly HashSet<long> _seenKills = [];
-    private readonly Dictionary<int, string> _names = [];   // type/system id → name cache
+    private readonly Dictionary<int, string> _names = [];   // type/system id -> name cache
 
     public IntelFeedViewModel(EsiService esi, ZkillService zkill, SystemSearchService systems, SettingsService settings)
     {
@@ -49,7 +49,7 @@ public partial class IntelFeedViewModel : ObservableObject
         _intel.Refresh();   // re-select the intel channel for the (possibly new) region
     }
 
-    // ── Lifecycle (driven by the view load/unload) ──
+    // Lifecycle (driven by the view load/unload)
     public void StartAuto()
     {
         if (_cts != null) return;
@@ -100,7 +100,7 @@ public partial class IntelFeedViewModel : ObservableObject
             if (k.Zkb != null && _seenKills.Add(k.KillmailId)) fresh.Add(k);
         fresh = fresh.Take(8).ToList();
 
-        // Build oldest→newest so the newest ends up at the top after inserting at 0.
+        // Build oldest->newest so the newest ends up at the top after inserting at 0.
         for (var i = fresh.Count - 1; i >= 0; i--)
         {
             var km = await _esi.GetKillmailAsync(fresh[i].KillmailId, fresh[i].Zkb!.Hash);

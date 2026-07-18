@@ -6,12 +6,11 @@ namespace FCAT.Services;
 
 /// <summary>
 /// Watches the FC's EVE gamelog and raises alerts for events that EVE actually writes to disk.
-///
 /// EVE log reality (verified against community log-parser tooling + in-game behaviour):
 /// the gamelog does NOT record most electronic warfare. The only EWar effect that produces a
 /// reliable line is warp scramble / disruption:  "Warp scramble attempt from &lt;name&gt; to you!".
 /// Webs, neuts, ECM, tracking disruptors, sensor dampeners and painters write nothing, so they
-/// are not — and cannot be — detected here. We also catch the genuine cap-out line where a
+/// are not - and cannot be - detected here. We also catch the genuine cap-out line where a
 /// module deactivates from insufficient capacitor, since that IS written to the combat log.
 /// </summary>
 public partial class CombatLogService : IDisposable
@@ -22,7 +21,7 @@ public partial class CombatLogService : IDisposable
 
     // "Warp scramble attempt from <name> to you!" (target may be "you" or "your <ship>").
     // EVE uses identical text for warp disruptors (point) and scramblers (scram).
-    // The target MUST be "you" — the gamelog is the FC's own, and lines like
+    // The target MUST be "you" - the gamelog is the FC's own, and lines like
     // "...from you to <name>!" (the FC tackling someone else) must NOT fire the alert.
     [GeneratedRegex(@"warp scramble attempt from (.+?) to you", RegexOptions.IgnoreCase)]
     private static partial Regex TackleRegex();
@@ -41,7 +40,7 @@ public partial class CombatLogService : IDisposable
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                      "EVE", "logs", "Gamelogs");
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // Public API
     public void StartWatching(string? logDirectory = null)
     {
         var dir = logDirectory ?? LogDirectory;
@@ -72,7 +71,7 @@ public partial class CombatLogService : IDisposable
         _lastFilePosition = 0;
     }
 
-    // ── File tracking ─────────────────────────────────────────────────────────
+    // File tracking
     private void AttachToLatestLogFile(string dir)
     {
         var latest = Directory.GetFiles(dir, "*.txt")
@@ -113,7 +112,7 @@ public partial class CombatLogService : IDisposable
         catch (IOException) { /* file locked — retry next change */ }
     }
 
-    // ── Parsing ───────────────────────────────────────────────────────────────
+    // Parsing
     private void ParseLine(string line)
     {
         var m = LogLineRegex().Match(line);
@@ -133,7 +132,7 @@ public partial class CombatLogService : IDisposable
         // Strip EVE's HTML-like markup
         var clean = Regex.Replace(content, "<[^>]+>", "").Trim();
 
-        // ── Tackle: "Warp scramble attempt from <name> to you" ──
+        // Tackle: "Warp scramble attempt from <name> to you"
         var tackle = TackleRegex().Match(clean);
         if (tackle.Success)
         {
@@ -152,7 +151,7 @@ public partial class CombatLogService : IDisposable
             return;
         }
 
-        // ── Cap-out: a module deactivates because capacitor ran dry ──
+        // Cap-out: a module deactivates because capacitor ran dry
         var capOut = CapOutRegex().Match(clean);
         if (capOut.Success)
         {

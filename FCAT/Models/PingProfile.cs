@@ -3,7 +3,7 @@ namespace FCAT.Models;
 /// <summary>
 /// A captured in-game chat-channel link. We store the raw MOTD markup verbatim
 /// (e.g. <c>&lt;url=joinChannel:...&gt;I. Boost IV&lt;/url&gt;</c>) so re-emitting it always
-/// produces a working clickable link — the channel's internal id is baked into the markup and
+/// produces a working clickable link - the channel's internal id is baked into the markup and
 /// can't be derived from the name via ESI.
 /// </summary>
 public class CapturedChannel
@@ -21,7 +21,7 @@ public class DoctrinePreset
     public string Name       { get; set; } = string.Empty;
     public string Ships      { get; set; } = string.Empty;   // priority order, e.g. "Napoc > Guardian > Boosts > HICs"
     public string FittingUrl { get; set; } = string.Empty;   // auth fitting-area link
-    public string Category   { get; set; } = string.Empty;   // e.g. "Skirmish" — for future grouping
+    public string Category   { get; set; } = string.Empty;   // e.g. "Skirmish" - for future grouping
 }
 
 /// <summary>

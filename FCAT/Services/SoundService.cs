@@ -50,7 +50,7 @@ public static class SoundService
         return player;
     }
 
-    // (frequency Hz, duration ms) — frequency 0 = silence.
+    // (frequency Hz, duration ms) - frequency 0 = silence.
     private static (int freq, int ms)[]? Segments(string preset) => preset switch
     {
         "Beep"        => [(880, 160)],

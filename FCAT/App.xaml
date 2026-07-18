@@ -7,23 +7,20 @@
              Startup="OnStartup">
     <Application.Resources>
 
-        <!-- ════════════════════════════════════════════════════════════
-             FCAT PALETTE — refined dark "cockpit"
-             Restraint over rainbow: near-black surfaces, hairline borders,
-             one cool cyan accent, gold reserved for the FC, role shown by
-             small accent bars/chips rather than loud text colours.
-        ════════════════════════════════════════════════════════════ -->
-        <SolidColorBrush x:Key="EveWindowBg"       Color="#0b0e14"/>   <!-- window base -->
-        <SolidColorBrush x:Key="EvePanelBg"        Color="#ee12171f"/> <!-- 93% surface -->
-        <SolidColorBrush x:Key="EveRaisedBg"       Color="#ff1a212b"/> <!-- hover / raised -->
-        <SolidColorBrush x:Key="EveRowAltBg"       Color="#5910151e"/> <!-- subtle row tint -->
+        <!-- FCAT PALETTE - "Nebula" (flat, opaque surfaces, violet accent). Lifted off pure black, high-contrast text, no gloss. Gold stays reserved for the FC; semantic red/amber/green unchanged. -->
+        <SolidColorBrush x:Key="EveWindowBg"       Color="#101019"/>
+        <SolidColorBrush x:Key="EvePanelBg"        Color="#191926"/>
+        <SolidColorBrush x:Key="EveRaisedBg"       Color="#23233a"/>
+        <SolidColorBrush x:Key="EveRowAltBg"       Color="#4d1e1e30"/>
 
-        <SolidColorBrush x:Key="EveHairline"       Color="#1f2735"/>   <!-- default border -->
-        <SolidColorBrush x:Key="EveHairlineSoft"   Color="#161c27"/>
-        <SolidColorBrush x:Key="EveHairlineStrong" Color="#2b3545"/>
+        <SolidColorBrush x:Key="EveHairline"       Color="#2b2b40"/>
+        <SolidColorBrush x:Key="EveHairlineSoft"   Color="#1c1c2b"/>
+        <SolidColorBrush x:Key="EveHairlineStrong" Color="#3a3a54"/>
 
-        <SolidColorBrush x:Key="EveAccent"         Color="#4db8d4"/>   <!-- cyan — live/interactive -->
-        <SolidColorBrush x:Key="EveAccentDim"      Color="#2c6c7e"/>
+        <SolidColorBrush x:Key="EveAccent"         Color="#a98ce0"/>   <!-- violet - live/interactive -->
+        <SolidColorBrush x:Key="EveAccentDim"      Color="#5b5080"/>
+        <SolidColorBrush x:Key="EveAccentBright"   Color="#bda2ea"/>   <!-- primary-button hover -->
+        <SolidColorBrush x:Key="EveAccentFaint"    Color="#22a98ce0"/> <!-- accent tint - outlined-button fill -->
 
         <SolidColorBrush x:Key="EveGold"           Color="#d4a449"/>   <!-- FC / wing only -->
         <SolidColorBrush x:Key="EveGoldSoft"       Color="#f0d99a"/>
@@ -33,27 +30,37 @@
         <SolidColorBrush x:Key="EveAmber"          Color="#c9883e"/>
         <SolidColorBrush x:Key="EveGreen"          Color="#3fae8f"/>
 
-        <SolidColorBrush x:Key="EveTextPrimary"    Color="#e6ebf2"/>
-        <SolidColorBrush x:Key="EveTextSecondary"  Color="#9aa3b3"/>
-        <SolidColorBrush x:Key="EveTextDim"        Color="#5c6473"/>
+        <!-- Three legible tiers. Data (ship, system, values) uses Secondary or Primary - NEVER Dim. Dim is only for decorative labels/hints, and even it is kept readable. -->
+        <SolidColorBrush x:Key="EveTextPrimary"    Color="#e8e9f4"/>
+        <SolidColorBrush x:Key="EveTextSecondary"  Color="#bcc0d4"/>   <!-- data / values -->
+        <SolidColorBrush x:Key="EveTextDim"        Color="#8a8fac"/>   <!-- labels / hints -->
 
         <!-- Back-compat aliases (older bindings still reference these names) -->
         <SolidColorBrush x:Key="EveDeepBg"         Color="#00000000"/>
-        <SolidColorBrush x:Key="EveBorderBrush"    Color="#1f2735"/>
+        <SolidColorBrush x:Key="EveBorderBrush"    Color="#2b2b40"/>
         <SolidColorBrush x:Key="EveGoldBrush"      Color="#d4a449"/>
         <SolidColorBrush x:Key="EveGoldDimBrush"   Color="#7a6530"/>
-        <SolidColorBrush x:Key="EveBlueBrush"      Color="#5a8fd6"/>
-        <SolidColorBrush x:Key="EveBlueDimBrush"   Color="#34527d"/>
+        <SolidColorBrush x:Key="EveBlueBrush"      Color="#8f86d6"/>
+        <SolidColorBrush x:Key="EveBlueDimBrush"   Color="#4a4570"/>
         <SolidColorBrush x:Key="EveRedBrush"       Color="#e2574c"/>
         <SolidColorBrush x:Key="EveGreenBrush"     Color="#3fae8f"/>
         <SolidColorBrush x:Key="EveAmberBrush"     Color="#c9883e"/>
-        <SolidColorBrush x:Key="EveTextDimBrush"   Color="#5c6473"/>
+        <SolidColorBrush x:Key="EveTextDimBrush"   Color="#8a8fac"/>
 
-        <!-- ══ TYPOGRAPHY TOKENS ══ -->
+        <!-- Window-chrome surfaces + backdrop stops (MainWindow), retinted per theme by ThemeService. -->
+        <SolidColorBrush x:Key="EveTopBarBrush"  Color="#cc12121d"/>
+        <SolidColorBrush x:Key="EveNavRailBrush" Color="#990a0d13"/>
+        <Color x:Key="EveGlowTopColor">#2b1f52</Color>
+        <Color x:Key="EveGlowMidColor">#1a1236</Color>
+        <Color x:Key="EveBackdropTopColor">#101019</Color>
+        <Color x:Key="EveBackdropMidColor">#0d0d16</Color>
+        <Color x:Key="EveBackdropBotColor">#0b0b12</Color>
+
+        <!-- TYPOGRAPHY TOKENS -->
         <FontFamily x:Key="FontUI">Segoe UI</FontFamily>
         <FontFamily x:Key="FontMono">Cascadia Mono, Consolas</FontFamily>
 
-        <!-- ══ VALUE CONVERTERS ══ -->
+        <!-- VALUE CONVERTERS -->
         <local:BoolToVisibilityConverter   x:Key="BoolToVisibility"/>
         <local:BoolToInvisibilityConverter x:Key="BoolToInvisibility"/>
         <local:InvertBoolConverter         x:Key="InvertBool"/>
@@ -65,27 +72,23 @@
         <local:BoolToAccentBrushConverter  x:Key="TabAccent"/>
         <local:NavActiveConverter          x:Key="NavActive"/>
         <local:NavActiveBrushConverter     x:Key="NavActiveBrush"
-            ActiveBrush="#4db8d4" InactiveBrush="#5c6473"/>
+            ActiveBrush="#a98ce0" InactiveBrush="#64668a"/>
         <local:NavActiveMultiConverter     x:Key="NavActiveMulti"/>
 
-        <!-- ════════════════════════════════════════════════════════════
-             CARD — flat surface, hairline border, soft rounded corners
-        ════════════════════════════════════════════════════════════ -->
+        <!-- CARD - flat surface, hairline border, soft rounded corners -->
         <Style x:Key="Card" TargetType="Border">
-            <Setter Property="Background"      Value="{StaticResource EvePanelBg}"/>
-            <Setter Property="BorderBrush"     Value="{StaticResource EveHairline}"/>
+            <Setter Property="Background"      Value="{DynamicResource EvePanelBg}"/>
+            <Setter Property="BorderBrush"     Value="{DynamicResource EveHairline}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius"    Value="10"/>
         </Style>
 
-        <!-- ════════════════════════════════════════════════════════════
-             BUTTONS — rounded, flat, restrained
-        ════════════════════════════════════════════════════════════ -->
+        <!-- BUTTONS - rounded, flat, restrained -->
+        <!-- Primary - solid accent fill, dark text. One per view. -->
         <Style x:Key="PrimaryButton" TargetType="Button">
-            <Setter Property="Background"       Value="#16202b"/>
-            <Setter Property="Foreground"       Value="{StaticResource EveAccent}"/>
-            <Setter Property="BorderBrush"      Value="{StaticResource EveAccentDim}"/>
-            <Setter Property="BorderThickness"  Value="1"/>
+            <Setter Property="Background"       Value="{DynamicResource EveAccent}"/>
+            <Setter Property="Foreground"       Value="#17122a"/>
+            <Setter Property="BorderThickness"  Value="0"/>
             <Setter Property="Cursor"           Value="Hand"/>
             <Setter Property="FontFamily"       Value="{StaticResource FontUI}"/>
             <Setter Property="FontSize"         Value="13"/>
@@ -95,16 +98,12 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="b" Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="7" Padding="{TemplateBinding Padding}">
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="b" Property="Background"  Value="#1d2c3a"/>
-                                <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource EveAccent}"/>
-                                <Setter Property="Foreground" Value="#86d6ea"/>
+                                <Setter TargetName="b" Property="Background" Value="{DynamicResource EveAccentBright}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.35"/>
@@ -115,10 +114,11 @@
             </Setter>
         </Style>
 
+        <!-- Secondary - subtle filled surface with a hairline, not an empty ghost. -->
         <Style x:Key="SecondaryButton" TargetType="Button">
-            <Setter Property="Background"       Value="Transparent"/>
+            <Setter Property="Background"       Value="#14ffffff"/>
             <Setter Property="Foreground"       Value="{StaticResource EveTextSecondary}"/>
-            <Setter Property="BorderBrush"      Value="{StaticResource EveHairlineStrong}"/>
+            <Setter Property="BorderBrush"      Value="{DynamicResource EveHairlineStrong}"/>
             <Setter Property="BorderThickness"  Value="1"/>
             <Setter Property="Cursor"           Value="Hand"/>
             <Setter Property="FontFamily"       Value="{StaticResource FontUI}"/>
@@ -130,12 +130,13 @@
                         <Border x:Name="b" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="7" Padding="{TemplateBinding Padding}">
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="b" Property="Background" Value="{StaticResource EveRaisedBg}"/>
+                                <Setter TargetName="b" Property="Background" Value="{DynamicResource EveRaisedBg}"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="{DynamicResource EveAccentDim}"/>
                                 <Setter Property="Foreground" Value="{StaticResource EveTextPrimary}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
@@ -164,7 +165,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="b" Property="Background" Value="{StaticResource EveRaisedBg}"/>
+                                <Setter TargetName="b" Property="Background" Value="{DynamicResource EveRaisedBg}"/>
                                 <Setter Property="Foreground" Value="{StaticResource EveTextPrimary}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -173,10 +174,7 @@
             </Setter>
         </Style>
 
-        <!-- ════════════════════════════════════════════════════════════
-             NAV RAIL BUTTON — icon over tiny label, left accent bar + fill
-             when active. Active state read via MultiBinding(ActiveNav, Tag).
-        ════════════════════════════════════════════════════════════ -->
+        <!-- NAV RAIL BUTTON - icon over tiny label, left accent bar + fill when active. Active state read via MultiBinding(ActiveNav, Tag). -->
         <Style x:Key="NavRailButton" TargetType="Button">
             <Setter Property="Background"       Value="Transparent"/>
             <Setter Property="Foreground"       Value="{StaticResource EveTextDim}"/>
@@ -191,14 +189,14 @@
                             <!-- active left accent bar -->
                             <Rectangle x:Name="bar" Width="3" HorizontalAlignment="Left"
                                        Margin="0,12" RadiusX="2" RadiusY="2"
-                                       Fill="{StaticResource EveAccent}" Opacity="0"/>
+                                       Fill="{DynamicResource EveAccent}" Opacity="0"/>
                             <Border x:Name="bg" Background="Transparent" CornerRadius="9" Margin="7,4"/>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
                                               TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bg" Property="Background" Value="{StaticResource EveRaisedBg}"/>
+                                <Setter TargetName="bg" Property="Background" Value="{DynamicResource EveRaisedBg}"/>
                                 <Setter Property="Foreground" Value="{StaticResource EveTextSecondary}"/>
                             </Trigger>
                             <DataTrigger Value="True">
@@ -209,8 +207,8 @@
                                     </MultiBinding>
                                 </DataTrigger.Binding>
                                 <Setter TargetName="bar" Property="Opacity" Value="1"/>
-                                <Setter TargetName="bg" Property="Background" Value="#14202e"/>
-                                <Setter Property="Foreground" Value="{StaticResource EveAccent}"/>
+                                <Setter TargetName="bg" Property="Background" Value="#211d34"/>
+                                <Setter Property="Foreground" Value="{DynamicResource EveAccent}"/>
                             </DataTrigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.3"/>
@@ -222,7 +220,7 @@
             </Setter>
         </Style>
 
-        <!-- ══ FEATURE CARD BUTTON — large clickable card with hover lift ══ -->
+        <!-- FEATURE CARD BUTTON - large clickable card with hover lift -->
         <Style x:Key="FeatureCardButton" TargetType="Button">
             <Setter Property="Cursor"           Value="Hand"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -231,15 +229,15 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="b" Background="{StaticResource EvePanelBg}"
-                                BorderBrush="{StaticResource EveHairline}" BorderThickness="1"
+                        <Border x:Name="b" Background="{DynamicResource EvePanelBg}"
+                                BorderBrush="{DynamicResource EveHairline}" BorderThickness="1"
                                 CornerRadius="10" Padding="18,16">
                             <ContentPresenter/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="b" Property="Background"  Value="{StaticResource EveRaisedBg}"/>
-                                <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource EveAccentDim}"/>
+                                <Setter TargetName="b" Property="Background"  Value="{DynamicResource EveRaisedBg}"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="{DynamicResource EveAccentDim}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -247,7 +245,7 @@
             </Setter>
         </Style>
 
-        <!-- ══ WINDOW CONTROL BUTTON — frameless min/max/close dots ══ -->
+        <!-- WINDOW CONTROL BUTTON - frameless min/max/close dots -->
         <Style x:Key="WindowControlButton" TargetType="Button">
             <Setter Property="Background"       Value="Transparent"/>
             <Setter Property="Cursor"           Value="Hand"/>
@@ -266,7 +264,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="b" Property="Background" Value="{StaticResource EveRaisedBg}"/>
+                                <Setter TargetName="b" Property="Background" Value="{DynamicResource EveRaisedBg}"/>
                                 <Setter Property="Foreground" Value="{StaticResource EveTextPrimary}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -275,14 +273,14 @@
             </Setter>
         </Style>
 
-        <!-- ══ SMALL UPPERCASE SECTION LABEL ══ -->
+        <!-- SMALL UPPERCASE SECTION LABEL -->
         <Style x:Key="SectionLabel" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
             <Setter Property="FontFamily" Value="{StaticResource FontUI}"/>
             <Setter Property="FontSize"   Value="11"/>
         </Style>
 
-        <!-- ══ PAGE TITLE — big light-weight heading, matches the dashboard greeting ══ -->
+        <!-- PAGE TITLE - big light-weight heading, matches the dashboard greeting -->
         <Style x:Key="PageTitle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource EveTextPrimary}"/>
             <Setter Property="FontFamily" Value="{StaticResource FontUI}"/>
@@ -290,12 +288,12 @@
             <Setter Property="FontWeight" Value="Light"/>
         </Style>
 
-        <!-- ══ PAGE EYEBROW — uppercase category above the title ══ -->
+        <!-- PAGE EYEBROW - uppercase category above the title -->
         <Style x:Key="PageEyebrow" TargetType="TextBlock" BasedOn="{StaticResource SectionLabel}">
             <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
 
-        <!-- ══ SLIM SCROLLBAR ══ -->
+        <!-- SLIM SCROLLBAR -->
         <Style TargetType="ScrollBar">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Width" Value="8"/>
@@ -308,7 +306,7 @@
                                     <Thumb>
                                         <Thumb.Template>
                                             <ControlTemplate TargetType="Thumb">
-                                                <Border CornerRadius="4" Background="#2b3545" Margin="2,0"/>
+                                                <Border CornerRadius="4" Background="#3a3a54" Margin="2,0"/>
                                             </ControlTemplate>
                                         </Thumb.Template>
                                     </Thumb>
@@ -326,7 +324,7 @@
             </Setter>
         </Style>
 
-        <!-- ══ DARK COMBOBOX ══ -->
+        <!-- DARK COMBOBOX -->
         <Style TargetType="ComboBoxItem">
             <Setter Property="Foreground" Value="{StaticResource EveTextPrimary}"/>
             <Setter Property="FontFamily" Value="{StaticResource FontUI}"/>
@@ -340,7 +338,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#14202e"/>
+                                <Setter TargetName="bd" Property="Background" Value="#211d34"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -366,11 +364,11 @@
                                           IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
                                 <ToggleButton.Template>
                                     <ControlTemplate TargetType="ToggleButton">
-                                        <Border x:Name="bd" Background="#0f1622" BorderBrush="{StaticResource EveHairlineStrong}"
+                                        <Border x:Name="bd" Background="#15151f" BorderBrush="{DynamicResource EveHairlineStrong}"
                                                 BorderThickness="1" CornerRadius="7"/>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource EveAccent}"/>
+                                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -386,12 +384,12 @@
                             <TextBox x:Name="PART_EditableTextBox" Grid.Column="0" Visibility="Collapsed"
                                      Margin="8,0,0,0" VerticalAlignment="Center" VerticalContentAlignment="Center"
                                      Background="Transparent" BorderThickness="0" Padding="0"
-                                     Foreground="{StaticResource EveTextPrimary}" CaretBrush="{StaticResource EveAccent}"/>
+                                     Foreground="{StaticResource EveTextPrimary}" CaretBrush="{DynamicResource EveAccent}"/>
                             <Path Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"
                                   Data="M 0 0 L 8 0 L 4 5 Z" Fill="{StaticResource EveTextSecondary}"/>
                             <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom"
                                    AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
-                                <Border Background="#0f1622" BorderBrush="{StaticResource EveHairlineStrong}" BorderThickness="1"
+                                <Border Background="#15151f" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1"
                                         CornerRadius="7" Margin="0,2,0,0" Padding="3"
                                         MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
                                         MaxHeight="{TemplateBinding MaxDropDownHeight}">
@@ -410,7 +408,7 @@
             </Setter>
         </Style>
 
-        <!-- ══ PAGE → VIEW MAPPINGS ══ -->
+        <!-- PAGE -> VIEW MAPPINGS -->
         <DataTemplate DataType="{x:Type vm:LoginViewModel}">
             <views:LoginView/>
         </DataTemplate>

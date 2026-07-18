@@ -40,7 +40,7 @@ public partial class SystemIntelViewModel : ObservableObject
 
     // Session caches so re-pulls (and revisited constellations) stay cheap on ESI.
     private readonly Dictionary<int, EsiSystem> _systemCache  = [];
-    private readonly Dictionary<int, int>       _gateDestCache = [];   // stargateId → destination systemId
+    private readonly Dictionary<int, int>       _gateDestCache = [];   // stargateId -> destination systemId
 
     private int _currentSystemId;
     private CancellationTokenSource? _cts;
@@ -54,9 +54,9 @@ public partial class SystemIntelViewModel : ObservableObject
         _auth = auth;
     }
 
-    // ── Map geometry — the canvas the constellation is projected into. Size is driven by the
-    //    view (it fills the available space), so large constellations get room to spread out
-    //    instead of piling up in a tiny fixed box. ──
+    // Map geometry - the canvas the constellation is projected into. Size is driven by the
+    // view (it fills the available space), so large constellations get room to spread out
+    // instead of piling up in a tiny fixed box.
     [ObservableProperty] private double _canvasWidth  = 360;
     [ObservableProperty] private double _canvasHeight = 360;
     private const double Margin = 46, NodeHalfW = 36, NodeHalfH = 15;
@@ -65,7 +65,7 @@ public partial class SystemIntelViewModel : ObservableObject
     private List<EsiSystem> _mapSystems = [];
     private List<(int a, int b)> _mapLinks = [];
 
-    /// <summary>Called by the view when the map area resizes — reprojects into the new size.</summary>
+    /// <summary>Called by the view when the map area resizes - reprojects into the new size.</summary>
     public void SetCanvasSize(double w, double h)
     {
         if (w < 120 || h < 120) return;                 // ignore degenerate/initial layout passes
@@ -94,7 +94,7 @@ public partial class SystemIntelViewModel : ObservableObject
     public ObservableCollection<NeighborRow> HotSystems { get; } = [];
     public bool HasHotSystems => HotSystems.Count > 0;
 
-    // ── Auto-refresh lifecycle (driven by the view's load/unload) ──
+    // Auto-refresh lifecycle (driven by the view's load/unload)
     public void StartAuto()
     {
         if (_cts != null) return;
@@ -279,7 +279,7 @@ public partial class SystemIntelViewModel : ObservableObject
 
     /// <summary>
     /// Projects the constellation's systems onto the canvas using their real ESI positions
-    /// (top-down: X → horizontal, Z → vertical, flipped to match Dotlan/in-game orientation),
+    /// (top-down: X -> horizontal, Z -> vertical, flipped to match Dotlan/in-game orientation),
     /// then draws the actual gate links between them.
     /// </summary>
     private void BuildMap(List<EsiSystem> systems, List<(int a, int b)> links)
@@ -326,13 +326,13 @@ public partial class SystemIntelViewModel : ObservableObject
     /// Many constellations have systems sitting at nearly identical coordinates, so a raw
     /// coordinate projection plots them on top of each other no matter how big the canvas is.
     /// This nudges any pair closer than the node footprint apart over a few iterations, then
-    /// clamps everything inside the canvas — readable layout, geography roughly preserved.
+    /// clamps everything inside the canvas - readable layout, geography roughly preserved.
     /// </summary>
     private void RelaxOverlaps(Dictionary<int, Point> centres)
     {
         const double minDist = 74;   // a node bubble + its label need roughly this much breathing room
         var ids = centres.Keys.ToList();
-        var rng = new Random(17);    // fixed seed → stable layout across re-projections
+        var rng = new Random(17);    // fixed seed -> stable layout across re-projections
 
         for (int iter = 0; iter < 80; iter++)
         {
@@ -346,7 +346,7 @@ public partial class SystemIntelViewModel : ObservableObject
                     double d = Math.Sqrt(dx * dx + dy * dy);
                     if (d >= minDist) continue;
 
-                    if (d < 0.01)   // coincident — shove apart in a random direction
+                    if (d < 0.01)   // coincident - shove apart in a random direction
                     {
                         double ang = rng.NextDouble() * Math.PI * 2;
                         dx = Math.Cos(ang); dy = Math.Sin(ang); d = 1;
@@ -443,7 +443,7 @@ public partial class SystemIntelViewModel : ObservableObject
         return br;
     }
 
-    // ── Sovereignty coloring ──
+    // Sovereignty coloring
     // Each alliance gets a stable colour from this palette (hashed by id) so you can see at a
     // glance which systems share an owner; unclaimed systems are a neutral slate.
     private static readonly Brush SovNone = Frozen(0x3a, 0x44, 0x55);
@@ -457,7 +457,7 @@ public partial class SystemIntelViewModel : ObservableObject
     private static Brush SovBrush(int? allianceId)
         => allianceId is > 0 ? SovPalette[(allianceId.Value & 0x7fffffff) % SovPalette.Length] : SovNone;
 
-    // ── Per-system links (right-click a map bubble) ──
+    // Per-system links (right-click a map bubble)
     [RelayCommand]
     private static void OpenDotlan(MapNode? node)
     {

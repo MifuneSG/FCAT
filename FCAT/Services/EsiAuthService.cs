@@ -38,7 +38,7 @@ public class EsiAuthService(HttpClient httpClient, CharacterStore store)
     // In-memory access tokens keyed by character id (hydrated from stored refresh tokens).
     private readonly Dictionary<int, EsiToken> _tokens = [];
 
-    // ── Active character (back-compat surface the rest of the app already uses) ──
+    // Active character (back-compat surface the rest of the app already uses)
     public EsiToken? CurrentToken { get; private set; }
     public int AuthenticatedCharacterId { get; private set; }
     public string AuthenticatedCharacterName { get; private set; } = string.Empty;
@@ -51,7 +51,7 @@ public class EsiAuthService(HttpClient httpClient, CharacterStore store)
 
     public EsiAuthService InitStore() { store.Load(); return this; }
 
-    // ── Add a character (runs the SSO browser flow) ──
+    // Add a character (runs the SSO browser flow)
     public async Task<bool> AuthenticateAsync()
     {
         var state = GenerateRandomString(16);
@@ -156,7 +156,7 @@ public class EsiAuthService(HttpClient httpClient, CharacterStore store)
         return tok?.AccessToken;
     }
 
-    // ── HTTP helpers ──
+    // HTTP helpers
     private async Task<EsiToken?> ExchangeCodeForTokenAsync(string code)
     {
         var request = NewTokenRequest(new Dictionary<string, string>
