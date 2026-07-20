@@ -24,3 +24,4 @@ jobs:
           username: "FCAT Releases"
           footer_title: "FCAT"
           reduce_headings: true
+          content: "@everyone"

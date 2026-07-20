@@ -331,9 +331,7 @@ public class EsiTypeInfo
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
-    // Base hull mass in kg. This is the bare hull - it does not include fit (plates add mass,
-    // nanos shed it, prop mods add it while hot). We can't see other pilots' fits over ESI, so
-    // this is the best mass figure available and it runs a touch low for fitted ships.
+    // Bare hull mass in kg - excludes fit, which ESI doesn't expose for other pilots.
     [JsonPropertyName("mass")]
     public double Mass { get; set; }
 }

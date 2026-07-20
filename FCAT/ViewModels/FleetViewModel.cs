@@ -706,8 +706,7 @@ public partial class FleetViewModel : ObservableObject
         HasFleetMass  = false;
         if (total == 0) return;
 
-        // Fleet mass tile: sum the base hull mass of every member whose type has resolved. The
-        // tooltip turns that into a wormhole go/no-go (see WormholeMass).
+        // Sums only members whose hull mass has resolved, so the tile is low until they all land.
         double fleetMass = 0; var massResolved = 0;
         foreach (var m in _currentMembers)
             if (_shipMassCache.TryGetValue(m.ShipTypeId, out var kg)) { fleetMass += kg; massResolved++; }
