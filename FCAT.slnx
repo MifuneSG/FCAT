@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="FCAT/FCAT.csproj" />
+  <Project Path="FCAT.Tests/FCAT.Tests.csproj" />
 </Solution>
