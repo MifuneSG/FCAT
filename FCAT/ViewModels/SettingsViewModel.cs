@@ -7,11 +7,15 @@ using FCAT.Services;
 
 namespace FCAT.ViewModels;
 
+/// <summary>One ESI scope row in the Settings access health check.</summary>
+public record ScopeStatus(string Label, bool Granted);
+
 public partial class SettingsViewModel : ObservableObject
 {
     private readonly SettingsService _settings;
     private readonly SystemSearchService _systemSearch;
     private readonly ShellViewModel _shell;
+    private readonly EsiAuthService _auth;
 
     /// <summary>The app-lifetime overlay/alert state - bound directly by the overlay controls.</summary>
     public AlertHub Overlay { get; }
@@ -20,12 +24,13 @@ public partial class SettingsViewModel : ObservableObject
     public ShellViewModel Shell => _shell;
 
     public SettingsViewModel(SettingsService settings, AlertHub overlay,
-                             SystemSearchService systemSearch, ShellViewModel shell)
+                             SystemSearchService systemSearch, ShellViewModel shell, EsiAuthService auth)
     {
         _settings = settings;
         Overlay   = overlay;
         _systemSearch = systemSearch;
         _shell = shell;
+        _auth = auth;
 
         EveLogsPath        = settings.Current.EveLogsPath;
         BoostChannelPrefix = settings.Current.BoostChannelPrefix;
@@ -40,7 +45,42 @@ public partial class SettingsViewModel : ObservableObject
         _alertClearSeconds = settings.Current.AlertClearSeconds;
         _themeName         = ThemeService.Name(ThemeService.Current);
 
+        BuildScopeHealth();
         _ = LoadSystemsAsync();
+    }
+
+    // ESI access health - shows which scopes the active character granted, and flags any missing
+    // (a character authorized before a newer scope was added won't have it until it's re-added).
+    public ObservableCollection<ScopeStatus> ScopeHealth { get; } = [];
+    [ObservableProperty] private bool _isLoggedIn;
+    [ObservableProperty] private bool _missingScopes;
+
+    private static readonly (string Scope, string Label)[] ScopeLabels =
+    [
+        ("esi-fleets.read_fleet.v1",        "Read fleet roster"),
+        ("esi-fleets.write_fleet.v1",       "Manage fleet (invite / move / kick / MOTD)"),
+        ("esi-location.read_location.v1",   "Read your location"),
+        ("esi-location.read_online.v1",     "Alt online status"),
+        ("esi-location.read_ship_type.v1",  "Alt current ship"),
+        ("esi-universe.read_structures.v1", "Resolve docked-structure names"),
+    ];
+
+    private void BuildScopeHealth()
+    {
+        ScopeHealth.Clear();
+        IsLoggedIn = _auth.AuthenticatedCharacterId > 0;
+        var granted = _auth.GrantedScopes();
+        foreach (var (scope, label) in ScopeLabels)
+            ScopeHealth.Add(new ScopeStatus(label, granted.Contains(scope)));
+        MissingScopes = IsLoggedIn && ScopeHealth.Any(s => !s.Granted);
+    }
+
+    [RelayCommand]
+    private void ClearRememberedPing()
+    {
+        _settings.Current.CustomPing = new CustomPingState();
+        _settings.Save();
+        StatusMessage = "Cleared saved custom ping details.";
     }
 
     // Colour theme

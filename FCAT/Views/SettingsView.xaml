@@ -52,7 +52,15 @@
         </StackPanel>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="34,0,34,24">
-            <Border Style="{StaticResource Card}" HorizontalAlignment="Left" MaxWidth="640">
+            <Grid HorizontalAlignment="Left" MaxWidth="1180">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="22"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+            <!-- LEFT COLUMN: appearance + log sources -->
+            <Border Grid.Column="0" Style="{StaticResource Card}" VerticalAlignment="Top">
             <StackPanel Margin="28,24,28,24">
 
                 <!-- Colour theme -->
@@ -305,8 +313,52 @@
                            FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,5,0,0"
                            Visibility="{Binding SystemsLoading, Converter={StaticResource BoolToVisibility}}"/>
 
+            </StackPanel>
+            </Border>
+
+            <!-- RIGHT COLUMN: ESI access, alerts, sounds, demo, updates -->
+            <Border Grid.Column="2" Style="{StaticResource Card}" VerticalAlignment="Top">
+            <StackPanel Margin="28,24,28,24">
+
+                <!-- ESI access health -->
+                <TextBlock Text="ESI ACCESS" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
+                <TextBlock Text="Permissions the active character granted at login. A red dot means FCAT asked for it but the character hasn't authorized it."
+                           Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                           TextWrapping="Wrap" Margin="0,0,0,9"/>
+                <ItemsControl ItemsSource="{Binding ScopeHealth}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ScopeStatus}">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                <Ellipse Width="7" Height="7" VerticalAlignment="Center" Margin="0,0,8,0">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="{StaticResource EveCritical}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Granted}" Value="True">
+                                                    <Setter Property="Fill" Value="{StaticResource EveGreen}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                                <TextBlock Text="{Binding Label}" Foreground="{StaticResource EveTextSecondary}"
+                                           FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="Some access is missing — remove and re-add this character on the Account page to grant it."
+                           Foreground="{StaticResource EveAmber}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                           TextWrapping="Wrap" Margin="0,6,0,0"
+                           Visibility="{Binding MissingScopes, Converter={StaticResource BoolToVisibility}}"/>
+                <TextBlock Text="Log in to check ESI access." Foreground="{StaticResource EveTextDim}"
+                           FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,6,0,0"
+                           Visibility="{Binding IsLoggedIn, Converter={StaticResource BoolToInvisibility}}"/>
+
+                <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,18,0,18"/>
+
                 <!-- Alerts: auto-clear -->
-                <TextBlock Text="ALERTS" Style="{StaticResource SectionLabel}" Margin="0,24,0,7"/>
+                <TextBlock Text="ALERTS" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
                 <Grid Margin="0,0,0,4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="160"/>
@@ -472,6 +524,17 @@
                     </TextBlock>
                 </Button>
 
+                <!-- Saved data -->
+                <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,24,0,18"/>
+                <TextBlock Text="SAVED DATA" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
+                <TextBlock Text="FCAT remembers your Custom ping fields between sessions. Clear them here — this does not touch your saved characters, theme, or other settings."
+                           Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                           TextWrapping="Wrap" Margin="0,0,0,9"/>
+                <Button Command="{Binding ClearRememberedPingCommand}" Style="{StaticResource SecondaryButton}"
+                        Height="34" Padding="16,0" HorizontalAlignment="Left">
+                    <TextBlock Text="Clear saved ping" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                </Button>
+
                 <!-- Updates -->
                 <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,24,0,18"/>
                 <TextBlock Text="UPDATES" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
@@ -506,6 +569,7 @@
                 </Grid>
             </StackPanel>
             </Border>
+            </Grid>
         </ScrollViewer>
     </Grid>
 </UserControl>

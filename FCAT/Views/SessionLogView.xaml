@@ -75,6 +75,25 @@
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="BATTLE REPORT" FontFamily="{StaticResource FontMono}" FontSize="11"
                                                Foreground="{StaticResource EveTextSecondary}" VerticalAlignment="Center"/>
+                                    <Border Margin="8,0,0,0" Padding="5,1" CornerRadius="3" VerticalAlignment="Center"
+                                            BorderThickness="1" BorderBrush="{StaticResource EveAmber}" Background="#1f1a10">
+                                        <Border.ToolTip>
+                                            <ToolTip Padding="0" Background="Transparent" BorderThickness="0">
+                                                <Border Background="{DynamicResource EvePanelBg}" BorderBrush="{DynamicResource EveHairlineStrong}"
+                                                        BorderThickness="1" CornerRadius="6" Padding="14,12" MaxWidth="300">
+                                                    <StackPanel>
+                                                        <TextBlock Text="Work in progress" Foreground="{StaticResource EveAmber}"
+                                                                   FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="The battle report is still being validated against live fights. Kills lag a few minutes and multi-system brawls can split across zKill windows - cross-check the Battle Report link before you trust the totals."
+                                                                   Foreground="{StaticResource EveTextSecondary}" Margin="0,7,0,0"
+                                                                   FontFamily="{StaticResource FontUI}" FontSize="12" TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </ToolTip>
+                                        </Border.ToolTip>
+                                        <TextBlock Text="WIP" Foreground="{StaticResource EveAmber}"
+                                                   FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold"/>
+                                    </Border>
                                     <TextBlock Text="{Binding Log.BattleReportSystem}" Foreground="{StaticResource EveGoldSoft}"
                                                FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"
                                                VerticalAlignment="Center" Margin="10,0,0,0"/>

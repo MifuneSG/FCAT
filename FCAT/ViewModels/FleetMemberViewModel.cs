@@ -85,6 +85,9 @@ public partial class FleetMemberViewModel : ObservableObject
     /// <summary>Distinct boost categories this pilot is providing (for fleet coverage tallies).</summary>
     public IReadOnlyList<BoostCategory> BoostCategories { get; set; } = [];
 
+    /// <summary>The pilot's resolved boost charges (used to break down each link in the coverage tooltip).</summary>
+    public IReadOnlyCollection<BoostChargeInfo> BoostCharges { get; set; } = [];
+
     /// <summary>True when the pilot is currently sitting in a pod (ship lost).</summary>
     [ObservableProperty] private bool _isInCapsule;
 

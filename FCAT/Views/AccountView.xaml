@@ -143,6 +143,13 @@
 
                                     <!-- Actions -->
                                     <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Command="{Binding DataContext.InviteCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}" Style="{StaticResource SecondaryButton}"
+                                                Height="32" Padding="14,0" Margin="0,0,8,0"
+                                                Visibility="{Binding CanInvite, Converter={StaticResource BoolToVisibility}}"
+                                                ToolTip="Invite this character to your fleet">
+                                            <TextBlock Text="Invite" FontFamily="{StaticResource FontUI}" FontSize="12" Foreground="{DynamicResource EveAccent}"/>
+                                        </Button>
                                         <Button Command="{Binding DataContext.SetActiveCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                 CommandParameter="{Binding}" Style="{StaticResource SecondaryButton}"
                                                 Height="32" Padding="14,0" Margin="0,0,8,0"
@@ -160,6 +167,10 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+
+                <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource EveGreen}"
+                           FontFamily="{StaticResource FontUI}" FontSize="12" Margin="2,10,0,0" TextWrapping="Wrap"
+                           Visibility="{Binding StatusMessage, Converter={StaticResource StringToVisibility}}"/>
 
                 <TextBlock Text="Status (online · system · ship) is read live from ESI for each character. Location is the system the character is in — not Local, grid, or d-scan."
                            Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"

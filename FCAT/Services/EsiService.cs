@@ -49,6 +49,10 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
     public async Task<AlliancePublicInfo?> GetAlliancePublicInfoAsync(int allianceId)
         => await GetPublicAsync<AlliancePublicInfo>($"/v3/alliances/{allianceId}/");
 
+    /// <summary>Tranquility server status (player count). Public, no auth.</summary>
+    public async Task<EsiServerStatus?> GetServerStatusAsync()
+        => await GetPublicAsync<EsiServerStatus>("/v1/status/");
+
     public async Task<CharacterFleetInfo?> GetCharacterFleetAsync(int characterId)
         => DemoMode ? DemoData.Fleet()
                     : await GetAuthenticatedAsync<CharacterFleetInfo>($"/v1/characters/{characterId}/fleet/", characterId);
@@ -162,18 +166,18 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
     }
 
     /// <summary>
-    /// Fetches group_id for each ship type ID (GET /v3/universe/types/{id}/).
-    /// Requests are made in parallel (max 8 concurrent) to stay ESI-friendly.
-    /// Returns only successfully resolved entries.
+    /// Fetches type info (group_id + base hull mass) for each ship type ID
+    /// (GET /v3/universe/types/{id}/). Requests run in parallel (max 8 concurrent) to stay
+    /// ESI-friendly. Returns only successfully resolved entries.
     /// </summary>
-    public async Task<Dictionary<int, int>> GetShipGroupIdsAsync(IEnumerable<int> typeIds)
+    public async Task<Dictionary<int, EsiTypeInfo>> GetShipTypeInfosAsync(IEnumerable<int> typeIds)
     {
-        if (DemoMode) return DemoData.GroupIds(typeIds);
+        if (DemoMode) return DemoData.TypeInfos(typeIds);
 
         var ids = typeIds.Distinct().ToList();
         if (ids.Count == 0) return [];
 
-        var result    = new Dictionary<int, int>();
+        var result    = new Dictionary<int, EsiTypeInfo>();
         var semaphore = new SemaphoreSlim(8, 8);
         var lockObj   = new object();
 
@@ -184,13 +188,24 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
             {
                 var info = await GetPublicAsync<EsiTypeInfo>($"/v3/universe/types/{id}/");
                 if (info != null && info.GroupId > 0)
-                    lock (lockObj) result[id] = info.GroupId;
+                    lock (lockObj) result[id] = info;
             }
             finally { semaphore.Release(); }
         });
 
         await Task.WhenAll(tasks);
         return result;
+    }
+
+    /// <summary>
+    /// group_id for each ship type ID. Thin projection over <see cref="GetShipTypeInfosAsync"/>
+    /// so callers that only need the role classifier don't carry the whole type payload.
+    /// </summary>
+    public async Task<Dictionary<int, int>> GetShipGroupIdsAsync(IEnumerable<int> typeIds)
+    {
+        if (DemoMode) return DemoData.GroupIds(typeIds);
+        var infos = await GetShipTypeInfosAsync(typeIds);
+        return infos.ToDictionary(kv => kv.Key, kv => kv.Value.GroupId);
     }
 
     /// <summary>Resolves inventory type names -> type IDs via POST /v1/universe/ids/ (public).</summary>

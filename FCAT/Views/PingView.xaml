@@ -120,6 +120,13 @@
                         <ComboBox IsEditable="True" StaysOpenOnEdit="True" ItemsSource="{Binding CommsOptions}"
                                   Text="{Binding CommsText, UpdateSourceTrigger=PropertyChanged}"/>
 
+                        <!-- Doctrine - free-type (Custom only); alliance profiles use the preset dropdown below -->
+                        <StackPanel Visibility="{Binding IsCustom, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="Doctrine" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Style="{StaticResource DarkTextBox}"
+                                     Text="{Binding DoctrineText, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+
                         <!-- Doctrine / Ships / Implants - alliance-specific (hidden on Custom) -->
                         <StackPanel Visibility="{Binding IsAlliance, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Text="Doctrine" Style="{StaticResource FieldLabel}"/>

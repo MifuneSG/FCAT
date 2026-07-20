@@ -147,6 +147,17 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Tranquility online count (like the EVE launcher) -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0"
+                                Visibility="{Binding ServerPlayers, Converter={StaticResource StringToVisibility}}"
+                                ToolTip="Players online on Tranquility">
+                        <Ellipse Width="7" Height="7" Fill="{StaticResource EveGreen}" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                        <TextBlock Text="TQ" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}"
+                                   FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="{Binding ServerPlayers}" Foreground="{StaticResource EveTextSecondary}"
+                                   FontFamily="{StaticResource FontMono}" FontSize="12" VerticalAlignment="Center"/>
+                    </StackPanel>
+
                     <!-- EVE (UTC) clock -->
                     <TextBlock x:Name="EveClock" Foreground="{StaticResource EveTextSecondary}"
                                FontFamily="{StaticResource FontMono}" FontSize="12"

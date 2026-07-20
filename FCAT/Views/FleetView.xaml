@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:FCAT.ViewModels"
              xmlns:models="clr-namespace:FCAT.Models"
+             xmlns:svc="clr-namespace:FCAT.Services"
              xmlns:local="clr-namespace:FCAT"
              d:DataContext="{d:DesignInstance vm:FleetViewModel}"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -228,7 +229,31 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:FleetStat}">
-                            <StackPanel Orientation="Horizontal" Margin="0,0,16,0" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,16,0" VerticalAlignment="Center" Background="Transparent">
+                                <StackPanel.ToolTip>
+                                    <ToolTip Padding="0" Background="Transparent" BorderThickness="0">
+                                        <Border Background="{DynamicResource EvePanelBg}" BorderBrush="{DynamicResource EveHairlineStrong}"
+                                                BorderThickness="1" CornerRadius="6" Padding="14,12">
+                                            <StackPanel MinWidth="150">
+                                                <TextBlock Foreground="{Binding Color}"
+                                                           FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold">
+                                                    <Run Text="{Binding Count, Mode=OneWay}"/><Run Text=" "/><Run Text="{Binding Label, Mode=OneWay}"/>
+                                                </TextBlock>
+                                                <ItemsControl ItemsSource="{Binding Hulls}" Margin="0,8,0,0">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate DataType="{x:Type vm:HullCount}">
+                                                            <TextBlock Text="{Binding Line}" Foreground="{StaticResource EveTextSecondary}"
+                                                                       FontFamily="{StaticResource FontMono}" FontSize="12" Margin="0,1,0,0"/>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Text="{Binding Detail}" Foreground="{StaticResource EveTextDim}" Margin="0,8,0,0"
+                                                           FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap"
+                                                           Visibility="{Binding HasDetail, Converter={StaticResource BoolToVisibility}}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </ToolTip>
+                                </StackPanel.ToolTip>
                                 <TextBlock Text="{Binding Count}" Foreground="{Binding Color}"
                                            FontFamily="{StaticResource FontUI}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding Label}" Foreground="{StaticResource EveTextSecondary}"
@@ -249,7 +274,37 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:BoostStat}">
-                            <StackPanel Orientation="Horizontal" Margin="0,0,14,0" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,14,0" VerticalAlignment="Center" Background="Transparent">
+                                <StackPanel.ToolTip>
+                                    <ToolTip Padding="0" Background="Transparent" BorderThickness="0">
+                                        <Border Background="{DynamicResource EvePanelBg}" BorderBrush="{DynamicResource EveHairlineStrong}"
+                                                BorderThickness="1" CornerRadius="6" Padding="14,12">
+                                            <StackPanel MinWidth="170">
+                                                <TextBlock Foreground="{Binding Color}"
+                                                           FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold">
+                                                    <Run Text="{Binding Label, Mode=OneWay}"/><Run Text=" links"/>
+                                                </TextBlock>
+                                                <ItemsControl ItemsSource="{Binding Sources}" Margin="0,8,0,0"
+                                                              Visibility="{Binding HasSources, Converter={StaticResource BoolToVisibility}}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate DataType="{x:Type vm:BoostSource}">
+                                                            <StackPanel Margin="0,0,0,6">
+                                                                <TextBlock Text="{Binding Pilot}" Foreground="{StaticResource EveTextPrimary}"
+                                                                           FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
+                                                                <TextBlock Text="{Binding Charges}" Foreground="{StaticResource EveTextSecondary}"
+                                                                           FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap"
+                                                                           Visibility="{Binding Charges, Converter={StaticResource StringToVisibility}}"/>
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Text="no coverage" Foreground="{StaticResource EveTextDim}" Margin="0,8,0,0"
+                                                           FontFamily="{StaticResource FontUI}" FontSize="11" FontStyle="Italic"
+                                                           Visibility="{Binding NoCoverage, Converter={StaticResource BoolToVisibility}}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </ToolTip>
+                                </StackPanel.ToolTip>
                                 <TextBlock Text="{Binding Label}" Foreground="{Binding Color}"
                                            FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding CountText}" Foreground="{Binding Color}"
@@ -258,6 +313,91 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+
+                <!-- Divider -->
+                <Rectangle Width="1" Height="18" Fill="{DynamicResource EveHairlineStrong}" Margin="4,0,16,0" VerticalAlignment="Center"
+                           Visibility="{Binding HasFleetMass, Converter={StaticResource BoolToVisibility}}"/>
+
+                <!-- Fleet mass (base hull); tooltip carries the wormhole go/no-go -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                            Visibility="{Binding HasFleetMass, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel.ToolTip>
+                        <ToolTip Padding="0" Background="Transparent" BorderThickness="0">
+                            <Border Background="{DynamicResource EvePanelBg}" BorderBrush="{DynamicResource EveHairlineStrong}"
+                                    BorderThickness="1" CornerRadius="6" Padding="14,12">
+                                <StackPanel MinWidth="200">
+                                    <!-- Header: mass value + estimate tag -->
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding FleetMassText}" Foreground="{DynamicResource EveAccent}"
+                                                   FontFamily="{StaticResource FontMono}" FontSize="17" FontWeight="SemiBold"/>
+                                        <TextBlock Text="est. cold" Foreground="{StaticResource EveTextDim}"
+                                                   FontFamily="{StaticResource FontUI}" FontSize="10" VerticalAlignment="Bottom" Margin="8,0,0,3"/>
+                                    </StackPanel>
+                                    <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,10,0,8"/>
+                                    <!-- Column headers -->
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="52"/>
+                                            <ColumnDefinition Width="60"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="IN"     Style="{StaticResource SectionLabel}" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="RETURN" Style="{StaticResource SectionLabel}" TextAlignment="Center"/>
+                                    </Grid>
+                                    <!-- One row per hole class -->
+                                    <ItemsControl ItemsSource="{Binding WormholeChecks}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type svc:WormholeCheck}">
+                                                <Grid Margin="0,3,0,0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="52"/>
+                                                        <ColumnDefinition Width="60"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding Label}" Foreground="{StaticResource EveTextSecondary}"
+                                                               FontFamily="{StaticResource FontMono}" FontSize="13" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding OneWayText}" TextAlignment="Center"
+                                                               FontFamily="{StaticResource FontMono}" FontSize="13" FontWeight="SemiBold">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding OneWay}" Value="False">
+                                                                        <Setter Property="Foreground" Value="{StaticResource EveCritical}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <TextBlock Grid.Column="2" Text="{Binding RoundTripText}" TextAlignment="Center"
+                                                               FontFamily="{StaticResource FontMono}" FontSize="13" FontWeight="SemiBold">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding RoundTrip}" Value="False">
+                                                                        <Setter Property="Foreground" Value="{StaticResource EveCritical}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,9,0,7"/>
+                                    <TextBlock Text="return also = fresh hole already at ~50%" Foreground="{StaticResource EveTextDim}"
+                                               FontFamily="{StaticResource FontUI}" FontSize="10"/>
+                                </StackPanel>
+                            </Border>
+                        </ToolTip>
+                    </StackPanel.ToolTip>
+                    <TextBlock Text="{Binding FleetMassText}" Foreground="{DynamicResource EveAccent}"
+                               FontFamily="{StaticResource FontMono}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock Text="MASS" Foreground="{StaticResource EveTextSecondary}"
+                               FontFamily="{StaticResource FontUI}" FontSize="11" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
             </StackPanel>
 
             <!-- Mainline label + composition advisories -->
@@ -273,6 +413,20 @@
                         <DataTemplate DataType="{x:Type vm:FleetAdvisory}">
                             <Border Margin="6,0,0,0" Padding="8,2" CornerRadius="4"
                                     BorderThickness="1" BorderBrush="{Binding Color}" Background="#1a1118">
+                                <Border.ToolTip>
+                                    <ToolTip Padding="0" Background="Transparent" BorderThickness="0"
+                                             Visibility="{Binding HasExplain, Converter={StaticResource BoolToVisibility}}">
+                                        <Border Background="{DynamicResource EvePanelBg}" BorderBrush="{DynamicResource EveHairlineStrong}"
+                                                BorderThickness="1" CornerRadius="6" Padding="14,12" MaxWidth="280">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Text}" Foreground="{Binding Color}"
+                                                           FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding Explain}" Foreground="{StaticResource EveTextSecondary}" Margin="0,7,0,0"
+                                                           FontFamily="{StaticResource FontUI}" FontSize="12" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </ToolTip>
+                                </Border.ToolTip>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="⚠" Foreground="{Binding Color}" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
                                     <TextBlock Text="{Binding Text}" Foreground="{Binding Color}"
@@ -918,6 +1072,32 @@
                         <Button Command="{Binding ConfirmRenameCommand}" Style="{StaticResource PrimaryButton}"
                                 Height="34" Width="110" HorizontalAlignment="Right">
                             <TextBlock Text="Rename" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- CONFIRM OVERLAY (themed replacement for the native Yes/No MessageBox) -->
+        <Grid Grid.Row="0" Grid.RowSpan="4" Background="#b0050810"
+              Visibility="{Binding IsConfirmOpen, Converter={StaticResource BoolToVisibility}}">
+            <Grid.InputBindings>
+                <KeyBinding Key="Esc" Command="{Binding ConfirmNoCommand}"/>
+            </Grid.InputBindings>
+            <Border Style="{StaticResource Card}" Width="360"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Margin="22,20,22,18">
+                    <TextBlock Text="CONFIRM" Style="{StaticResource SectionLabel}" Margin="0,0,0,10"/>
+                    <TextBlock Text="{Binding ConfirmMessage}" Foreground="{StaticResource EveTextPrimary}"
+                               FontFamily="{StaticResource FontUI}" FontSize="14" TextWrapping="Wrap"/>
+                    <Grid Margin="0,18,0,0">
+                        <Button Command="{Binding ConfirmNoCommand}" Style="{StaticResource GhostButton}"
+                                Height="34" Width="90" HorizontalAlignment="Left">
+                            <TextBlock Text="Cancel" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                        </Button>
+                        <Button Command="{Binding ConfirmYesCommand}" Style="{StaticResource PrimaryButton}"
+                                Height="34" MinWidth="110" HorizontalAlignment="Right">
+                            <TextBlock Text="{Binding ConfirmYesText}" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
                         </Button>
                     </Grid>
                 </StackPanel>

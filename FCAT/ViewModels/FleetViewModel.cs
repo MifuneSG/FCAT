@@ -29,6 +29,9 @@ public partial class FleetViewModel : ObservableObject
     // Persistent ship role cache - typeId -> group_id from ESI
     private readonly Dictionary<int, int>    _groupIdCache = [];
 
+    // Persistent hull-mass cache - typeId -> base hull mass (kg) from the same ESI type fetch.
+    private readonly Dictionary<int, double> _shipMassCache = [];
+
     // FC role overrides for this fleet, keyed by ship type (e.g. Legion -> Logi). Session-only.
     private readonly Dictionary<int, ShipRole> _typeRoleOverrides = [];
 
@@ -88,6 +91,12 @@ public partial class FleetViewModel : ObservableObject
     [ObservableProperty] private string _inviteName = string.Empty;
     [ObservableProperty] private string _mainlineLabel = string.Empty;
 
+    // Fleet-mass tile (base hull mass; tooltip carries the wormhole go/no-go). Hidden until at
+    // least one hull's mass has resolved.
+    [ObservableProperty] private bool   _hasFleetMass;
+    [ObservableProperty] private string _fleetMassText = string.Empty;
+    public ObservableCollection<WormholeCheck> WormholeChecks { get; } = [];
+
     // Move picker state
     [ObservableProperty] private bool _isMovePickerOpen;
     [ObservableProperty] private string _movePilotName = string.Empty;
@@ -97,6 +106,39 @@ public partial class FleetViewModel : ObservableObject
     [ObservableProperty] private bool _isRenameOpen;
     [ObservableProperty] private string _renameTitle = string.Empty;
     [ObservableProperty] private string _renameText = string.Empty;
+
+    // Themed confirm dialog - replaces the native MessageBox for destructive actions (kick,
+    // delete wing/squad). ConfirmAsync awaits the user's Yes/No via a TaskCompletionSource.
+    [ObservableProperty] private bool   _isConfirmOpen;
+    [ObservableProperty] private string _confirmMessage = string.Empty;
+    [ObservableProperty] private string _confirmYesText = "Confirm";
+    private TaskCompletionSource<bool>? _confirmTcs;
+
+    private Task<bool> ConfirmAsync(string message, string yesText)
+    {
+        ConfirmMessage = message;
+        ConfirmYesText = yesText;
+        _confirmTcs?.TrySetResult(false);   // resolve any dialog still pending
+        _confirmTcs = new TaskCompletionSource<bool>();
+        IsConfirmOpen = true;
+        return _confirmTcs.Task;
+    }
+
+    [RelayCommand]
+    private void ConfirmYes()
+    {
+        IsConfirmOpen = false;
+        _confirmTcs?.TrySetResult(true);
+        _confirmTcs = null;
+    }
+
+    [RelayCommand]
+    private void ConfirmNo()
+    {
+        IsConfirmOpen = false;
+        _confirmTcs?.TrySetResult(false);
+        _confirmTcs = null;
+    }
 
     public ObservableCollection<WingViewModel>        Wings            { get; } = [];
     public ObservableCollection<FleetMemberViewModel> FleetCommandLevel { get; } = [];
@@ -261,9 +303,12 @@ public partial class FleetViewModel : ObservableObject
 
         if (uncachedTypeIds.Count > 0)
         {
-            var groups = await _esi.GetShipGroupIdsAsync(uncachedTypeIds);
-            foreach (var (typeId, groupId) in groups)
-                _groupIdCache[typeId] = groupId;
+            var infos = await _esi.GetShipTypeInfosAsync(uncachedTypeIds);
+            foreach (var (typeId, info) in infos)
+            {
+                _groupIdCache[typeId] = info.GroupId;
+                if (info.Mass > 0) _shipMassCache[typeId] = info.Mass;
+            }
         }
 
         // 3. Apply cached names to every member every tick
@@ -658,7 +703,21 @@ public partial class FleetViewModel : ObservableObject
         Advisories.Clear();
         _currentDpsIds.Clear();   // repopulated below for combat fleets; left empty disables attrition
         MainlineLabel = string.Empty;
+        HasFleetMass  = false;
         if (total == 0) return;
+
+        // Fleet mass tile: sum the base hull mass of every member whose type has resolved. The
+        // tooltip turns that into a wormhole go/no-go (see WormholeMass).
+        double fleetMass = 0; var massResolved = 0;
+        foreach (var m in _currentMembers)
+            if (_shipMassCache.TryGetValue(m.ShipTypeId, out var kg)) { fleetMass += kg; massResolved++; }
+        HasFleetMass = massResolved > 0;
+        WormholeChecks.Clear();
+        if (HasFleetMass)
+        {
+            FleetMassText = WormholeMass.Format(fleetMass);
+            foreach (var c in WormholeMass.Checks(fleetMass)) WormholeChecks.Add(c);
+        }
 
         // Dominant hull + fleet kind
         var dominant      = _currentMembers.GroupBy(m => m.ShipTypeId)
@@ -684,11 +743,22 @@ public partial class FleetViewModel : ObservableObject
             => overrideMainline && m.ShipTypeId == dominantType && !_typeRoleOverrides.ContainsKey(m.ShipTypeId)
                 ? ShipRole.DPS : m.ShipRole;
 
-        // Role tally (using effective roles)
-        void AddRole(string label, Brush color, Func<ShipRole, bool> match)
+        // DPS-attrition summary for the DPS chip tooltip. Numbers come from the frozen baseline
+        // (see the DPS-attrition section); before the fleet commits there's nothing to measure yet.
+        var dpsDetail = _dpsBaselineArmed && _baselineDpsIds.Count > 0
+            ? $"Baseline {_baselineDpsIds.Count} · lost {_dpsLostIds.Count} (~{(int)Math.Round(100.0 * _dpsLostIds.Count / _baselineDpsIds.Count)}%)"
+            : "Baseline sets once the fleet commits";
+
+        // Role tally (using effective roles). Hulls is the ship mix behind the count (hover tooltip).
+        void AddRole(string label, Brush color, Func<ShipRole, bool> match, string detail = "")
         {
-            var n = _currentMembers.Count(m => match(EffectiveRole(m)));
-            if (n > 0) RoleStats.Add(new FleetStat(label, n, color));
+            var members = _currentMembers.Where(m => match(EffectiveRole(m))).ToList();
+            if (members.Count == 0) return;
+            var hulls = members.GroupBy(m => string.IsNullOrEmpty(m.ShipTypeName) ? "Unknown" : m.ShipTypeName)
+                               .OrderByDescending(g => g.Count())
+                               .Select(g => new HullCount(g.Key, g.Count()))
+                               .ToList();
+            RoleStats.Add(new FleetStat(label, members.Count, color, hulls, detail));
         }
         AddRole("LOGI",   BrLogi,   r => r is ShipRole.Logi or ShipRole.CapLogi);
         AddRole("BOOST",  BrBoost,  r => r is ShipRole.Booster);
@@ -697,7 +767,7 @@ public partial class FleetViewModel : ObservableObject
         AddRole("SUPP",   BrSupport, r => r is ShipRole.Support);
         AddRole("CAP",    BrCap,     r => r is ShipRole.Titan or ShipRole.Supercarrier or ShipRole.CapDPS);
         AddRole("INDY",   BrIndy,    r => r is ShipRole.Industrial or ShipRole.Mining);
-        AddRole("DPS",    BrDps,     r => r is ShipRole.DPS or ShipRole.Unknown);
+        AddRole("DPS",    BrDps,     r => r is ShipRole.DPS or ShipRole.Unknown, kind == FleetKind.Combat ? dpsDetail : "");
 
         // DPS-attrition snapshot (combat fleets only)
         // Same definition the FC sees in the DPS tally above. Capital/mining fleets leave this
@@ -714,8 +784,14 @@ public partial class FleetViewModel : ObservableObject
         // The FC is usually the booster, so these come from the boost channel (Chatlogs).
         void AddBoost(string label, BoostCategory cat, Brush color)
         {
-            var n = _currentMembers.Count(m => m.BoostCategories.Contains(cat));
-            BoostStats.Add(new BoostStat(label, n, n > 0 ? color : BrUncovered));
+            var sources = new List<BoostSource>();
+            foreach (var m in _currentMembers.Where(m => m.BoostCategories.Contains(cat)))
+            {
+                var charges = string.Join(", ", m.BoostCharges.Where(c => c.Category == cat)
+                                                              .Select(c => c.Name.Replace(" Charge", "")));
+                sources.Add(new BoostSource(m.CharacterName, charges));
+            }
+            BoostStats.Add(new BoostStat(label, sources.Count, sources.Count > 0 ? color : BrUncovered, sources));
         }
         if (kind == FleetKind.Mining)
         {
@@ -749,12 +825,15 @@ public partial class FleetViewModel : ObservableObject
         var logiPct = (double)logi / total;
 
         if (logi == 0)
-            Advisories.Add(new FleetAdvisory("No logistics", BrCritical));
+            Advisories.Add(new FleetAdvisory("No logistics", BrCritical,
+                $"No logi hull in a {total}-pilot combat fleet. Reps are what keep the fleet on grid - confirm logi is in fleet and assigned."));
         else if (logiPct < 0.07)
-            Advisories.Add(new FleetAdvisory($"Low logi {(int)Math.Round(logiPct * 100)}% (~10% ideal)", BrAmber));
+            Advisories.Add(new FleetAdvisory($"Low logi {(int)Math.Round(logiPct * 100)}% (~10% ideal)", BrAmber,
+                $"{logi} logi across {total} pilots. Most doctrines want roughly 1 logi per 10 in fleet; under ~7% the reps get overwhelmed fast."));
 
         if (tackle == 0)
-            Advisories.Add(new FleetAdvisory("No tackle / interdiction", BrAmber));
+            Advisories.Add(new FleetAdvisory("No tackle / interdiction", BrAmber,
+                "No tackle or interdiction hull detected. Without points or bubbles, targets just warp off before they die."));
     }
 
     private WingViewModel CreateWing(long id)
@@ -793,13 +872,7 @@ public partial class FleetViewModel : ObservableObject
     {
         var name = string.IsNullOrEmpty(member.CharacterName) ? "this pilot" : member.CharacterName;
 
-        var confirm = System.Windows.MessageBox.Show(
-            $"Remove {name} from the fleet?",
-            "Kick pilot",
-            System.Windows.MessageBoxButton.YesNo,
-            System.Windows.MessageBoxImage.Warning);
-
-        if (confirm != System.Windows.MessageBoxResult.Yes) return;
+        if (!await ConfirmAsync($"Remove {name} from the fleet?", "Kick")) return;
 
         StatusMessage = $"Removing {name}…";
         var ok = await _esi.KickFleetMemberAsync(SessionFleetId, member.CharacterId);
@@ -958,10 +1031,7 @@ public partial class FleetViewModel : ObservableObject
     private async Task DeleteWing(WingViewModel wing)
     {
         if (wing == null) return;
-        var confirm = System.Windows.MessageBox.Show(
-            $"Delete {wing.Name}? Pilots in it will move to the fleet's default wing.",
-            "Delete wing", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning);
-        if (confirm != System.Windows.MessageBoxResult.Yes) return;
+        if (!await ConfirmAsync($"Delete {wing.Name}? Pilots in it will move to the fleet's default wing.", "Delete")) return;
 
         var ok = await _esi.DeleteWingAsync(SessionFleetId, wing.WingId);
         StatusMessage = ok ? "Wing deleted" : "Delete failed — are you the fleet boss?";
@@ -972,10 +1042,7 @@ public partial class FleetViewModel : ObservableObject
     private async Task DeleteSquad(SquadViewModel squad)
     {
         if (squad == null) return;
-        var confirm = System.Windows.MessageBox.Show(
-            $"Delete {squad.Name}?",
-            "Delete squad", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning);
-        if (confirm != System.Windows.MessageBoxResult.Yes) return;
+        if (!await ConfirmAsync($"Delete {squad.Name}?", "Delete")) return;
 
         var ok = await _esi.DeleteSquadAsync(SessionFleetId, squad.SquadId);
         StatusMessage = ok ? "Squad deleted" : "Delete failed — are you the fleet boss?";
@@ -995,6 +1062,7 @@ public partial class FleetViewModel : ObservableObject
             vm.BoostSummary    = string.Empty;
             vm.BoostDetail     = string.Empty;
             vm.BoostCategories = [];
+            vm.BoostCharges    = [];
             return;
         }
 
@@ -1003,6 +1071,7 @@ public partial class FleetViewModel : ObservableObject
         vm.BoostSummary    = string.Join(" · ", ordered.Select(c => c.Name.Replace(" Charge", "")));
         vm.BoostDetail     = string.Join("\n", ordered.Select(c => $"{c.Name} — {c.Effect}"));
         vm.BoostCategories = ordered.Select(c => c.Category).Distinct().ToList();
+        vm.BoostCharges    = ordered;
     }
 
     private void OnBoostUpdated()

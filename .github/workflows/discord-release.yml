@@ -1,0 +1,26 @@
+name: Announce release on Discord
+
+# Posts the release changelog to the FCAT Discord whenever a GitHub Release is
+# published. One-time setup:
+#   1. Discord: Server Settings -> Integrations -> Webhooks -> New Webhook, pick
+#      the channel, Copy Webhook URL.
+#   2. GitHub: repo Settings -> Secrets and variables -> Actions -> New repository
+#      secret, name it DISCORD_WEBHOOK, paste the URL.
+# After that this runs automatically on every published release (nothing to host).
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post release changelog to Discord
+        uses: SethCohen/github-releases-to-discord@v1
+        with:
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
+          color: "11119017"
+          username: "FCAT Releases"
+          footer_title: "FCAT"
+          reduce_headings: true

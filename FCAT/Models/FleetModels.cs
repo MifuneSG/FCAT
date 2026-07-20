@@ -315,6 +315,13 @@ public class ZkillTeamKill
     [JsonPropertyName("zkb")] public ZkbInfo? Zkb { get; set; }   // reuses ZkbInfo (hash + totalValue)
 }
 
+/// <summary>Tranquility server status from GET /v1/status/ (public, no auth).</summary>
+public class EsiServerStatus
+{
+    [JsonPropertyName("players")]        public int    Players       { get; set; }
+    [JsonPropertyName("server_version")] public string ServerVersion { get; set; } = string.Empty;
+}
+
 /// <summary>Minimal type info returned by GET /v3/universe/types/{typeId}/</summary>
 public class EsiTypeInfo
 {
@@ -323,4 +330,10 @@ public class EsiTypeInfo
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
+
+    // Base hull mass in kg. This is the bare hull - it does not include fit (plates add mass,
+    // nanos shed it, prop mods add it while hot). We can't see other pilots' fits over ESI, so
+    // this is the best mass figure available and it runs a touch low for fitted ships.
+    [JsonPropertyName("mass")]
+    public double Mass { get; set; }
 }

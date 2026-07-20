@@ -239,6 +239,37 @@ public class EsiAuthService(HttpClient httpClient, CharacterStore store)
         finally { listener.Stop(); }
     }
 
+    /// <summary>The scopes FCAT requests at login.</summary>
+    public static IReadOnlyList<string> RequiredScopes => Scopes;
+
+    /// <summary>
+    /// Scopes actually granted on the active character's token, read from the JWT 'scp' claim.
+    /// Empty when nobody is logged in. Lets Settings flag a character that authorized before a
+    /// newer scope was added (its token won't carry the new scope until it's re-added).
+    /// </summary>
+    public IReadOnlyList<string> GrantedScopes()
+    {
+        var token = CurrentToken?.AccessToken;
+        if (string.IsNullOrEmpty(token)) return [];
+        try
+        {
+            var parts = token.Split('.');
+            if (parts.Length < 2) return [];
+            var payload = parts[1].Replace('-', '+').Replace('_', '/');
+            payload += new string('=', (4 - payload.Length % 4) % 4);
+            var json = Encoding.UTF8.GetString(Convert.FromBase64String(payload));
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("scp", out var scp)) return [];
+            return scp.ValueKind switch
+            {
+                JsonValueKind.Array  => scp.EnumerateArray().Select(e => e.GetString() ?? "").Where(s => s.Length > 0).ToList(),
+                JsonValueKind.String => [scp.GetString() ?? ""],
+                _                    => []
+            };
+        }
+        catch { return []; }
+    }
+
     /// <summary>Decodes the access-token JWT to (characterId, name).</summary>
     private static (int id, string name) ParseCharacter(string accessToken)
     {

@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FCAT.Models;
@@ -42,6 +43,22 @@ public partial class ShellViewModel : ObservableObject
 
         // Quietly check GitHub for a newer release on launch (no-op when run from source).
         _ = CheckForUpdatesAsync(silent: true);
+
+        // Tranquility online-count in the top bar (like the launcher). Public status, no auth.
+        _serverStatusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
+        _serverStatusTimer.Tick += (_, _) => _ = RefreshServerStatusAsync();
+        _serverStatusTimer.Start();
+        _ = RefreshServerStatusAsync();
+    }
+
+    // Tranquility player count
+    private readonly DispatcherTimer _serverStatusTimer;
+    [ObservableProperty] private string _serverPlayers = string.Empty;
+
+    private async Task RefreshServerStatusAsync()
+    {
+        var status = await _esi.GetServerStatusAsync();
+        ServerPlayers = status is { Players: > 0 } ? $"{status.Players:N0}" : string.Empty;
     }
 
     private async Task TryRestoreSessionAsync()
@@ -246,7 +263,7 @@ public partial class ShellViewModel : ObservableObject
     public void ShowSettings()
     {
         ActiveNav = "setup";
-        CurrentPage = new SettingsViewModel(_settings, _alertHub, _systemSearch, this);
+        CurrentPage = new SettingsViewModel(_settings, _alertHub, _systemSearch, this, _auth);
     }
 
     public void ShowSessionLog()

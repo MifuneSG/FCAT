@@ -46,6 +46,7 @@ public partial class PingViewModel : ObservableObject
         if (auth.AuthenticatedCharacterId > 0)
             _charIds[auth.AuthenticatedCharacterName] = auth.AuthenticatedCharacterId;
 
+        RestoreCustomPing();
         LoadProfileLists();
         _ = _systemSearch.EnsureLoadedAsync();
         _ = ApplyAllianceLockAsync();
@@ -104,9 +105,13 @@ public partial class PingViewModel : ObservableObject
 
     [ObservableProperty] private PingProfile? _selectedProfile;
 
-    /// <summary>True for alliance profiles (INIT): shows the doctrine/implants/channel-link fields.
-    /// Custom (personal) profiles hide those alliance-specific bits.</summary>
+    /// <summary>True for alliance profiles (INIT): shows the doctrine preset dropdown / implants /
+    /// channel-link fields. Custom (personal) profiles hide those alliance-specific bits.</summary>
     public bool IsAlliance => SelectedProfile?.Alliance ?? false;
+
+    /// <summary>True for a Custom (personal) profile: shows a free-type doctrine field with no
+    /// alliance presets, the same way Comms is a blank editable field on Custom.</summary>
+    public bool IsCustom => !IsAlliance;
 
     partial void OnSelectedProfileChanged(PingProfile? value)
     {
@@ -114,8 +119,34 @@ public partial class PingViewModel : ObservableObject
         _settings.Current.ActivePingProfile = value.Name;
         _settings.Save();
         OnPropertyChanged(nameof(IsAlliance));
+        OnPropertyChanged(nameof(IsCustom));
         LoadProfileLists();
         Refresh();
+    }
+
+    /// <summary>Restore the last Custom-profile ping fields from settings (only non-empty saved
+    /// values, so the sensible defaults survive a first run). Runs before bindings attach.</summary>
+    private void RestoreCustomPing()
+    {
+        if (SelectedProfile?.Alliance ?? false) return;   // alliance profiles use their own seed
+        var c = _settings.Current.CustomPing;
+        if (!string.IsNullOrEmpty(c.Hurf))       Hurf         = c.Hurf;
+        if (!string.IsNullOrEmpty(c.Comms))      CommsText    = c.Comms;
+        if (!string.IsNullOrEmpty(c.Doctrine))   DoctrineText = c.Doctrine;
+        if (!string.IsNullOrEmpty(c.Fittings))   Fittings     = c.Fittings;
+        if (!string.IsNullOrEmpty(c.MainAnchor)) MainAnchor   = c.MainAnchor;
+        if (!string.IsNullOrEmpty(c.LogiAnchor)) LogiAnchor   = c.LogiAnchor;
+        if (!string.IsNullOrEmpty(c.Notes))      Notes        = c.Notes;
+    }
+
+    /// <summary>Remember the current Custom-profile fields so they survive a restart.</summary>
+    private void SaveCustomPing()
+    {
+        if (IsAlliance) return;   // only the Custom profile is remembered
+        var c = _settings.Current.CustomPing;
+        c.Hurf = Hurf; c.Comms = CommsText; c.Doctrine = DoctrineText;
+        c.Fittings = Fittings; c.MainAnchor = MainAnchor; c.LogiAnchor = LogiAnchor; c.Notes = Notes;
+        _settings.Save();
     }
 
     private void LoadProfileLists()
@@ -142,6 +173,7 @@ public partial class PingViewModel : ObservableObject
     [ObservableProperty] private string _mainAnchor = string.Empty;
     [ObservableProperty] private string _logiAnchor = string.Empty;
     [ObservableProperty] private string _fittings = "Default";
+    [ObservableProperty] private string _doctrineText = string.Empty;   // free-type doctrine for Custom pings
     [ObservableProperty] private string _notes = string.Empty;
     [ObservableProperty] private CapturedChannel? _selectedBoost;
     [ObservableProperty] private CapturedChannel? _selectedLogi;
@@ -160,6 +192,7 @@ public partial class PingViewModel : ObservableObject
     partial void OnMainAnchorChanged(string value) { Refresh(); _ = ResolveAnchorAsync(value); }
     partial void OnLogiAnchorChanged(string value) { Refresh(); _ = ResolveAnchorAsync(value); }
     partial void OnFittingsChanged(string value)     => Refresh();
+    partial void OnDoctrineTextChanged(string value) => Refresh();
     partial void OnNotesChanged(string value)        => Refresh();
     partial void OnSelectedBoostChanged(CapturedChannel? value) => Refresh();
     partial void OnSelectedLogiChanged(CapturedChannel? value)  => Refresh();
@@ -258,7 +291,8 @@ public partial class PingViewModel : ObservableObject
         sb.AppendLine($"FC: {FcName}");
         sb.AppendLine($"Forming: {FormupText}");
         sb.Append($"Comms: {CommsText}");
-        if (IsAlliance) sb.Append($"\nDoctrine: {SelectedDoctrine?.Name}");   // doctrine is alliance-specific
+        if (IsAlliance) sb.Append($"\nDoctrine: {SelectedDoctrine?.Name}");            // alliance preset
+        else if (!string.IsNullOrWhiteSpace(DoctrineText)) sb.Append($"\nDoctrine: {DoctrineText.Trim()}");
         return sb.ToString();
     }
 
@@ -278,6 +312,11 @@ public partial class PingViewModel : ObservableObject
             sb.AppendLine($"Doctrine: {doctrine}");
             sb.AppendLine($"Ships: {Ships}");
             sb.AppendLine($"Implants: {ImplantsText}");
+            sb.AppendLine(div);
+        }
+        else if (!string.IsNullOrWhiteSpace(DoctrineText))   // Custom: a plain free-typed doctrine line
+        {
+            sb.AppendLine($"Doctrine: {DoctrineText.Trim()}");
             sb.AppendLine(div);
         }
 
@@ -302,6 +341,7 @@ public partial class PingViewModel : ObservableObject
     [RelayCommand]
     private void CopyPing()
     {
+        SaveCustomPing();
         try { System.Windows.Clipboard.SetText(PingText); StatusMessage = "Ping copied to clipboard."; }
         catch { StatusMessage = "Couldn't access the clipboard."; }
     }
@@ -309,6 +349,7 @@ public partial class PingViewModel : ObservableObject
     [RelayCommand]
     private void CopyMotd()
     {
+        SaveCustomPing();
         try { System.Windows.Clipboard.SetText(MotdText); StatusMessage = "MOTD copied to clipboard."; }
         catch { StatusMessage = "Couldn't access the clipboard."; }
     }
@@ -324,5 +365,5 @@ public partial class PingViewModel : ObservableObject
         StatusMessage = ok ? "MOTD set on the fleet." : "Failed — are you the fleet boss?";
     }
 
-    [RelayCommand] private void BackToMenu() => _shell.BackToMenu();
+    [RelayCommand] private void BackToMenu() { SaveCustomPing(); _shell.BackToMenu(); }
 }

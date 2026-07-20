@@ -23,6 +23,10 @@ public class AppSettings
     public List<PingProfile> PingProfiles      { get; set; } = [];
     public string            ActivePingProfile { get; set; } = string.Empty;
 
+    /// <summary>Remembered inputs for the Custom ping profile, so they survive restarts.
+    /// Cleared by the "Clear saved ping" button in Settings.</summary>
+    public CustomPingState CustomPing { get; set; } = new();
+
     /// <summary>Colour theme - "Nebula" (violet, default) or "Carbon" (amber/gold).</summary>
     public string Theme { get; set; } = "Nebula";
 
@@ -47,4 +51,16 @@ public class AppSettings
 
     [JsonIgnore] public string GamelogsPath => Path.Combine(EveLogsPath, "Gamelogs");
     [JsonIgnore] public string ChatlogsPath => Path.Combine(EveLogsPath, "Chatlogs");
+}
+
+/// <summary>Remembered field values for the Custom ping profile.</summary>
+public class CustomPingState
+{
+    public string Hurf       { get; set; } = string.Empty;
+    public string Comms      { get; set; } = string.Empty;
+    public string Doctrine   { get; set; } = string.Empty;
+    public string Fittings   { get; set; } = string.Empty;
+    public string MainAnchor { get; set; } = string.Empty;
+    public string LogiAnchor { get; set; } = string.Empty;
+    public string Notes      { get; set; } = string.Empty;
 }

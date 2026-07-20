@@ -20,6 +20,7 @@ public partial class CharacterRow : ObservableObject
     [ObservableProperty] private string _shipName   = "—";
     [ObservableProperty] private string _dockText   = string.Empty;   // " Docked · X" / "In space"
     [ObservableProperty] private string _fleetText  = string.Empty;   // "In your fleet" / "In fleet"
+    [ObservableProperty] private bool   _canInvite;                    // online, not yet in a fleet, and the FC has one
 
     /// <summary>Set by the VM so a role change from the combo box persists to the store.</summary>
     public Action<string>? RoleChanged;
@@ -41,6 +42,7 @@ public partial class AccountViewModel : ObservableObject
     public string[] RoleOptions { get; } = ["Main", "Cyno", "Scout", "Hauler", "Titan", "Booster", "Tackle", "Other"];
 
     [ObservableProperty] private bool _isAdding;
+    [ObservableProperty] private string _statusMessage = string.Empty;
 
     public AccountViewModel(EsiAuthService auth, EsiService esi, ShellViewModel shell)
     {
@@ -123,6 +125,10 @@ public partial class AccountViewModel : ObservableObject
                     r.fleetId == 0                                   ? string.Empty :
                     r.fleetId == activeFleet && activeFleet != 0     ? "In your fleet" :
                                                                        "In fleet";
+
+                // Offer a one-click invite only for an online alt that isn't in a fleet yet, and
+                // only when the active character actually has a fleet to invite into.
+                r.row.CanInvite = r.online && !r.row.IsActive && r.fleetId == 0 && activeFleet != 0;
             }
         });
     }
@@ -142,6 +148,25 @@ public partial class AccountViewModel : ObservableObject
         if (row == null || row.IsActive) return;
         if (await _auth.SetActiveCharacterAsync(row.CharacterId))
             foreach (var r in Characters) r.IsActive = r.CharacterId == row.CharacterId;
+    }
+
+    [RelayCommand]
+    private async Task Invite(CharacterRow? row)
+    {
+        if (row == null) return;
+
+        var fleet = await _esi.GetCharacterFleetAsync(_auth.AuthenticatedCharacterId);
+        if (fleet == null) { StatusMessage = "You're not in a fleet."; return; }
+
+        // ESI needs a destination squad; drop the alt into the first one (they can be moved after).
+        var wings = await _esi.GetFleetWingsAsync(fleet.FleetId);
+        var squad = wings?.SelectMany(w => w.Squads.Select(s => (WingId: w.Id, SquadId: s.Id))).FirstOrDefault() ?? default;
+        if (squad.SquadId == 0) { StatusMessage = "Your fleet has no squad to invite into — make one first."; return; }
+
+        StatusMessage = $"Inviting {row.Name}…";
+        var ok = await _esi.InviteFleetMemberAsync(fleet.FleetId, row.CharacterId, squad.WingId, squad.SquadId);
+        StatusMessage = ok ? $"Invited {row.Name} — accept the pop-up in-game." : "Invite failed — are you the fleet boss?";
+        if (ok) await PollOnceAsync();
     }
 
     [RelayCommand]

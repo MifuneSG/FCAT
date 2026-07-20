@@ -23,17 +23,18 @@ public static class DemoData
     private const long WAnchor = 1, WDps = 2, WLogi = 3;
     private const long SqTackle = 10, SqEwar = 11, SqLine = 12, SqLogi = 13;
 
-    // (typeId, name, groupId) - groupId drives ShipRoleClassifier.
-    private static readonly (int Id, string Name, int Grp)[] Hulls =
+    // (typeId, name, groupId, base hull mass kg) - groupId drives ShipRoleClassifier;
+    // mass feeds the fleet-mass tile. Masses are the real ESI hull values.
+    private static readonly (int Id, string Name, int Grp, double Mass)[] Hulls =
     {
-        (11987, "Guardian",  832), // logi
-        (11978, "Scimitar",  832), // logi
-        (22456, "Sabre",     541), // interdictor  -> tackle
-        (11196, "Stiletto",  831), // interceptor  -> tackle
-        (22474, "Damnation", 540), // command ship -> booster
-        (11961, "Huginn",    906), // recon        -> ewar
-        (641,   "Megathron",  27), // battleship   -> DPS
-        (12005, "Ishtar",    358), // HAC          -> DPS
+        (11987, "Guardian",  832, 11_760_000), // logi
+        (11978, "Scimitar",  832, 11_270_000), // logi
+        (22456, "Sabre",     541,  1_530_000), // interdictor  -> tackle
+        (11196, "Stiletto",  831,  1_173_000), // interceptor  -> tackle
+        (22474, "Damnation", 540, 15_010_000), // command ship -> booster
+        (11961, "Huginn",    906, 11_940_000), // recon        -> ewar
+        (641,   "Megathron",  27, 98_400_000), // battleship   -> DPS
+        (12005, "Ishtar",    358, 11_970_000), // HAC          -> DPS
     };
 
     // Composition (besides the FC): hull index, count, role, wing, squad.
@@ -118,6 +119,18 @@ public static class DemoData
         {
             var hull = Array.Find(Hulls, h => h.Id == id);
             if (hull.Id != 0) map[id] = hull.Grp;
+        }
+        return map;
+    }
+
+    public static Dictionary<int, EsiTypeInfo> TypeInfos(IEnumerable<int> typeIds)
+    {
+        var map = new Dictionary<int, EsiTypeInfo>();
+        foreach (var id in typeIds.Distinct())
+        {
+            var hull = Array.Find(Hulls, h => h.Id == id);
+            if (hull.Id != 0)
+                map[id] = new EsiTypeInfo { GroupId = hull.Grp, Name = hull.Name, Mass = hull.Mass };
         }
         return map;
     }
