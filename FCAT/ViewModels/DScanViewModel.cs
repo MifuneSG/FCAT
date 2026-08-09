@@ -48,7 +48,7 @@ public partial class DScanViewModel : ObservableObject
     public ObservableCollection<FleetStat> RoleBreakdown { get; } = [];
     public ObservableCollection<DScanShip> Ships         { get; } = [];
 
-    private const string Hint = "Paste a d-scan or your Local member list — the tool detects which — then Analyze.";
+    private const string Hint = "Paste a d-scan or your Local member list, the tool detects which, then Analyze.";
 
     [RelayCommand]
     private void Clear()
@@ -83,7 +83,7 @@ public partial class DScanViewModel : ObservableObject
         try
         {
             if (shipLines == 0 && names.Count == 0)
-                Summary = "Nothing recognized — paste a d-scan or a list of Local names.";
+                Summary = "Nothing recognized. Paste a d-scan or a list of Local names.";
             else if (shipLines >= names.Count)
                 await AnalyzeShipsAsync(byType);          // looks like a d-scan
             else
@@ -148,7 +148,7 @@ public partial class DScanViewModel : ObservableObject
 
         var nameToId = await _esi.ResolveCharacterIdsAsync(names);
         var ids = nameToId.Values.Distinct().ToList();
-        if (ids.Count == 0) { Summary = "Couldn't resolve any of those names — are they exact character names?"; HasResult = false; return; }
+        if (ids.Count == 0) { Summary = "Couldn't resolve any of those names. Are they exact character names?"; HasResult = false; return; }
 
         var affs = await _esi.GetAffiliationsAsync(ids);
         var orgIds = affs.SelectMany(a => new[] { a.AllianceId ?? 0, a.CorporationId }).Where(x => x > 0 && !_name.ContainsKey(x)).Distinct();
@@ -198,7 +198,7 @@ public partial class DScanViewModel : ObservableObject
     private void CopySummary()
     {
         var sb = new StringBuilder();
-        sb.AppendLine(_lastWasLocal ? $"Local — {Ships.Sum(s => s.Count)} pilots" : $"D-Scan — {Ships.Sum(s => s.Count)} ships");
+        sb.AppendLine(_lastWasLocal ? $"Local · {Ships.Sum(s => s.Count)} pilots" : $"D-Scan · {Ships.Sum(s => s.Count)} ships");
         if (RoleBreakdown.Count > 0)
             sb.AppendLine(string.Join("  ·  ", RoleBreakdown.Select(r => $"{r.Count} {r.Label}")));
         sb.AppendLine("---");
@@ -206,7 +206,7 @@ public partial class DScanViewModel : ObservableObject
 
         // Wrap in a Discord code block (```…```) so the scan pastes as fixed-width, un-mangled text.
         var fenced = "```\n" + sb.ToString().TrimEnd() + "\n```";
-        try { Clipboard.SetText(fenced); Summary = "Copied as a Discord code block — paste into comms."; }
+        try { Clipboard.SetText(fenced); Summary = "Copied as a Discord code block, paste into comms."; }
         catch (Exception ex) { Summary = $"Couldn't copy: {ex.Message}"; }
     }
 

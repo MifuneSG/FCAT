@@ -202,7 +202,7 @@ public partial class IntelFeedViewModel : ObservableObject
             Timestamp        = DateTime.Now,
             AlertType        = AlertType.IntelHostile,
             SeverityOverride = here ? AlertSeverity.Critical : AlertSeverity.Warning,
-            Detail           = $"{system} ({where}) — {message.Trim()} [{speaker}]",
+            Detail           = $"{system} ({where}): {message.Trim()} [{speaker}]",
             RawLogLine       = message,
         }));
     }

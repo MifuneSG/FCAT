@@ -112,7 +112,7 @@ public partial class CombatLogService : IDisposable
                 ParseLine(line);
             _lastFilePosition = stream.Position;
         }
-        catch (IOException) { /* file locked — retry next change */ }
+        catch (IOException) { /* file locked - retry next change */ }
     }
 
     // Parsing

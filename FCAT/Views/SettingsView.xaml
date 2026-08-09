@@ -347,7 +347,7 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <TextBlock Text="Some access is missing — remove and re-add this character on the Account page to grant it."
+                <TextBlock Text="Some access is missing. Remove and re-add this character on the Account page to grant it."
                            Foreground="{StaticResource EveAmber}" FontFamily="{StaticResource FontUI}" FontSize="11"
                            TextWrapping="Wrap" Margin="0,6,0,0"
                            Visibility="{Binding MissingScopes, Converter={StaticResource BoolToVisibility}}"/>
@@ -384,7 +384,7 @@
                 <!-- Saved data -->
                 <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,24,0,18"/>
                 <TextBlock Text="SAVED DATA" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
-                <TextBlock Text="FCAT remembers your Custom ping fields between sessions. Clear them here — this does not touch your saved characters, theme, or other settings."
+                <TextBlock Text="FCAT remembers your Custom ping fields between sessions. Clear them here. This does not touch your saved characters, theme, or other settings."
                            Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
                            TextWrapping="Wrap" Margin="0,0,0,9"/>
                 <Button Command="{Binding ClearRememberedPingCommand}" Style="{StaticResource SecondaryButton}"

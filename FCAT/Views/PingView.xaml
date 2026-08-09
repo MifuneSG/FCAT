@@ -88,7 +88,7 @@
                     <StackPanel>
                         <TextBlock Text="PING DETAILS" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
 
-                        <TextBlock Text="Hurf — hype / explanation" Style="{StaticResource FieldLabel}"/>
+                        <TextBlock Text="Hurf · hype / explanation" Style="{StaticResource FieldLabel}"/>
                         <TextBox Style="{StaticResource DarkTextBox}" Height="70" AcceptsReturn="True" TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
                                  Text="{Binding Hurf, UpdateSourceTrigger=PropertyChanged}"/>
@@ -156,12 +156,12 @@
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="Main anchor" Style="{StaticResource FieldLabel}"/>
                                 <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding MainAnchor, UpdateSourceTrigger=PropertyChanged}"
-                                         ToolTip="Type the exact character name — auto-links in the MOTD"/>
+                                         ToolTip="Type the exact character name, auto-links in the MOTD"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="Logi anchor" Style="{StaticResource FieldLabel}"/>
                                 <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding LogiAnchor, UpdateSourceTrigger=PropertyChanged}"
-                                         ToolTip="Type the exact character name — auto-links in the MOTD"/>
+                                         ToolTip="Type the exact character name, auto-links in the MOTD"/>
                             </StackPanel>
                         </Grid>
 
@@ -172,7 +172,7 @@
                         <!-- Channel links - alliance-specific (hidden on Custom) -->
                         <StackPanel Visibility="{Binding IsAlliance, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Text="CHANNEL LINKS (clickable in MOTD)" Style="{StaticResource SectionLabel}" Margin="0,18,0,4"/>
-                            <TextBlock Text="Pick the boost / logi channel for this fleet — the clickable link drops into the MOTD."
+                            <TextBlock Text="Pick the boost / logi channel for this fleet. The clickable link drops into the MOTD."
                                        Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>

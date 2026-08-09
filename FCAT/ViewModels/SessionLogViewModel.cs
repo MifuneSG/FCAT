@@ -49,10 +49,10 @@ public partial class SessionLogViewModel : ObservableObject
 
             Report = report;
             ReportStatus = report == null
-                ? "No kills on zKillboard yet — they lag a few minutes. Try Refresh."
+                ? "No kills on zKillboard yet. They lag a few minutes, try Refresh."
                 : $"Updated {DateTime.Now:HH:mm:ss}";
         }
-        catch (Exception ex) { ReportStatus = $"Couldn't reach zKillboard — {ex.Message}"; }
+        catch (Exception ex) { ReportStatus = $"Couldn't reach zKillboard: {ex.Message}"; }
         finally { IsLoadingReport = false; }
     }
 
@@ -86,7 +86,7 @@ public partial class SessionLogViewModel : ObservableObject
             File.WriteAllText(dialog.FileName, Log.Export(Report));
             StatusMessage = $"Saved to {Path.GetFileName(dialog.FileName)}";
         }
-        catch (Exception ex) { StatusMessage = $"Save failed — {ex.Message}"; }
+        catch (Exception ex) { StatusMessage = $"Save failed: {ex.Message}"; }
     }
 
     [RelayCommand]
@@ -115,7 +115,7 @@ public partial class SessionLogViewModel : ObservableObject
     {
         if (Log.BattleReportZkill is not { } url) return;
         try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch (Exception ex) { StatusMessage = $"Couldn't open the browser — {ex.Message}"; }
+        catch (Exception ex) { StatusMessage = $"Couldn't open the browser: {ex.Message}"; }
     }
 
     [RelayCommand]

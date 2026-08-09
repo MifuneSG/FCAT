@@ -200,7 +200,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Foreground="{StaticResource EveAmber}"
                            FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center">
-                    <Run Text="New fleet detected — ID " FontWeight="SemiBold"/>
+                    <Run Text="New fleet detected · ID " FontWeight="SemiBold"/>
                     <Run Text="{Binding NewDetectedFleetId}" FontWeight="SemiBold"/>
                     <Run Text=". This session is tracking the old fleet."/>
                 </TextBlock>
@@ -883,7 +883,7 @@
                     <StackPanel Margin="16,12,16,12">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <TextBlock Text="LOGI CHAIN" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
-                            <TextBlock Text="cap order — top caps bottom, loops" Foreground="{StaticResource EveTextDim}"
+                            <TextBlock Text="cap order, top caps bottom, loops" Foreground="{StaticResource EveTextDim}"
                                        FontFamily="{StaticResource FontUI}" FontSize="10" VerticalAlignment="Center" Margin="8,0,0,0"/>
                         </StackPanel>
                         <ItemsControl ItemsSource="{Binding LogiChain}">

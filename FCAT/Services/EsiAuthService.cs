@@ -227,7 +227,7 @@ public class EsiAuthService(HttpClient httpClient, CharacterStore store)
             var query = HttpUtility.ParseQueryString(context.Request.Url?.Query ?? string.Empty);
 
             var responseHtml = "<html><body style='font-family:Segoe UI;background:#0b0e14;color:#e6ebf2'>" +
-                               "<h2>FCAT — authentication complete. You can close this window.</h2></body></html>";
+                               "<h2>FCAT: authentication complete. You can close this window.</h2></body></html>";
             var buffer = Encoding.UTF8.GetBytes(responseHtml);
             context.Response.ContentLength64 = buffer.Length;
             await context.Response.OutputStream.WriteAsync(buffer);

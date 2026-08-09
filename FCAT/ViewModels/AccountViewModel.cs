@@ -161,11 +161,11 @@ public partial class AccountViewModel : ObservableObject
         // ESI needs a destination squad; drop the alt into the first one (they can be moved after).
         var wings = await _esi.GetFleetWingsAsync(fleet.FleetId);
         var squad = wings?.SelectMany(w => w.Squads.Select(s => (WingId: w.Id, SquadId: s.Id))).FirstOrDefault() ?? default;
-        if (squad.SquadId == 0) { StatusMessage = "Your fleet has no squad to invite into — make one first."; return; }
+        if (squad.SquadId == 0) { StatusMessage = "Your fleet has no squad to invite into. Make one first."; return; }
 
         StatusMessage = $"Inviting {row.Name}…";
         var ok = await _esi.InviteFleetMemberAsync(fleet.FleetId, row.CharacterId, squad.WingId, squad.SquadId);
-        StatusMessage = ok ? $"Invited {row.Name} — accept the pop-up in-game." : "Invite failed — are you the fleet boss?";
+        StatusMessage = ok ? $"Invited {row.Name}. Accept the pop-up in-game." : "Invite failed. Are you the fleet boss?";
         if (ok) await PollOnceAsync();
     }
 

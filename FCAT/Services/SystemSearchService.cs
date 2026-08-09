@@ -120,7 +120,7 @@ public class SystemSearchService(EsiService esi)
             var loaded = JsonSerializer.Deserialize<List<SystemMatch>>(File.ReadAllText(CachePath));
             if (loaded is { Count: > 0 }) { _systems = loaded; return true; }
         }
-        catch { /* corrupt cache — rebuild */ }
+        catch { /* corrupt cache - rebuild */ }
         return false;
     }
 
@@ -131,6 +131,6 @@ public class SystemSearchService(EsiService esi)
             Directory.CreateDirectory(Path.GetDirectoryName(CachePath)!);
             File.WriteAllText(CachePath, JsonSerializer.Serialize(_systems));
         }
-        catch { /* non-fatal — we just rebuild next launch */ }
+        catch { /* non-fatal - we just rebuild next launch */ }
     }
 }

@@ -221,7 +221,7 @@ public partial class FleetViewModel : ObservableObject
         try { await PollAsync(); }
         catch (Exception ex)
         {
-            await App.Current.Dispatcher.InvokeAsync(() => StatusMessage = $"Poll error — retrying ({ex.Message})");
+            await App.Current.Dispatcher.InvokeAsync(() => StatusMessage = $"Poll error, retrying ({ex.Message})");
         }
     }
 
@@ -373,7 +373,7 @@ public partial class FleetViewModel : ObservableObject
                     {
                         Timestamp = DateTime.Now,
                         AlertType = AlertType.BoostLost,
-                        Detail    = $"{m.CharacterName} podded — {cats} links down"
+                        Detail    = $"{m.CharacterName} podded, {cats} links down"
                     });
                     _boost.ClearPilot(m.CharacterName);   // links are gone with the ship
                 }
@@ -575,7 +575,7 @@ public partial class FleetViewModel : ObservableObject
             foreach (var m in known.Where(m => !InFormup(m))
                                    .OrderBy(m => m.SolarSystemName, StringComparer.OrdinalIgnoreCase)
                                    .ThenBy(m => m.CharacterName, StringComparer.OrdinalIgnoreCase))
-                Stragglers.Add($"{m.CharacterName} — {m.SolarSystemName}");
+                Stragglers.Add($"{m.CharacterName} · {m.SolarSystemName}");
             StragglerSummary = Stragglers.Count == 0 ? $"All pilots in {formup}" : $"{Stragglers.Count} not in {formup}";
             ShowFormupCard = true;
         }
@@ -622,8 +622,8 @@ public partial class FleetViewModel : ObservableObject
         {
             var who = string.Join(", ", lost);
             var detail = chain.Count >= 2
-                ? $"{who} dropped — re-form ring: {RingText(chain)}"
-                : $"{who} dropped — cap chain collapsed ({chain.Count} left)";
+                ? $"{who} dropped, re-form ring: {RingText(chain)}"
+                : $"{who} dropped, cap chain collapsed ({chain.Count} left)";
             RaiseAlert(new FcAlert { Timestamp = DateTime.Now, AlertType = AlertType.LogiChain, Detail = detail });
         }
 
@@ -670,7 +670,7 @@ public partial class FleetViewModel : ObservableObject
         {
             Timestamp        = DateTime.Now,
             AlertType        = AlertType.DpsLoss,
-            Detail           = $"~{crossed}% of DPS lost — {_dpsLostIds.Count} of {_baselineDpsIds.Count} ships down",
+            Detail           = $"~{crossed}% of DPS lost, {_dpsLostIds.Count} of {_baselineDpsIds.Count} ships down",
             // Red only at the worst step; 30/50 stay a warning.
             SeverityOverride = crossed >= 75 ? AlertSeverity.Critical : AlertSeverity.Warning,
         };
@@ -705,7 +705,7 @@ public partial class FleetViewModel : ObservableObject
             AlertType = AlertType.LogiRatio,
             Detail    = logi == 0
                 ? $"No logi left in a {total}-pilot fleet"
-                : $"{logi} logi across {total} pilots ({ratio:P0}) — below {threshold:P0}",
+                : $"{logi} logi across {total} pilots ({ratio:P0}), below {threshold:P0}",
             // Losing logi entirely is a different order of problem from thinning out.
             SeverityOverride = logi == 0 ? AlertSeverity.Critical : AlertSeverity.Warning,
         });
@@ -938,7 +938,7 @@ public partial class FleetViewModel : ObservableObject
         }
         else
         {
-            StatusMessage = "Kick failed — are you the fleet boss?";
+            StatusMessage = "Kick failed. Are you the fleet boss?";
         }
     }
 
@@ -953,11 +953,11 @@ public partial class FleetViewModel : ObservableObject
         MoveTargets.Add(new MoveTargetViewModel("Promote to Fleet Commander", "fleet_commander", null, null));
         foreach (var wing in Wings)
         {
-            MoveTargets.Add(new MoveTargetViewModel($"{wing.Name}  —  Wing Commander", "wing_commander", wing.WingId, null));
+            MoveTargets.Add(new MoveTargetViewModel($"{wing.Name}  ·  Wing Commander", "wing_commander", wing.WingId, null));
             foreach (var squad in wing.Squads)
             {
                 MoveTargets.Add(new MoveTargetViewModel($"{wing.Name}  ›  {squad.Name}", "squad_member", wing.WingId, squad.SquadId));
-                MoveTargets.Add(new MoveTargetViewModel($"{wing.Name}  ›  {squad.Name}  —  Commander", "squad_commander", wing.WingId, squad.SquadId));
+                MoveTargets.Add(new MoveTargetViewModel($"{wing.Name}  ›  {squad.Name}  ·  Commander", "squad_commander", wing.WingId, squad.SquadId));
             }
         }
 
@@ -981,7 +981,7 @@ public partial class FleetViewModel : ObservableObject
 
         StatusMessage = $"Moving {member.CharacterName}…";
         var ok = await _esi.MoveFleetMemberAsync(SessionFleetId, member.CharacterId, target.Role, target.WingId, target.SquadId);
-        StatusMessage = ok ? $"Moved {member.CharacterName}" : "Move failed — are you the fleet boss?";
+        StatusMessage = ok ? $"Moved {member.CharacterName}" : "Move failed. Are you the fleet boss?";
         if (ok) await LoadFleetDataAsync();
     }
 
@@ -1029,7 +1029,7 @@ public partial class FleetViewModel : ObservableObject
         else
             return;
 
-        StatusMessage = ok ? "Renamed" : "Rename failed — are you the fleet boss?";
+        StatusMessage = ok ? "Renamed" : "Rename failed. Are you the fleet boss?";
         if (ok) await LoadFleetDataAsync();
     }
 
@@ -1044,7 +1044,7 @@ public partial class FleetViewModel : ObservableObject
         var squad = Wings.SelectMany(w => w.Squads.Select(s => (w.WingId, s.SquadId))).FirstOrDefault();
         if (squad.SquadId == 0 && squad.WingId == 0)
         {
-            StatusMessage = "Invite needs at least one squad — create one first.";
+            StatusMessage = "Invite needs at least one squad. Create one first.";
             return;
         }
 
@@ -1057,7 +1057,7 @@ public partial class FleetViewModel : ObservableObject
         }
 
         var ok = await _esi.InviteFleetMemberAsync(SessionFleetId, charId.Value, squad.WingId, squad.SquadId);
-        StatusMessage = ok ? $"Invited {name}" : "Invite failed — are you the fleet boss?";
+        StatusMessage = ok ? $"Invited {name}" : "Invite failed. Are you the fleet boss?";
         if (ok) InviteName = string.Empty;
     }
 
@@ -1067,7 +1067,7 @@ public partial class FleetViewModel : ObservableObject
     {
         StatusMessage = "Creating wing…";
         var ok = await _esi.CreateWingAsync(SessionFleetId);
-        StatusMessage = ok ? "Wing created" : "Create failed — are you the fleet boss?";
+        StatusMessage = ok ? "Wing created" : "Create failed. Are you the fleet boss?";
         if (ok) await LoadFleetDataAsync();
     }
 
@@ -1077,7 +1077,7 @@ public partial class FleetViewModel : ObservableObject
         if (wing == null) return;
         StatusMessage = "Creating squad…";
         var ok = await _esi.CreateSquadAsync(SessionFleetId, wing.WingId);
-        StatusMessage = ok ? "Squad created" : "Create failed — are you the fleet boss?";
+        StatusMessage = ok ? "Squad created" : "Create failed. Are you the fleet boss?";
         if (ok) await LoadFleetDataAsync();
     }
 
@@ -1088,7 +1088,7 @@ public partial class FleetViewModel : ObservableObject
         if (!await ConfirmAsync($"Delete {wing.Name}? Pilots in it will move to the fleet's default wing.", "Delete")) return;
 
         var ok = await _esi.DeleteWingAsync(SessionFleetId, wing.WingId);
-        StatusMessage = ok ? "Wing deleted" : "Delete failed — are you the fleet boss?";
+        StatusMessage = ok ? "Wing deleted" : "Delete failed. Are you the fleet boss?";
         if (ok) await LoadFleetDataAsync();
     }
 
@@ -1099,7 +1099,7 @@ public partial class FleetViewModel : ObservableObject
         if (!await ConfirmAsync($"Delete {squad.Name}?", "Delete")) return;
 
         var ok = await _esi.DeleteSquadAsync(SessionFleetId, squad.SquadId);
-        StatusMessage = ok ? "Squad deleted" : "Delete failed — are you the fleet boss?";
+        StatusMessage = ok ? "Squad deleted" : "Delete failed. Are you the fleet boss?";
         if (ok) await LoadFleetDataAsync();
     }
 
@@ -1123,7 +1123,7 @@ public partial class FleetViewModel : ObservableObject
         // Show the specific charges (short names), ordered by category for stability.
         var ordered = loadout.OrderBy(c => c.Category).ThenBy(c => c.Name).ToList();
         vm.BoostSummary    = string.Join(" · ", ordered.Select(c => c.Name.Replace(" Charge", "")));
-        vm.BoostDetail     = string.Join("\n", ordered.Select(c => $"{c.Name} — {c.Effect}"));
+        vm.BoostDetail     = string.Join("\n", ordered.Select(c => $"{c.Name}: {c.Effect}"));
         vm.BoostCategories = ordered.Select(c => c.Category).Distinct().ToList();
         vm.BoostCharges    = ordered;
     }

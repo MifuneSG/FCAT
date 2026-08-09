@@ -13,7 +13,7 @@
             <!-- Drag handle (hidden when locked / click-through) -->
             <Border x:Name="DragHandle" Background="#3312203a" CornerRadius="9,9,0,0"
                     Padding="10,6" Cursor="SizeAll" MouseLeftButtonDown="DragHandle_MouseDown">
-                <TextBlock Text="⠿  FCAT alerts — drag to position, then Lock"
+                <TextBlock Text="⠿  FCAT alerts · drag to position, then Lock"
                            Foreground="#9aa3b3" FontFamily="Segoe UI" FontSize="10"/>
             </Border>
 

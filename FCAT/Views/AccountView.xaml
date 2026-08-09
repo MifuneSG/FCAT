@@ -172,7 +172,7 @@
                            FontFamily="{StaticResource FontUI}" FontSize="12" Margin="2,10,0,0" TextWrapping="Wrap"
                            Visibility="{Binding StatusMessage, Converter={StaticResource StringToVisibility}}"/>
 
-                <TextBlock Text="Status (online · system · ship) is read live from ESI for each character. Location is the system the character is in — not Local, grid, or d-scan."
+                <TextBlock Text="Status (online · system · ship) is read live from ESI for each character. Location is the system the character is in, not Local, grid, or d-scan."
                            Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
                            TextWrapping="Wrap" Margin="2,8,0,0"
                            Visibility="{Binding Characters.Count, Converter={StaticResource CountToVisibility}}"/>

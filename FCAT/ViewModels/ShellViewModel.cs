@@ -94,7 +94,7 @@ public partial class ShellViewModel : ObservableObject
             {
                 UpdateVersion = version;
                 UpdateReady = true;
-                UpdateStatus = $"Update {version} ready — restart to apply.";
+                UpdateStatus = $"Update {version} ready. Restart to apply.";
             }
             else if (!silent)
             {
@@ -103,7 +103,7 @@ public partial class ShellViewModel : ObservableObject
         }
         catch
         {
-            if (!silent) UpdateStatus = "Update check failed — try again later.";
+            if (!silent) UpdateStatus = "Update check failed. Try again later.";
         }
     }
 
@@ -138,9 +138,9 @@ public partial class ShellViewModel : ObservableObject
         (AlertType type, string attacker, string detail)[] script =
         {
             (AlertType.Tackled,    "Vng. Hostile", ""),
-            (AlertType.BoostLost,  "",             "Damnation — gang links dropped"),
-            (AlertType.LogiChain,  "",             "Guardian ring lost a link — re-anchor"),
-            (AlertType.DpsLoss,    "",             "~50% of DPS lost — 8 of 16 ships down"),
+            (AlertType.BoostLost,  "",             "Damnation down, gang links dropped"),
+            (AlertType.LogiChain,  "",             "Guardian ring lost a link, re-anchor"),
+            (AlertType.DpsLoss,    "",             "~50% of DPS lost, 8 of 16 ships down"),
             (AlertType.CapTrouble, "",             "Large Micro Jump Drive"),
         };
         _sessionLog.MarkCombat(DemoData.StagingSystemId, DemoData.StagingName);   // give the demo AAR a battle report

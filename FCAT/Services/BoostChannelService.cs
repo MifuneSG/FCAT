@@ -169,7 +169,7 @@ public partial class BoostChannelService : IDisposable
 
             _lastFilePosition = stream.Position;
         }
-        catch (IOException) { /* locked — retry on next change */ }
+        catch (IOException) { /* locked - retry on next change */ }
 
         if (changed) Updated?.Invoke();
     }

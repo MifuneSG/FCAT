@@ -49,7 +49,7 @@
                     </Border>
                 </StackPanel>
             </StackPanel>
-            <TextBlock Text="Every alert raised this session — newest first"
+            <TextBlock Text="Every alert raised this session, newest first"
                        Foreground="{StaticResource EveTextDim}"
                        FontFamily="{StaticResource FontUI}" FontSize="11"
                        HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0,4"/>

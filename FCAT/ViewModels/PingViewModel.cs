@@ -358,11 +358,11 @@ public partial class PingViewModel : ObservableObject
     private async Task SetMotdOnFleetAsync()
     {
         var charFleet = await _esi.GetCharacterFleetAsync(_auth.AuthenticatedCharacterId);
-        if (charFleet == null) { StatusMessage = "Not in a fleet — can't set the MOTD."; return; }
+        if (charFleet == null) { StatusMessage = "Not in a fleet, can't set the MOTD."; return; }
 
         var info = await _esi.GetFleetInfoAsync(charFleet.FleetId);
         var ok = await _esi.SetFleetMotdAsync(charFleet.FleetId, MotdText, info?.IsFreeMove ?? false);
-        StatusMessage = ok ? "MOTD set on the fleet." : "Failed — are you the fleet boss?";
+        StatusMessage = ok ? "MOTD set on the fleet." : "Failed. Are you the fleet boss?";
     }
 
     [RelayCommand] private void BackToMenu() { SaveCustomPing(); _shell.BackToMenu(); }

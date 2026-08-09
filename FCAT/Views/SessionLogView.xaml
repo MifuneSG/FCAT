@@ -245,7 +245,7 @@
                                 <TextBlock Text="Clear" FontFamily="{StaticResource FontUI}" FontSize="12"/>
                             </Button>
                             <Button Command="{Binding CopyCommand}" Style="{StaticResource SecondaryButton}" Height="32" Padding="14,0" Margin="0,0,8,0"
-                                    ToolTip="Copy the AAR as plain text — pastes cleanly into Discord">
+                                    ToolTip="Copy the AAR as plain text, pastes cleanly into Discord">
                                 <TextBlock Text="Copy" FontFamily="{StaticResource FontUI}" FontSize="12"/>
                             </Button>
                             <Button Command="{Binding SaveCommand}" Style="{StaticResource PrimaryButton}" Height="32" Padding="16,0">

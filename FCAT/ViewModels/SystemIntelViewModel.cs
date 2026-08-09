@@ -179,7 +179,7 @@ public partial class SystemIntelViewModel : ObservableObject
     private async Task SafeRefresh(bool force)
     {
         try { await RefreshCurrentAsync(force); }
-        catch (Exception ex) { Status = $"Update failed — retrying ({ex.Message})"; }
+        catch (Exception ex) { Status = $"Update failed, retrying ({ex.Message})"; }
     }
 
     // Explore mode: the System panel can be pinned to any clicked system instead of following your
@@ -212,7 +212,7 @@ public partial class SystemIntelViewModel : ObservableObject
     private async Task SafeLoad(int systemId)
     {
         try { await LoadSystemAsync(systemId, force: true); }
-        catch (Exception ex) { Status = $"Couldn't load that system — {ex.Message}"; }
+        catch (Exception ex) { Status = $"Couldn't load that system: {ex.Message}"; }
     }
 
     private async Task RefreshCurrentAsync(bool force)
@@ -220,7 +220,7 @@ public partial class SystemIntelViewModel : ObservableObject
         var loc = await _esi.GetCharacterLocationAsync(_auth.AuthenticatedCharacterId);
         if (loc == null || loc.SolarSystemId == 0)
         {
-            if (!HasResult) Status = "Couldn't read your location — are you docked/undocked in space?";
+            if (!HasResult) Status = "Couldn't read your location. Are you docked or undocked in space?";
             return;
         }
 
@@ -292,7 +292,7 @@ public partial class SystemIntelViewModel : ObservableObject
 
             if (jumped) SystemChanged?.Invoke(systemId, region ?? string.Empty);
         }
-        catch (Exception ex) { Status = $"Couldn't load that system — {ex.Message}"; }
+        catch (Exception ex) { Status = $"Couldn't load that system: {ex.Message}"; }
     }
 
     private async Task<EsiSystem?> GetSystemCachedAsync(int id)
@@ -896,6 +896,6 @@ public partial class SystemIntelViewModel : ObservableObject
     private static void OpenUrl(string url)
     {
         try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch { /* no browser / blocked — nothing useful to do */ }
+        catch { /* no browser / blocked - nothing useful to do */ }
     }
 }

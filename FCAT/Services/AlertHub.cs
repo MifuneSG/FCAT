@@ -71,7 +71,7 @@ public partial class AlertHub : ObservableObject
         UnreadCount++;
 
         // Permanent AAR record - the live feeds are bounded/auto-cleared, this isn't.
-        var line = string.IsNullOrEmpty(alert.SubText) ? alert.Headline : $"{alert.Headline} — {alert.SubText}";
+        var line = string.IsNullOrEmpty(alert.SubText) ? alert.Headline : $"{alert.Headline}: {alert.SubText}";
         _sessionLog.Record(alert.AlertTag, line);
 
         var cfg = _settings.Current;

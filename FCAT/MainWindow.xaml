@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="FCAT — Fleet Commander Assistance Tool"
+        Title="FCAT · Fleet Commander Assistance Tool"
         Icon="fcat.ico"
         Height="820" Width="1280"
         MinHeight="700" MinWidth="1100"
@@ -115,7 +115,7 @@
                     <Button Command="{Binding ApplyUpdateCommand}" Cursor="Hand" Margin="0,0,12,0"
                             Visibility="{Binding UpdateReady, Converter={StaticResource BoolToVisibility}}"
                             WindowChrome.IsHitTestVisibleInChrome="True"
-                            ToolTip="A new version is downloaded — click to restart and apply">
+                            ToolTip="A new version is downloaded, click to restart and apply">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border x:Name="ub" CornerRadius="5" Padding="9,3"

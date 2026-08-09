@@ -13,7 +13,7 @@
 
     <!-- Branding -->
     <ApplicationIcon>fcat.ico</ApplicationIcon>
-    <AssemblyTitle>FCAT — Fleet Commander Assistance Tool</AssemblyTitle>
+    <AssemblyTitle>FCAT · Fleet Commander Assistance Tool</AssemblyTitle>
     <Product>FCAT</Product>
     <Version>0.15.0-beta</Version>
     <FileVersion>0.14.0.0</FileVersion>
@@ -34,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Template file for contributors — not compiled -->
+    <!-- Template file for contributors - not compiled -->
     <Compile Remove="AppSecrets.example.cs" />
     <None Include="AppSecrets.example.cs" />
   </ItemGroup>

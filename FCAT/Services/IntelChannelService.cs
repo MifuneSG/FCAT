@@ -174,7 +174,7 @@ public partial class IntelChannelService : IDisposable
             while ((line = reader.ReadLine()) != null) ParseLine(line);
             _lastFilePosition = stream.Position;
         }
-        catch (IOException) { /* locked — retry next poll */ }
+        catch (IOException) { /* locked - retry next poll */ }
     }
 
     private void ParseLine(string line)

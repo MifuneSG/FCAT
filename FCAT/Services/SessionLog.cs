@@ -89,7 +89,7 @@ public partial class SessionLog : ObservableObject
         SessionStart ??= DateTime.Now;   // keep the original op start time across re-forms
         _fleetId = fleetId;
         _fc = fc;
-        Record("SESSION", $"Session started — fleet {fleetId}" + (string.IsNullOrEmpty(fc) ? "" : $", FC {fc}"));
+        Record("SESSION", $"Session started, fleet {fleetId}" + (string.IsNullOrEmpty(fc) ? "" : $", FC {fc}"));
         UpdateSummary();
     }
 
@@ -186,7 +186,7 @@ public partial class SessionLog : ObservableObject
         if (HasBattleReport)
         {
             sb.AppendLine();
-            sb.AppendLine($"Battle Report — {string.Join(", ", _anchors.Select(a => a.SystemName))}");
+            sb.AppendLine($"Battle Report: {string.Join(", ", _anchors.Select(a => a.SystemName))}");
             foreach (var a in _anchors)
                 sb.AppendLine($"{a.SystemName}: {a.ZkillUrl}");
 
@@ -201,14 +201,14 @@ public partial class SessionLog : ObservableObject
                     sb.AppendLine();
                     sb.AppendLine("Losses (SRP)");
                     foreach (var l in report.Losses)
-                        sb.AppendLine($"• {l.Pilot} — {l.Ship} — {l.IskText}");
+                        sb.AppendLine($"• {l.Pilot} · {l.Ship} · {l.IskText}");
                 }
                 if (report.HasKills)
                 {
                     sb.AppendLine();
                     sb.AppendLine("Kills");
                     foreach (var k in report.Kills)
-                        sb.AppendLine($"• {k.Pilot} — {k.Ship} — {k.IskText}");
+                        sb.AppendLine($"• {k.Pilot} · {k.Ship} · {k.IskText}");
                 }
             }
         }
