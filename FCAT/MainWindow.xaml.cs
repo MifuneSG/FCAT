@@ -11,6 +11,8 @@ public partial class MainWindow : Window
 {
     private readonly AlertHub _hub;
     private AlertOverlayWindow? _overlay;
+    private MapOverlayWindow? _mapOverlay;
+    private ViewModels.ShellViewModel? _shell;
     private readonly DispatcherTimer _clock;
 
     public MainWindow(AlertHub hub)
@@ -18,7 +20,16 @@ public partial class MainWindow : Window
         InitializeComponent();
         _hub = hub;
         _hub.PropertyChanged += OnHubPropertyChanged;
-        Closed += (_, _) => CloseOverlay();
+        Closed += (_, _) => { CloseOverlay(); CloseMapOverlay(); };
+
+        // The shell arrives as the DataContext, and owns the map-overlay state.
+        DataContextChanged += (_, e) =>
+        {
+            if (_shell != null) _shell.PropertyChanged -= OnShellPropertyChanged;
+            _shell = e.NewValue as ViewModels.ShellViewModel;
+            if (_shell != null) _shell.PropertyChanged += OnShellPropertyChanged;
+            UpdateMapOverlay();
+        };
 
         // EVE time = UTC, ticking once a second in the top bar.
         _clock = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
@@ -37,7 +48,7 @@ public partial class MainWindow : Window
         };
 
         // Honour the saved overlay on/off state at launch (PropertyChanged only fires on later toggles).
-        Loaded += (_, _) => UpdateOverlay();
+        Loaded += (_, _) => { UpdateOverlay(); UpdateMapOverlay(); };
     }
 
     // Maximize-to-work-area (respect the taskbar)
@@ -131,5 +142,55 @@ public partial class MainWindow : Window
     {
         if (_overlay != null)
             _hub.PersistOverlay(_overlay.Left, _overlay.Top, _hub.OverlayLocked);
+    }
+
+    // Map overlay - same lifecycle as the alert overlay, but it also remembers its size.
+    private void OnShellPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(ViewModels.ShellViewModel.MapOverlayEnabled):
+                UpdateMapOverlay();
+                break;
+            case nameof(ViewModels.ShellViewModel.MapOverlayLocked):
+                _mapOverlay?.SetLocked(_shell!.MapOverlayLocked);
+                PersistMapPosition();
+                break;
+        }
+    }
+
+    private void UpdateMapOverlay()
+    {
+        if (_shell == null || !IsLoaded) return;
+
+        if (_shell.MapOverlayEnabled)
+        {
+            if (_mapOverlay != null) return;
+            _mapOverlay = new MapOverlayWindow
+            {
+                DataContext = _shell.SystemIntel,
+                Left   = _shell.MapOverlayLeft,
+                Top    = _shell.MapOverlayTop,
+                Width  = _shell.MapOverlayWidth,
+                Height = _shell.MapOverlayHeight,
+            };
+            _mapOverlay.Show();
+            _mapOverlay.SetLocked(_shell.MapOverlayLocked);   // hwnd exists after Show()
+        }
+        else CloseMapOverlay();
+    }
+
+    private void CloseMapOverlay()
+    {
+        if (_mapOverlay == null) return;
+        PersistMapPosition();
+        _mapOverlay.Close();
+        _mapOverlay = null;
+    }
+
+    private void PersistMapPosition()
+    {
+        if (_mapOverlay != null && _shell != null)
+            _shell.PersistMapOverlay(_mapOverlay.Left, _mapOverlay.Top, _mapOverlay.Width, _mapOverlay.Height);
     }
 }

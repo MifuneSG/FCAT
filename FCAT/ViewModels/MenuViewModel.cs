@@ -50,6 +50,13 @@ public partial class MenuViewModel : ObservableObject
     [ObservableProperty] private string _securityStatusText = "—";
     [ObservableProperty] private string _currentSystemName = "Unknown";
 
+    /// <summary>You're in a fleet but not its boss - ESI won't share any fleet data with FCAT.</summary>
+    [ObservableProperty] private bool _isFleetBoss;
+    public bool IsInFleetNotBoss => !IsFleetBoss && FleetStatusText.StartsWith("In a fleet");
+
+    partial void OnIsFleetBossChanged(bool value)      => OnPropertyChanged(nameof(IsInFleetNotBoss));
+    partial void OnFleetStatusTextChanged(string value) => OnPropertyChanged(nameof(IsInFleetNotBoss));
+
     // Fleet preview (only meaningful when IsInFleet)
     [ObservableProperty] private int    _pilotCount;
     [ObservableProperty] private string _fleetCompositionText = string.Empty;  // "3 wings · 5 squads"
@@ -164,13 +171,26 @@ public partial class MenuViewModel : ObservableObject
 
         if (charFleet != null)
         {
-            IsInFleet = true;
-            DetectedFleetId = charFleet.FleetId;
-            FleetStatusText = $"Active fleet detected";
-            await LoadFleetSummaryAsync(charFleet.FleetId);
+            // EVE only serves fleet members/wings to the fleet BOSS. Wing/squad commanders - and
+            // even an FC who didn't create the fleet - get a 404, so say so instead of showing an
+            // empty fleet that looks like a broken tool.
+            IsFleetBoss = charFleet.FleetBossId == _auth.AuthenticatedCharacterId;
+            IsInFleet = IsFleetBoss;
+            DetectedFleetId = IsFleetBoss ? charFleet.FleetId : 0;
+
+            if (IsFleetBoss)
+            {
+                FleetStatusText = "Active fleet detected";
+                await LoadFleetSummaryAsync(charFleet.FleetId);
+            }
+            else
+            {
+                FleetStatusText = "In a fleet, but you're not fleet boss.";
+            }
         }
         else
         {
+            IsFleetBoss = false;
             IsInFleet = false;
             FleetStatusText = "No active fleet found.";
         }

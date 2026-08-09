@@ -71,6 +71,7 @@ public partial class FleetViewModel : ObservableObject
         _sessionLog.StartSession(fleetId, auth.AuthenticatedCharacterName);
 
         _combatLog.AlertRaised += OnAlertRaised;
+        _combatLog.LineParsed += OnGameLogLine;   // feed the FC's own gamelog rules
         _combatLog.StartWatching(_settings.Current.GamelogsPath);
 
         _boost.Updated += OnBoostUpdated;
@@ -86,6 +87,9 @@ public partial class FleetViewModel : ObservableObject
     [ObservableProperty] private bool   _isLive;
     [ObservableProperty] private string _statusMessage  = "Connecting...";
     [ObservableProperty] private bool   _fleetChangedWarning;
+
+    /// <summary>You're in this fleet but not its boss, so ESI returns nothing (see PollAsync).</summary>
+    [ObservableProperty] private bool   _notFleetBoss;
     [ObservableProperty] private long   _newDetectedFleetId;
     [ObservableProperty] private string _boostChannelName = string.Empty;
     [ObservableProperty] private string _inviteName = string.Empty;
@@ -228,6 +232,7 @@ public partial class FleetViewModel : ObservableObject
         _pollCts = null;
         _combatLog.StopWatching();
         _combatLog.AlertRaised -= OnAlertRaised;
+        _combatLog.LineParsed -= OnGameLogLine;
         _boost.Updated -= OnBoostUpdated;
         _boost.StopWatching();
         IsLive = false;
@@ -250,6 +255,17 @@ public partial class FleetViewModel : ObservableObject
                 FleetChangedWarning = true;
                 StatusMessage = $"New fleet detected: {charFleet.FleetId}";
             });
+            return;
+        }
+
+        // EVE serves fleet members/wings to the BOSS only, so a wing commander (or an FC who didn't
+        // create the fleet) just gets 404s. Say that plainly rather than polling an empty roster.
+        var isBoss = charFleet.FleetBossId == _auth.AuthenticatedCharacterId;
+        await App.Current.Dispatcher.InvokeAsync(() => NotFleetBoss = !isBoss);
+        if (!isBoss)
+        {
+            await App.Current.Dispatcher.InvokeAsync(() =>
+                StatusMessage = "You're not fleet boss - EVE won't share this fleet's data.");
             return;
         }
 
@@ -655,8 +671,44 @@ public partial class FleetViewModel : ObservableObject
             Timestamp        = DateTime.Now,
             AlertType        = AlertType.DpsLoss,
             Detail           = $"~{crossed}% of DPS lost — {_dpsLostIds.Count} of {_baselineDpsIds.Count} ships down",
-            CriticalOverride = crossed >= 75,   // red only at the worst step; 30/50 stay amber
+            // Red only at the worst step; 30/50 stay a warning.
+            SeverityOverride = crossed >= 75 ? AlertSeverity.Critical : AlertSeverity.Warning,
         };
+    }
+
+    // Logi-ratio watch: latched so it fires on the way DOWN through the threshold, not every poll.
+    private bool _logiRatioFired;
+    private const int MinLogiRatioFleet = 8;   // ratios are meaningless on a tiny gang
+
+    /// <summary>
+    /// Warns when logi thin out past the configured share of the fleet - the "reps won't hold" moment.
+    /// Unlike the standing composition advisory this only speaks up on the transition, and re-arms
+    /// once the ratio recovers, so a fight that chews through logi says so exactly once.
+    /// </summary>
+    private void EvaluateLogiRatio(int logi, int total)
+    {
+        if (!_settings.Current.LogiRatioAlertEnabled) return;
+        if (total < MinLogiRatioFleet) { _logiRatioFired = false; return; }
+
+        var threshold = _settings.Current.LogiRatioThreshold;
+        if (threshold <= 0) return;
+
+        var ratio = (double)logi / total;
+
+        if (ratio >= threshold) { _logiRatioFired = false; return; }   // healthy again - re-arm
+        if (_logiRatioFired) return;
+        _logiRatioFired = true;
+
+        RaiseAlert(new FcAlert
+        {
+            Timestamp = DateTime.Now,
+            AlertType = AlertType.LogiRatio,
+            Detail    = logi == 0
+                ? $"No logi left in a {total}-pilot fleet"
+                : $"{logi} logi across {total} pilots ({ratio:P0}) — below {threshold:P0}",
+            // Losing logi entirely is a different order of problem from thinning out.
+            SeverityOverride = logi == 0 ? AlertSeverity.Critical : AlertSeverity.Warning,
+        });
     }
 
     /// <summary>Re-arms the tracker between fights: once the DPS line is rebuilt to baseline strength
@@ -776,6 +828,9 @@ public partial class FleetViewModel : ObservableObject
                 if (EffectiveRole(m) is ShipRole.DPS or ShipRole.Unknown)
                     _currentDpsIds.Add(m.CharacterId);
         EvaluateDpsRearm();
+        if (kind == FleetKind.Combat)
+            EvaluateLogiRatio(_currentMembers.Count(m => EffectiveRole(m) is ShipRole.Logi or ShipRole.CapLogi),
+                              _currentMembers.Count);
 
         // Boost coverage
         // The boost row tracks the link types that matter for the fleet kind: combat fleets
@@ -1086,6 +1141,8 @@ public partial class FleetViewModel : ObservableObject
     // All alerts flow through the app-lifetime AlertHub (sound, auto-clear, overlay) so they
     // persist regardless of which page is open.
     private void OnAlertRaised(FcAlert alert) => App.Current.Dispatcher.Invoke(() => _alertHub.Raise(alert));
+
+    private void OnGameLogLine(string line) => _shell.CustomAlerts.OnGameLogLine(line);
 
     private void RaiseAlert(FcAlert alert) => _alertHub.Raise(alert);
 }

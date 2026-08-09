@@ -169,7 +169,23 @@
                                     Visibility="{Binding IsInFleet, Converter={StaticResource BoolToInvisibility}}">
                             <TextBlock Text="Form your fleet in EVE, then refresh to detect it here."
                                        Foreground="{StaticResource EveTextSecondary}"
-                                       FontFamily="{StaticResource FontUI}" FontSize="13"/>
+                                       FontFamily="{StaticResource FontUI}" FontSize="13"
+                                       Visibility="{Binding IsInFleetNotBoss, Converter={StaticResource BoolToInvisibility}}"/>
+
+                            <!-- In a fleet, but ESI only serves fleet data to the boss -->
+                            <StackPanel Visibility="{Binding IsInFleetNotBoss, Converter={StaticResource BoolToVisibility}}">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <TextBlock Text="⚠" Foreground="{DynamicResource EveAmber}" FontSize="14" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                                    <TextBlock Text="You're not the fleet boss" Foreground="{DynamicResource EveAmber}"
+                                               FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}"
+                                           FontSize="12" TextWrapping="Wrap"
+                                           Text="EVE only shares fleet members and wings with the fleet boss, so FCAT can't read this fleet. Ask for boss, or run FCAT on the character that holds it."/>
+                                <TextBlock Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}"
+                                           FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"
+                                           Text="Still working: intel feed and alerts, d-scan, the map, and your own combat-log alerts."/>
+                            </StackPanel>
                         </StackPanel>
 
                         <!-- CTA row -->

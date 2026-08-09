@@ -38,12 +38,7 @@ public partial class SettingsViewModel : ObservableObject
         _formupSystemText  = settings.Current.FormupSystem;
         _formupSystemId    = settings.Current.FormupSystemId;
 
-        AlertSoundsEnabled = settings.Current.AlertSoundsEnabled;
-        TackledSound       = settings.Current.TackledSound;
-        CapTroubleSound    = settings.Current.CapTroubleSound;
-        BoostLostSound     = settings.Current.BoostLostSound;
-        _alertClearSeconds = settings.Current.AlertClearSeconds;
-        _themeName         = ThemeService.Name(ThemeService.Current);
+        _themeName = ThemeService.Name(ThemeService.Current);
 
         BuildScopeHealth();
         _ = LoadSystemsAsync();
@@ -152,49 +147,6 @@ public partial class SettingsViewModel : ObservableObject
         SystemSuggestions.Clear();
     }
 
-    // Alert sounds
-    [ObservableProperty] private bool   _alertSoundsEnabled = true;
-    [ObservableProperty] private string _tackledSound    = "Alarm";
-    [ObservableProperty] private string _capTroubleSound = "Beep";
-    [ObservableProperty] private string _boostLostSound  = "Double Beep";
-
-    // Auto-clear
-    // Free-text seconds entry (like the boost-channel field). Backed by an int; non-numeric or
-    // negative input is clamped to 0 (= keep alerts until the session ends).
-    private int _alertClearSeconds = 60;
-
-    public string AlertClearSecondsText
-    {
-        get => _alertClearSeconds.ToString();
-        set
-        {
-            var seconds = int.TryParse(value, out var n) && n > 0 ? n : 0;
-            if (SetProperty(ref _alertClearSeconds, seconds, nameof(AlertClearSecondsText)))
-                OnPropertyChanged(nameof(AlertClearHint));
-        }
-    }
-
-    public int AlertClearSeconds => _alertClearSeconds;
-
-    public string AlertClearHint => _alertClearSeconds <= 0
-        ? "Off — alerts stay on the overlay until the session ends."
-        : "Alerts disappear from the on-screen overlay after this long. The in-app Alerts list keeps them for the whole session.";
-
-    private static string Cycle(string current)
-    {
-        var i = Array.IndexOf(SoundService.Presets, current);
-        return SoundService.Presets[(i + 1) % SoundService.Presets.Length];
-    }
-
-    [RelayCommand] private void ToggleSounds() => AlertSoundsEnabled = !AlertSoundsEnabled;
-
-    [RelayCommand] private void CycleTackled()    { TackledSound    = Cycle(TackledSound);    SoundService.Play(TackledSound); }
-    [RelayCommand] private void CycleCapTrouble() { CapTroubleSound = Cycle(CapTroubleSound); SoundService.Play(CapTroubleSound); }
-    [RelayCommand] private void CycleBoostLost()  { BoostLostSound  = Cycle(BoostLostSound);  SoundService.Play(BoostLostSound); }
-
-    [RelayCommand] private void TestTackled()    => SoundService.Play(TackledSound);
-    [RelayCommand] private void TestCapTrouble() => SoundService.Play(CapTroubleSound);
-    [RelayCommand] private void TestBoostLost()  => SoundService.Play(BoostLostSound);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(GamelogsPath))]
@@ -239,11 +191,7 @@ public partial class SettingsViewModel : ObservableObject
         _settings.Current.FormupSystem       = FormupSystemText.Trim();
         _settings.Current.FormupSystemId     = _formupSystemId;
 
-        _settings.Current.AlertSoundsEnabled = AlertSoundsEnabled;
-        _settings.Current.TackledSound       = TackledSound;
-        _settings.Current.CapTroubleSound    = CapTroubleSound;
-        _settings.Current.BoostLostSound     = BoostLostSound;
-        _settings.Current.AlertClearSeconds  = AlertClearSeconds;
+        // Alert configuration lives on the Alerts page now, and saves itself there.
         _settings.Save();
 
         StatusMessage = "Saved. Applies next time you enter a fleet.";

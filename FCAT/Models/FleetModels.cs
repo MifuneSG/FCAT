@@ -25,6 +25,11 @@ public class CharacterFleetInfo
     [JsonPropertyName("fleet_id")]
     public long FleetId { get; set; }
 
+    /// <summary>The current fleet boss. EVE only lets the BOSS read fleet members/wings, so this is
+    /// what decides whether FCAT can see the fleet at all - being FC or a wing commander isn't enough.</summary>
+    [JsonPropertyName("fleet_boss_id")]
+    public int FleetBossId { get; set; }
+
     [JsonPropertyName("role")]
     public string Role { get; set; } = string.Empty;
 
@@ -176,6 +181,7 @@ public class EsiSystem
     [JsonPropertyName("security_status")]  public double   SecurityStatus  { get; set; }
     [JsonPropertyName("constellation_id")] public int      ConstellationId { get; set; }
     [JsonPropertyName("stargates")]        public int[]?   Stargates       { get; set; }
+    [JsonPropertyName("stations")]         public int[]?   Stations        { get; set; }   // NPC stations only
     [JsonPropertyName("position")]         public EsiPosition? Position    { get; set; }
 }
 
@@ -222,6 +228,32 @@ public class SovEntry
     [JsonPropertyName("system_id")]  public int  SystemId   { get; set; }
     [JsonPropertyName("alliance_id")] public int? AllianceId { get; set; }
     [JsonPropertyName("faction_id")]  public int? FactionId  { get; set; }
+}
+
+/// <summary>An active sovereignty campaign (structure fight with a timer) from /sovereignty/campaigns/.</summary>
+public class SovCampaign
+{
+    [JsonPropertyName("constellation_id")] public int      ConstellationId { get; set; }
+    [JsonPropertyName("solar_system_id")]  public int      SolarSystemId   { get; set; }
+    [JsonPropertyName("event_type")]       public string   EventType       { get; set; } = string.Empty;  // tcu_defense / ihub_defense / station_defense
+    [JsonPropertyName("start_time")]       public DateTime StartTime       { get; set; }
+    [JsonPropertyName("defender_id")]      public int?     DefenderId      { get; set; }
+}
+
+/// <summary>An active Sansha incursion from /incursions/ (constellation-scoped).</summary>
+public class Incursion
+{
+    [JsonPropertyName("constellation_id")]        public int    ConstellationId { get; set; }
+    [JsonPropertyName("state")]                   public string State           { get; set; } = string.Empty;  // withdrawing / mobilizing / established
+    [JsonPropertyName("staging_solar_system_id")] public int    StagingSystemId { get; set; }
+    [JsonPropertyName("influence")]               public double Influence       { get; set; }
+}
+
+/// <summary>Faction-warfare contest state for a system from /fw/systems/.</summary>
+public class FwSystem
+{
+    [JsonPropertyName("solar_system_id")] public int    SolarSystemId { get; set; }
+    [JsonPropertyName("contested")]       public string Contested     { get; set; } = string.Empty;  // uncontested / contested / vulnerable / captured
 }
 
 public class CharacterLocation

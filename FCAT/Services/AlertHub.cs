@@ -74,24 +74,57 @@ public partial class AlertHub : ObservableObject
         var line = string.IsNullOrEmpty(alert.SubText) ? alert.Headline : $"{alert.Headline} — {alert.SubText}";
         _sessionLog.Record(alert.AlertTag, line);
 
-        if (_settings.Current.AlertSoundsEnabled)
+        var cfg = _settings.Current;
+        if (cfg.AlertSoundsEnabled && !cfg.MutedAlertTypes.Contains(alert.AlertType.ToString()))
         {
-            var preset = alert.AlertType switch
-            {
-                AlertType.Tackled    => _settings.Current.TackledSound,
-                AlertType.CapTrouble => _settings.Current.CapTroubleSound,
-                AlertType.BoostLost  => _settings.Current.BoostLostSound,
-                AlertType.LogiChain  => _settings.Current.BoostLostSound,  // same "a key ship dropped" cue
-                AlertType.DpsLoss    => _settings.Current.TackledSound,    // fleet-effectiveness drop - louder cue
-                _                    => "None",
-            };
+            var preset = SoundFor(alert);
             // Throttle per type so repeated alerts don't machine-gun the speaker.
-            SoundService.PlayThrottled(preset, alert.AlertType.ToString(), TimeSpan.FromSeconds(2));
+            var gap = TimeSpan.FromSeconds(Math.Max(0, cfg.AlertSoundThrottleSeconds));
+            SoundService.PlayThrottled(preset, SoundKey(alert), gap);
         }
 
-        var clearSecs = _settings.Current.AlertClearSeconds;
+        // Louder alerts stay on the overlay longer.
+        var clearSecs = alert.Severity switch
+        {
+            AlertSeverity.Critical => cfg.AlertClearSecondsCritical,
+            AlertSeverity.Info     => cfg.AlertClearSecondsInfo,
+            _                      => cfg.AlertClearSeconds,
+        };
         if (clearSecs > 0) _ = ExpireAlertAsync(alert, clearSecs);
     }
+
+    /// <summary>Custom rules carry their own sound; built-ins use their per-type setting.</summary>
+    private string SoundFor(FcAlert alert)
+    {
+        if (alert.AlertType == AlertType.Custom)
+            return string.IsNullOrWhiteSpace(alert.CustomSound) ? SeverityDefault(alert.Severity) : alert.CustomSound;
+
+        var cfg = _settings.Current;
+        return alert.AlertType switch
+        {
+            AlertType.Tackled      => cfg.TackledSound,
+            AlertType.CapTrouble   => cfg.CapTroubleSound,
+            AlertType.BoostLost    => cfg.BoostLostSound,
+            AlertType.LogiChain    => cfg.LogiChainSound,
+            AlertType.DpsLoss      => cfg.DpsLossSound,
+            AlertType.LogiRatio    => cfg.LogiRatioSound,
+            AlertType.IntelHostile => cfg.IntelHostileSound,
+            _                      => "None",
+        };
+    }
+
+    private static string SeverityDefault(AlertSeverity s) => s switch
+    {
+        AlertSeverity.Critical => "Alarm",
+        AlertSeverity.Warning  => "Beep",
+        _                      => "None",
+    };
+
+    // Custom rules throttle per rule, not per type, so two different rules don't mute each other.
+    private static string SoundKey(FcAlert alert) =>
+        alert.AlertType == AlertType.Custom && alert.CustomTag.Length > 0
+            ? $"Custom:{alert.CustomTag}"
+            : alert.AlertType.ToString();
 
     private async Task ExpireAlertAsync(FcAlert alert, int seconds)
     {

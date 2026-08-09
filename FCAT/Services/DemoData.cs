@@ -83,8 +83,11 @@ public static class DemoData
         return list;
     }
 
-    public static CharacterFleetInfo Fleet() =>
-        new() { FleetId = FleetId, Role = "fleet_commander", WingId = WAnchor, SquadId = SqTackle };
+    // The demo character is always the boss, otherwise the sandbox would report the real
+    // "you're not fleet boss" state and show an empty fleet.
+    public static CharacterFleetInfo Fleet(int ownCharId) =>
+        new() { FleetId = FleetId, FleetBossId = ownCharId, Role = "fleet_commander",
+                WingId = WAnchor, SquadId = SqTackle };
 
     public static List<FleetMember> Members(int ownCharId, string ownName)
     {

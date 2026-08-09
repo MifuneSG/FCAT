@@ -38,6 +38,12 @@ public partial class ShellViewModel : ObservableObject
         _auth.ActiveCharacterChanged += OnActiveCharacterChanged;
         CurrentPage = new LoginViewModel(_auth, this);
 
+        // Restore the map overlay's on/off + lock state. Going through the property (not the field)
+        // starts the location poll, so a restored overlay fills in by itself once the saved session
+        // comes back - polling before that just retries harmlessly.
+        _mapOverlayLocked = settings.Current.MapOverlayLocked;
+        MapOverlayEnabled = settings.Current.MapOverlayEnabled;
+
         // Restore the last active character from disk (no SSO needed if the refresh token is valid).
         _ = TryRestoreSessionAsync();
 
@@ -246,7 +252,7 @@ public partial class ShellViewModel : ObservableObject
     {
         ActiveNav = "alerts";
         _alertHub.MarkRead();   // opening the page clears the unread badge
-        CurrentPage = new AlertsViewModel(_alertHub);
+        CurrentPage = new AlertsViewModel(_alertHub, _settings);
     }
 
     // The live fleet-monitoring session. Kept alive across navigation so the alert overlay and
@@ -282,8 +288,56 @@ public partial class ShellViewModel : ObservableObject
     public void ShowIntel()
     {
         ActiveNav = "intel";
-        _intel ??= new IntelViewModel(_esi, _auth, _zkill, _systemSearch, _settings, this);
+        _intel ??= new IntelViewModel(_esi, _auth, _zkill, _systemSearch, _settings, this, SystemIntel,
+                                      _alertHub, CustomAlerts);
         CurrentPage = _intel;
+    }
+
+    /// <summary>The FC's own alert rules, evaluated against the intel channel and the gamelog.</summary>
+    private CustomAlertService? _customAlerts;
+    public CustomAlertService CustomAlerts => _customAlerts ??= new CustomAlertService(_settings, _alertHub);
+
+    // The live current-system/constellation tracker: the Intel page's map renders it, the intel feed
+    // listens to it for the region you're in, and the map overlay window binds to it too.
+    private SystemIntelViewModel? _systemIntel;
+    public SystemIntelViewModel SystemIntel => _systemIntel ??= new SystemIntelViewModel(_esi, _auth, _systemSearch);
+
+    // Map overlay - the constellation map over the game, same idea as the alert overlay.
+    // MainWindow owns the window itself and watches these.
+    [ObservableProperty] private bool _mapOverlayEnabled;
+    [ObservableProperty] private bool _mapOverlayLocked;
+
+    [RelayCommand] private void ToggleMapOverlay()     => MapOverlayEnabled = !MapOverlayEnabled;
+    [RelayCommand] private void ToggleMapOverlayLock() => MapOverlayLocked  = !MapOverlayLocked;
+
+    partial void OnMapOverlayEnabledChanged(bool value)
+    {
+        _settings.Current.MapOverlayEnabled = value;
+        _settings.Save();
+        // The overlay needs the tracker polling even when the Intel page isn't open.
+        if (value) SystemIntel.StartAuto();
+        else       SystemIntel.StopAuto();
+    }
+
+    partial void OnMapOverlayLockedChanged(bool value)
+    {
+        _settings.Current.MapOverlayLocked = value;
+        _settings.Save();
+    }
+
+    public double MapOverlayLeft   => _settings.Current.MapOverlayLeft;
+    public double MapOverlayTop    => _settings.Current.MapOverlayTop;
+    public double MapOverlayWidth  => _settings.Current.MapOverlayWidth;
+    public double MapOverlayHeight => _settings.Current.MapOverlayHeight;
+
+    /// <summary>Called by the overlay host when the window is moved or resized.</summary>
+    public void PersistMapOverlay(double left, double top, double width, double height)
+    {
+        _settings.Current.MapOverlayLeft   = left;
+        _settings.Current.MapOverlayTop    = top;
+        _settings.Current.MapOverlayWidth  = width;
+        _settings.Current.MapOverlayHeight = height;
+        _settings.Save();
     }
 
     public void ShowFleet(long fleetId)

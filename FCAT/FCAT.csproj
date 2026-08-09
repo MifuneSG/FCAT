@@ -15,13 +15,16 @@
     <ApplicationIcon>fcat.ico</ApplicationIcon>
     <AssemblyTitle>FCAT — Fleet Commander Assistance Tool</AssemblyTitle>
     <Product>FCAT</Product>
-    <Version>0.14.0-beta</Version>
+    <Version>0.15.0-beta</Version>
     <FileVersion>0.14.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Embedded so the window/taskbar icon resolves at runtime -->
     <Resource Include="fcat.ico" />
+    <!-- 2D map layout (system positions per region), extracted once from Dotlan's published SVGs.
+         Bundled so the map needs no network at all - see DotlanLayout.cs for the attribution note. -->
+    <EmbeddedResource Include="Assets\dotlan-layout.json" />
   </ItemGroup>
 
   <ItemGroup>

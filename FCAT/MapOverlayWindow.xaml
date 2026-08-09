@@ -1,0 +1,147 @@
+<Window x:Class="FCAT.MapOverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:FCAT.ViewModels"
+        Title="FCAT Map"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        MinWidth="320" MinHeight="260">
+
+    <Border Background="#d20b0e14" BorderBrush="#33ffffff" BorderThickness="1" CornerRadius="9">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Drag handle (hidden when locked / click-through). Kept thin - every pixel here is
+                 a pixel the map doesn't get. -->
+            <Border x:Name="DragHandle" Grid.Row="0" Background="#3312203a" CornerRadius="9,9,0,0"
+                    Padding="9,3" Cursor="SizeAll" MouseLeftButtonDown="DragHandle_MouseDown">
+                <TextBlock Text="⠿  drag · resize from the corner · then Lock"
+                           Foreground="#9aa3b3" FontFamily="Segoe UI" FontSize="9" TextTrimming="CharacterEllipsis"/>
+            </Border>
+
+            <!-- Where you are -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="9,4,9,0">
+                <TextBlock Text="{Binding SystemName}" Foreground="#f3f6fb"
+                           FontFamily="Segoe UI" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding LocationLine}" Foreground="#7d879b"
+                           FontFamily="Segoe UI" FontSize="9" VerticalAlignment="Center" Margin="6,0,0,0"
+                           TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+
+            <!-- The map, scaled to fit whatever size the window is dragged to -->
+            <!-- No inner panel - the map draws straight onto the overlay's own surface -->
+            <Border Grid.Row="2" Margin="4,0,4,4" Background="Transparent" ClipToBounds="True">
+                <!-- Same minimap rule as the Intel map: fixed scale, you in the middle, cropped -->
+                <Grid x:Name="Viewport" ClipToBounds="True" SizeChanged="OnViewportSizeChanged">
+                    <Grid HorizontalAlignment="Left" VerticalAlignment="Top">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="MapCentre"/>
+                        </Grid.RenderTransform>
+                        <ItemsControl ItemsSource="{Binding MapLinks}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><Canvas/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:MapLink}">
+                                    <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}" StrokeThickness="1.5">
+                                        <Line.Style>
+                                            <Style TargetType="Line">
+                                                <Setter Property="Stroke" Value="#3a4557"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsExit}" Value="True">
+                                                        <Setter Property="Stroke" Value="#3fae8f"/>
+                                                        <Setter Property="StrokeDashArray" Value="3 2"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Line.Style>
+                                    </Line>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <ItemsControl ItemsSource="{Binding MapNodes}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><Canvas/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="Canvas.Left" Value="{Binding NodeLeft}"/>
+                                    <Setter Property="Canvas.Top"  Value="{Binding NodeTop}"/>
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:MapNode}">
+                                    <Grid Width="72">
+                                        <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <Grid Width="24" Height="24">
+                                                <Ellipse Width="19" Height="19" Stroke="#a98ce0" StrokeThickness="1.5" Opacity="0.7"
+                                                         Visibility="{Binding IsCurrent, Converter={StaticResource BoolToVisibility}}"/>
+                                                <!-- gold dashed ring = where you actually are, while exploring elsewhere -->
+                                                <Ellipse Width="19" Height="19" Stroke="#f0d99a" StrokeThickness="2" StrokeDashArray="2 1.5"
+                                                         Visibility="{Binding IsHome, Converter={StaticResource BoolToVisibility}}"/>
+                                                <Ellipse Width="11" Height="11" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <Ellipse.Style>
+                                                        <Style TargetType="Ellipse">
+                                                            <Setter Property="Fill" Value="#4A5468"/>
+                                                            <Setter Property="Stroke" Value="#6E7A90"/>
+                                                            <Setter Property="StrokeThickness" Value="1"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Hot}" Value="True">
+                                                                    <Setter Property="Fill" Value="#e2574c"/>
+                                                                    <Setter Property="Stroke" Value="#F09B93"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding IsExit}" Value="True">
+                                                                    <Setter Property="Fill" Value="#0F2A24"/>
+                                                                    <Setter Property="Stroke" Value="#3fae8f"/>
+                                                                    <Setter Property="StrokeThickness" Value="2"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                                    <Setter Property="Fill" Value="#a98ce0"/>
+                                                                    <Setter Property="Stroke" Value="#D9C8F5"/>
+                                                                    <Setter Property="StrokeThickness" Value="1.5"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Ellipse.Style>
+                                                </Ellipse>
+                                                <Border CornerRadius="7" Background="#e2574c" MinWidth="14" Height="14" Padding="3,0"
+                                                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-6,-10,0"
+                                                        Visibility="{Binding Hot, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{Binding KillBadge}" Foreground="#1a0f0f" FontFamily="Segoe UI" FontSize="8" FontWeight="Bold"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </Grid>
+                                            <TextBlock Text="{Binding Name}" FontFamily="Segoe UI" FontSize="10"
+                                                       HorizontalAlignment="Center" TextAlignment="Center"
+                                                       VerticalAlignment="Bottom" Margin="0,0,0,-16">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="#bcc0d4"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Hot}" Value="True">
+                                                                <Setter Property="Foreground" Value="#f3f6fb"/>
+                                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsExit}" Value="True">
+                                                                <Setter Property="Foreground" Value="#3fae8f"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                                <Setter Property="Foreground" Value="#a98ce0"/>
+                                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Grid>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

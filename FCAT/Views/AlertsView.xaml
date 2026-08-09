@@ -8,8 +8,29 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d">
 
+    <UserControl.Resources>
+        <!-- Segmented tab button (Feed / Configure) -->
+        <Style x:Key="AlertTabBtn" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
     <Grid Background="Transparent">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
@@ -34,7 +55,32 @@
                        HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
         </Grid>
 
-        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="34,0,34,24">
+        <!-- Feed / Configure switcher -->
+        <Border Grid.Row="1" CornerRadius="6" Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1"
+                Padding="3" HorizontalAlignment="Left" Margin="34,0,0,12" VerticalAlignment="Top">
+            <StackPanel Orientation="Horizontal">
+                <Button Style="{StaticResource AlertTabBtn}" Command="{Binding SetTabCommand}" CommandParameter="Feed">
+                    <TextBlock Text="Feed" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold">
+                        <TextBlock.Style><Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                            <Style.Triggers><DataTrigger Binding="{Binding IsFeedTab}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/></DataTrigger></Style.Triggers>
+                        </Style></TextBlock.Style>
+                    </TextBlock>
+                </Button>
+                <Button Style="{StaticResource AlertTabBtn}" Command="{Binding SetTabCommand}" CommandParameter="Configure">
+                    <TextBlock Text="Configure" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold">
+                        <TextBlock.Style><Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                            <Style.Triggers><DataTrigger Binding="{Binding IsConfigTab}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/></DataTrigger></Style.Triggers>
+                        </Style></TextBlock.Style>
+                    </TextBlock>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- FEED -->
+        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="34,0,34,24"
+                Visibility="{Binding IsFeedTab, Converter={StaticResource BoolToVisibility}}">
             <Grid>
                 <!-- Empty state -->
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
@@ -112,6 +158,291 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- CONFIGURE - every alert FCAT can raise, in one list -->
+        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="34,0,34,24"
+                Visibility="{Binding IsConfigTab, Converter={StaticResource BoolToVisibility}}">
+            <Grid Margin="24,20,24,20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- master controls -->
+                <Grid Grid.Row="0" Margin="0,0,0,14">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Command="{Binding ToggleSoundsCommand}" Style="{StaticResource SecondaryButton}" Height="32" Padding="14,0" Margin="0,0,8,0">
+                            <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12">
+                                <TextBlock.Style><Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Sounds: OFF"/>
+                                    <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                    <Style.Triggers><DataTrigger Binding="{Binding AlertSoundsEnabled}" Value="True">
+                                        <Setter Property="Text" Value="Sounds: ON"/><Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                    </DataTrigger></Style.Triggers>
+                                </Style></TextBlock.Style>
+                            </TextBlock>
+                        </Button>
+                        <Button Command="{Binding ImportSoundCommand}" Style="{StaticResource GhostButton}" Height="32" Padding="14,0" Margin="0,0,8,0"
+                                ToolTip="Add your own .wav so any alert can use it">
+                            <TextBlock Text="+ Add sound" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                        </Button>
+
+                        <Rectangle Width="1" Fill="{DynamicResource EveHairline}" Margin="4,4,12,4"/>
+
+                        <!-- On-screen overlay: an always-on-top window showing alerts over the game -->
+                        <Button Command="{Binding Hub.ToggleOverlayCommand}" Style="{StaticResource SecondaryButton}" Height="32" Padding="14,0" Margin="0,0,8,0"
+                                ToolTip="Show / hide the on-screen alert overlay over your game">
+                            <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12">
+                                <TextBlock.Style><Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="⧉ Overlay: OFF"/>
+                                    <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                    <Style.Triggers><DataTrigger Binding="{Binding Hub.OverlayEnabled}" Value="True">
+                                        <Setter Property="Text" Value="⧉ Overlay: ON"/><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/>
+                                    </DataTrigger></Style.Triggers>
+                                </Style></TextBlock.Style>
+                            </TextBlock>
+                        </Button>
+                        <Button Command="{Binding Hub.ToggleOverlayLockCommand}" Style="{StaticResource GhostButton}" Height="32" Padding="14,0"
+                                ToolTip="Lock makes the overlay click-through so it won't steal clicks from the game"
+                                Visibility="{Binding Hub.OverlayEnabled, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12">
+                                <TextBlock.Style><Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="🔓 Unlocked"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource EveAmber}"/>
+                                    <Style.Triggers><DataTrigger Binding="{Binding Hub.OverlayLocked}" Value="True">
+                                        <Setter Property="Text" Value="🔒 Locked"/><Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                    </DataTrigger></Style.Triggers>
+                                </Style></TextBlock.Style>
+                            </TextBlock>
+                        </Button>
+                    </StackPanel>
+                    <Button Command="{Binding StartCreateCommand}" Style="{StaticResource PrimaryButton}" Height="32" Padding="18,0"
+                            HorizontalAlignment="Right"
+                            Visibility="{Binding IsCreating, Converter={StaticResource BoolToInvisibility}}">
+                        <TextBlock Text="New alert" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
+                    </Button>
+                </Grid>
+
+                <TextBlock Grid.Row="1" Text="{Binding Status}" Foreground="{StaticResource EveTextDim}"
+                           FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"
+                           Visibility="{Binding Status, Converter={StaticResource StringToVisibility}}"/>
+
+                <!-- the one list: built-in alerts and your own, together -->
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Rows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:AlertConfigRow}">
+                                <Border Background="{DynamicResource EveRaisedBg}" CornerRadius="7" Padding="12,9" Margin="0,0,4,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- severity pip -->
+                                        <Ellipse Grid.Column="0" Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,11,0">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <Setter Property="Fill" Value="{StaticResource EveTextDim}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding SeverityLabel}" Value="WARNING"><Setter Property="Fill" Value="{DynamicResource EveAmber}"/></DataTrigger>
+                                                        <DataTrigger Binding="{Binding SeverityLabel}" Value="CRITICAL"><Setter Property="Fill" Value="{DynamicResource EveCritical}"/></DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                        </Ellipse>
+
+                                        <StackPanel Grid.Column="1">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Name}" FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center">
+                                                    <TextBlock.Style><Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{StaticResource EveTextPrimary}"/>
+                                                        <Style.Triggers><DataTrigger Binding="{Binding Enabled}" Value="False">
+                                                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                                        </DataTrigger></Style.Triggers>
+                                                    </Style></TextBlock.Style>
+                                                </TextBlock>
+                                                <Border CornerRadius="3" Background="#2a3343" Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                        Visibility="{Binding IsCustom, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="YOURS" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="8" FontWeight="SemiBold"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Trigger}" Foreground="{StaticResource EveTextDim}"
+                                                       FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button Command="{Binding CycleSoundCommand}" Style="{StaticResource SecondaryButton}" Height="28" Padding="10,0" Margin="0,0,4,0"
+                                                    ToolTip="Click to change the sound">
+                                                <TextBlock FontFamily="{StaticResource FontUI}" FontSize="11"><Run Text="♪ "/><Run Text="{Binding SoundLabel, Mode=OneWay}"/></TextBlock>
+                                            </Button>
+                                            <Button Command="{Binding DataContext.TestCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}" Style="{StaticResource GhostButton}" Height="28" Padding="9,0" Margin="0,0,4,0" ToolTip="Fire it now">
+                                                <TextBlock Text="▶" FontSize="11" Foreground="{DynamicResource EveAccent}"/>
+                                            </Button>
+                                            <Button Command="{Binding ToggleEnabledCommand}" Style="{StaticResource GhostButton}" Height="28" Padding="9,0" Margin="0,0,4,0"
+                                                    ToolTip="Turn this alert on or off">
+                                                <TextBlock FontSize="11">
+                                                    <TextBlock.Style><Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="Off"/>
+                                                        <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                                        <Style.Triggers><DataTrigger Binding="{Binding Enabled}" Value="True">
+                                                            <Setter Property="Text" Value="On"/><Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                                        </DataTrigger></Style.Triggers>
+                                                    </Style></TextBlock.Style>
+                                                </TextBlock>
+                                            </Button>
+                                            <Button Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}" Style="{StaticResource GhostButton}" Height="28" Padding="9,0" ToolTip="Delete this alert"
+                                                    Visibility="{Binding IsCustom, Converter={StaticResource BoolToVisibility}}">
+                                                <TextBlock Text="✕" FontSize="11" Foreground="{DynamicResource EveCritical}"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- NEW ALERT - a few questions rather than one big form -->
+                <Border Grid.Row="3" Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="8"
+                        Padding="18,16" Margin="0,10,0,0"
+                        Visibility="{Binding IsCreating, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel>
+                        <!-- step 1: what to watch -->
+                        <StackPanel Visibility="{Binding IsStep1, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="What should FCAT watch?" Foreground="{StaticResource EveTextPrimary}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Button Command="{Binding SetNewSourceCommand}" CommandParameter="IntelChannel" Style="{StaticResource GhostButton}" Height="34" Padding="16,0" Margin="0,0,8,0">
+                                    <TextBlock Text="Intel channel" FontFamily="{StaticResource FontUI}" FontSize="12">
+                                        <TextBlock.Style><Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                            <Style.Triggers><DataTrigger Binding="{Binding SourceIsIntel}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/></DataTrigger></Style.Triggers>
+                                        </Style></TextBlock.Style>
+                                    </TextBlock>
+                                </Button>
+                                <Button Command="{Binding SetNewSourceCommand}" CommandParameter="GameLog" Style="{StaticResource GhostButton}" Height="34" Padding="16,0">
+                                    <TextBlock Text="Your game log" FontFamily="{StaticResource FontUI}" FontSize="12">
+                                        <TextBlock.Style><Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                            <Style.Triggers><DataTrigger Binding="{Binding SourceIsGameLog}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/></DataTrigger></Style.Triggers>
+                                        </Style></TextBlock.Style>
+                                    </TextBlock>
+                                </Button>
+                            </StackPanel>
+                            <TextBlock Text="{Binding SourceHint}" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <!-- step 2: what to look for -->
+                        <StackPanel Visibility="{Binding IsStep2, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="What should it look for?" Foreground="{StaticResource EveTextPrimary}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,10,0">
+                                    <Button Command="{Binding SetNewMatchCommand}" CommandParameter="Contains" Style="{StaticResource GhostButton}" Height="34" Padding="13,0" Margin="0,0,6,0">
+                                        <TextBlock Text="contains" FontFamily="{StaticResource FontUI}" FontSize="12">
+                                            <TextBlock.Style><Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                                <Style.Triggers><DataTrigger Binding="{Binding MatchIsContains}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/></DataTrigger></Style.Triggers>
+                                            </Style></TextBlock.Style>
+                                        </TextBlock>
+                                    </Button>
+                                    <Button Command="{Binding SetNewMatchCommand}" CommandParameter="Regex" Style="{StaticResource GhostButton}" Height="34" Padding="13,0">
+                                        <TextBlock Text="regex" FontFamily="{StaticResource FontUI}" FontSize="12">
+                                            <TextBlock.Style><Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                                <Style.Triggers><DataTrigger Binding="{Binding MatchIsRegex}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/></DataTrigger></Style.Triggers>
+                                            </Style></TextBlock.Style>
+                                        </TextBlock>
+                                    </Button>
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="#0c1018" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="7" Height="34">
+                                    <TextBox Text="{Binding NewPattern, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0"
+                                             Foreground="{StaticResource EveTextPrimary}" CaretBrush="{DynamicResource EveAccent}"
+                                             FontFamily="{StaticResource FontMono}" FontSize="12" Padding="10,0" VerticalContentAlignment="Center"/>
+                                </Border>
+                            </Grid>
+                            <TextBlock Text="For example: a hostile alliance ticker, a ship name, or a phrase your intel channel uses."
+                                       Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <!-- step 3: how loud + name -->
+                        <StackPanel Visibility="{Binding IsStep3, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="How loud should it be?" Foreground="{StaticResource EveTextPrimary}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                <Button Command="{Binding SetNewSeverityCommand}" CommandParameter="Info" Style="{StaticResource GhostButton}" Height="32" Padding="14,0" Margin="0,0,6,0">
+                                    <TextBlock Text="Info" FontFamily="{StaticResource FontUI}" FontSize="12">
+                                        <TextBlock.Style><Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                            <Style.Triggers><DataTrigger Binding="{Binding SeverityIsInfo}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/></DataTrigger></Style.Triggers>
+                                        </Style></TextBlock.Style>
+                                    </TextBlock>
+                                </Button>
+                                <Button Command="{Binding SetNewSeverityCommand}" CommandParameter="Warning" Style="{StaticResource GhostButton}" Height="32" Padding="14,0" Margin="0,0,6,0">
+                                    <TextBlock Text="Warning" FontFamily="{StaticResource FontUI}" FontSize="12">
+                                        <TextBlock.Style><Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                            <Style.Triggers><DataTrigger Binding="{Binding SeverityIsWarning}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveAmber}"/></DataTrigger></Style.Triggers>
+                                        </Style></TextBlock.Style>
+                                    </TextBlock>
+                                </Button>
+                                <Button Command="{Binding SetNewSeverityCommand}" CommandParameter="Critical" Style="{StaticResource GhostButton}" Height="32" Padding="14,0" Margin="0,0,14,0">
+                                    <TextBlock Text="Critical" FontFamily="{StaticResource FontUI}" FontSize="12">
+                                        <TextBlock.Style><Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                            <Style.Triggers><DataTrigger Binding="{Binding SeverityIsCritical}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveCritical}"/></DataTrigger></Style.Triggers>
+                                        </Style></TextBlock.Style>
+                                    </TextBlock>
+                                </Button>
+                                <Button Command="{Binding CycleNewSoundCommand}" Style="{StaticResource SecondaryButton}" Height="32" Padding="13,0" ToolTip="Click to change the sound">
+                                    <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12"><Run Text="♪ "/><Run Text="{Binding NewSound}"/></TextBlock>
+                                </Button>
+                            </StackPanel>
+
+                            <TextBlock Text="CALL IT" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,0,0,4"/>
+                            <Border Background="#0c1018" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="7" Height="34" HorizontalAlignment="Left" Width="240">
+                                <TextBox Text="{Binding NewName, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0"
+                                         Foreground="{StaticResource EveTextPrimary}" CaretBrush="{DynamicResource EveAccent}"
+                                         FontFamily="{StaticResource FontUI}" FontSize="12" Padding="10,0" VerticalContentAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding NewError}" Foreground="{DynamicResource EveCritical}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                                   TextWrapping="Wrap" Margin="0,10,0,0"
+                                   Visibility="{Binding NewError, Converter={StaticResource StringToVisibility}}"/>
+
+                        <!-- flow controls -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                            <Button Command="{Binding CancelCreateCommand}" Style="{StaticResource GhostButton}" Height="32" Padding="14,0" Margin="0,0,8,0">
+                                <TextBlock Text="Cancel" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                            </Button>
+                            <Button Command="{Binding PrevStepCommand}" Style="{StaticResource GhostButton}" Height="32" Padding="14,0" Margin="0,0,8,0"
+                                    Visibility="{Binding IsStep1, Converter={StaticResource BoolToInvisibility}}">
+                                <TextBlock Text="Back" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                            </Button>
+                            <Button Command="{Binding NextStepCommand}" Style="{StaticResource PrimaryButton}" Height="32" Padding="20,0"
+                                    Visibility="{Binding IsStep3, Converter={StaticResource BoolToInvisibility}}">
+                                <TextBlock Text="Next" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
+                            </Button>
+                            <Button Command="{Binding FinishCreateCommand}" Style="{StaticResource PrimaryButton}" Height="32" Padding="20,0"
+                                    Visibility="{Binding IsStep3, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="Create alert" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
             </Grid>
         </Border>
     </Grid>

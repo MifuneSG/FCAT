@@ -7,7 +7,7 @@
         Title="FCAT — Fleet Commander Assistance Tool"
         Icon="fcat.ico"
         Height="820" Width="1280"
-        MinHeight="560" MinWidth="800"
+        MinHeight="700" MinWidth="1100"
         WindowStyle="None"
         ResizeMode="CanResize"
         Background="{DynamicResource EveWindowBg}"

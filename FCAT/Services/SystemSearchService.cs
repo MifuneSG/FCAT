@@ -66,6 +66,19 @@ public class SystemSearchService(EsiService esi)
         return hit?.Id;
     }
 
+    private Dictionary<int, string>? _byId;
+
+    /// <summary>
+    /// System id -> name, straight from the local index. Anything showing systems the map hasn't
+    /// loaded (the in-range and content boards reach several jumps out) needs this, or it ends up
+    /// printing raw ids at the FC.
+    /// </summary>
+    public string? NameOf(int systemId)
+    {
+        _byId ??= _systems.GroupBy(s => s.Id).ToDictionary(g => g.Key, g => g.First().Name);
+        return _byId.TryGetValue(systemId, out var name) ? name : null;
+    }
+
     private Dictionary<string, string>? _nameLookup;   // lower-case token -> canonical system name
     private static readonly char[] Delimiters = [' ', '\t', ',', '.', '!', '?', ';', ':', '(', ')', '[', ']', '"', '\'', '*', '>'];
 

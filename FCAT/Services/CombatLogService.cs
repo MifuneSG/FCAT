@@ -36,6 +36,9 @@ public partial class CombatLogService : IDisposable
 
     public event Action<FcAlert>? AlertRaised;
 
+    /// <summary>Every parsed gamelog line, so the FC's own rules can match against it.</summary>
+    public event Action<string>? LineParsed;
+
     public string LogDirectory { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                      "EVE", "logs", "Gamelogs");
@@ -131,6 +134,8 @@ public partial class CombatLogService : IDisposable
 
         // Strip EVE's HTML-like markup
         var clean = Regex.Replace(content, "<[^>]+>", "").Trim();
+
+        LineParsed?.Invoke(clean);
 
         // Tackle: "Warp scramble attempt from <name> to you"
         var tackle = TackleRegex().Match(clean);

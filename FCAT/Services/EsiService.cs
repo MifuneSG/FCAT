@@ -54,7 +54,7 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
         => await GetPublicAsync<EsiServerStatus>("/v1/status/");
 
     public async Task<CharacterFleetInfo?> GetCharacterFleetAsync(int characterId)
-        => DemoMode ? DemoData.Fleet()
+        => DemoMode ? DemoData.Fleet(characterId)
                     : await GetAuthenticatedAsync<CharacterFleetInfo>($"/v1/characters/{characterId}/fleet/", characterId);
 
     /// <summary>Resolve a citadel/structure name (needs esi-universe.read_structures; uses the given char's token).</summary>
@@ -267,6 +267,9 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
     public async Task<List<SystemKills>> GetSystemKillsAsync() => await GetPublicAsync<List<SystemKills>>("/v2/universe/system_kills/") ?? [];
     public async Task<List<SystemJumps>> GetSystemJumpsAsync() => await GetPublicAsync<List<SystemJumps>>("/v1/universe/system_jumps/") ?? [];
     public async Task<List<SovEntry>>    GetSovMapAsync()      => await GetPublicAsync<List<SovEntry>>("/v1/sovereignty/map/") ?? [];
+    public async Task<List<SovCampaign>> GetSovCampaignsAsync() => await GetPublicAsync<List<SovCampaign>>("/v1/sovereignty/campaigns/") ?? [];
+    public async Task<List<Incursion>>   GetIncursionsAsync()   => await GetPublicAsync<List<Incursion>>("/v1/incursions/") ?? [];
+    public async Task<List<FwSystem>>    GetFwSystemsAsync()    => await GetPublicAsync<List<FwSystem>>("/v2/fw/systems/") ?? [];
 
     /// <summary>A character's current solar system, queried with that character's own token
     /// (needs esi-location). Works for the active char and any added alt.</summary>

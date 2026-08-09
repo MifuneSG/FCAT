@@ -3,7 +3,7 @@
 # FCAT — Fleet Commander Assistance Tool
 
 **A desktop companion for EVE Online fleet commanders.**
-Live fleet readout, ship-role classification, boost tracking, combat alerts, and a d-scan analyzer, combining EVE's ESI API with your local game logs.
+Live fleet readout, ship-role classification, boost tracking, configurable alerts, a constellation map, and a d-scan analyzer — combining EVE's ESI API with your local game logs. Everything runs on your machine; nothing leaves your PC.
 
 </div>
 
@@ -20,6 +20,7 @@ Live fleet readout, ship-role classification, boost tracking, combat alerts, and
 - [Tech stack](#tech-stack)
 - [Security & privacy](#security--privacy)
 - [Roadmap](#roadmap)
+- [Credits](#credits)
 - [License](#license)
 
 ---
@@ -80,16 +81,31 @@ Full fleet control from the window (requires fleet-boss):
 ### ⚡ Boost loadout tracking
 Reads the fleet's **boost channel** (a configured chat channel) where boosters drag their loaded command-burst charges, and attaches each booster's links to their row (`⚡ Active Shielding · Shield Extension`). Detects when a booster **pods out** and raises a *boost-lost* alert.
 
-### 🚨 Combat alerts
-Watches your combat log and raises FC alerts:
+### 🚨 Alerts
+FCAT raises an alert when something needs the FC's attention:
 - **Tackled** — warp scramble / disruption on you.
+- **Intel call-out** — your system, or one next door, named in the intel channel.
+- **DPS loss** — the fleet's damage line is dying (30 / 50 / 75% of baseline).
+- **Logi thin** — logi have dropped below your chosen ratio of the fleet.
+- **Cap chain** — a cap-chain logi dropped and the ring needs re-forming.
+- **Booster down** — a tracked booster was podded and their links are gone.
 - **Cap out** — a module dropped from insufficient capacitor.
-- **Boost lost** — a tracked booster died.
 
-Alerts appear in a feed, can play **configurable sounds** (6 presets, per-alert-type, with preview), and can be shown on a **movable on-screen overlay** that floats over the game and can be locked to click-through.
+Every alert has a **severity** (info / warning / critical) that drives its colour, its sound, and how long it stays on the overlay. Each one has **its own sound** (six built-in presets, or import your own `.wav`) and can be muted individually without disappearing from the feed.
 
-### 🔭 Intel Tools — D-scan analyzer & constellation map
-Paste a directional scan or your Local member list and get an instant threat breakdown by role (`3 LOGI · 7 DPS · 2 TACKLE · 1 DICTOR`) plus a per-ship list — drones/structures/pods are filtered out. **Copy for comms** produces a clean summary to paste into Discord/fleet chat. Alongside it, a live **constellation map** of your current system — laid out from real ESI positions with actual stargate links, **colored by sovereignty holder**, with recent kills highlighted and right-click links to **Dotlan / zKillboard**.
+**Write your own alerts.** Point a rule at the intel channel or your game log, give it a word or phrase to watch for, pick how loud it should be, and name it — created by answering a few questions rather than filling in a form. Test-fire any alert to hear it before a fight.
+
+Alerts show in a feed and on a **movable on-screen overlay** that floats over the game and can be locked to click-through.
+
+### 🔭 Intel Tools — map, d-scan & live feed
+A **minimap of your constellation** on the real 2D layout players know, centred on you at a fixed scale, with gates, exits, recent kills and a fresh-kill pulse. Click a system to look around it; right-click for **Dotlan / zKillboard**. It also runs as a second **on-screen overlay** so you can keep it over the game.
+
+Beside the map, the three things an FC actually reads a map for:
+- **In range** — where PvP is happening within *N* jumps, closest and hottest first.
+- **Content** — ratting picking up, sov timers counting down, incursions, FW contest.
+- **Escapes** — the ways out of the constellation, **quietest first**, because an exit with a fight on it isn't an escape.
+
+The **d-scan analyzer** takes a directional scan or your Local member list and gives an instant threat breakdown by role (`3 LOGI · 7 DPS · 2 TACKLE · 1 DICTOR`) plus a per-ship list — drones/structures/pods filtered out. **Copy for comms** produces a clean summary for Discord/fleet chat. A live **intel feed** runs alongside, combining zKillboard kills in your system with reports from your in-game intel channel.
 
 ### 📣 Ping / MOTD builder
 Compose a fleet **ping** (Hurf → FC → forming → comms → doctrine) and a formatted **fleet MOTD** from shared dropdowns, then **push the MOTD straight to your fleet** over ESI. Alliance **profiles** carry their own doctrines, comms channels, and clickable in-game **boost/logi channel links**; doctrines link to their fitting page and the forming system + anchors become clickable in-game links. Alliance profiles are locked to members of that alliance.
@@ -104,7 +120,7 @@ For cap-chain logi (Guardian / Basilisk / Osprey / Augoror), FCAT builds an alph
 A running timeline of the op — alerts, pilots joining/leaving, form-up events — that you can **copy or save as Markdown** for your fleet write-up.
 
 ### ⚙️ Settings
-Configure your EVE logs folder (with live "found" checks for Gamelogs/Chatlogs), the boost channel name, and alert sounds.
+Configure your EVE logs folder (with live "found" checks for Gamelogs/Chatlogs), the boost and intel channel names, your form-up system, and the colour theme. Alert configuration lives on the **Alerts** page, next to the feed.
 
 ---
 
@@ -114,9 +130,12 @@ FCAT is deliberately honest about the limits of EVE's data. This matters if you'
 
 | Data | Source | Notes |
 |------|--------|-------|
-| Fleet hierarchy, ships, systems | ESI | Live, every 5s |
+| Fleet hierarchy, ships, systems | ESI | Live, every 5s. **You must be the fleet boss** — EVE only serves fleet data to the boss, so being FC or a wing commander isn't enough. FCAT tells you when that's why the page is empty. |
 | Tackle on you | Combat log | `Warp scramble attempt …` — the **only** EWar EVE logs |
 | Boost loadouts | Boost **chat channel** | Only what pilots **drag into the channel**; the FC must be in that channel. |
+| Kills / jumps / ratting near you | ESI | Updates roughly **hourly** — good for "where has been busy", not a live feed. |
+| Map layout | Bundled | Ships with FCAT, so the map works offline. Layout by [Wollari / dotlan.net](https://evemaps.dotlan.net), credited in-app. |
+| Pilots in space, cynos, beacons | — | **Doesn't exist in EVE's API.** Nothing can show you a live head-count per system. |
 ---
 
 ## Download (beta)
@@ -189,11 +208,20 @@ Put the resulting Client ID and Secret into `FCAT/AppSecrets.cs`.
 
 ## Roadmap
 Ideas under consideration (not promises):
+- **Hunt tab** — hunting-ground finder ranking active systems within range
 - Route danger readout (kills/jumps per hop)
 - Doctrine import / fit-aware classification
+- ISK destroyed near you
 - More alert types as EVE exposes them
 - More Alliance Profiles
-- FC alt & account management
+
+---
+
+## Credits
+
+The map's 2D system layout comes from **[Dotlan EveMaps](https://evemaps.dotlan.net) by Wollari** — the arrangement EVE players actually recognise, which isn't derivable from CCP's own data. FCAT bundles the coordinates so the map works offline, and credits Dotlan on the map itself.
+
+EVE Online and all related material are trademarks of **CCP hf.** FCAT is a third-party tool and is not affiliated with or endorsed by CCP.
 
 ---
 

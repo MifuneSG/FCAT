@@ -18,12 +18,73 @@ public static class SoundService
     private static readonly Dictionary<string, SoundPlayer> _players = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<string, DateTime>    _lastPlayed = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Where user-imported sounds are copied, so an alert keeps working if the original
+    /// file is moved or deleted.</summary>
+    public static readonly string CustomDir = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FCAT", "sounds", "custom");
+
+    /// <summary>Plays a built-in preset name, or a path to the user's own .wav file.</summary>
     public static void Play(string? preset)
     {
         if (string.IsNullOrWhiteSpace(preset) || preset.Equals("None", StringComparison.OrdinalIgnoreCase))
             return;
-        try { GetPlayer(preset)?.Play(); } catch { /* audio device unavailable — ignore */ }
+        try { GetPlayer(preset)?.Play(); } catch { /* audio device unavailable or bad file - ignore */ }
     }
+
+    /// <summary>User-imported sound files, newest first (bare filenames, as stored in settings).</summary>
+    public static string[] CustomSounds()
+    {
+        try
+        {
+            if (!Directory.Exists(CustomDir)) return [];
+            return new DirectoryInfo(CustomDir).GetFiles("*.wav")
+                .OrderByDescending(f => f.LastWriteTimeUtc).Select(f => f.Name).ToArray();
+        }
+        catch { return []; }
+    }
+
+    /// <summary>
+    /// Copies a user's .wav into the custom-sound folder and returns the stored name (or null if it
+    /// couldn't be read). SoundPlayer only handles PCM WAV - mp3/ogg won't play, so we reject them
+    /// up front rather than failing silently at alert time.
+    /// </summary>
+    public static string? ImportSound(string sourcePath)
+    {
+        try
+        {
+            if (!File.Exists(sourcePath)) return null;
+            if (!Path.GetExtension(sourcePath).Equals(".wav", StringComparison.OrdinalIgnoreCase)) return null;
+
+            Directory.CreateDirectory(CustomDir);
+            var name = Path.GetFileName(sourcePath);
+            var dest = Path.Combine(CustomDir, name);
+            for (int i = 1; File.Exists(dest) && !SamePath(sourcePath, dest); i++)
+            {
+                name = $"{Path.GetFileNameWithoutExtension(sourcePath)} ({i}).wav";
+                dest = Path.Combine(CustomDir, name);
+            }
+            if (!SamePath(sourcePath, dest)) File.Copy(sourcePath, dest, overwrite: true);
+
+            // Verify it actually loads before we let a rule depend on it.
+            using (var probe = new SoundPlayer(dest)) probe.Load();
+            return name;
+        }
+        catch { return null; }
+    }
+
+    public static void DeleteCustomSound(string name)
+    {
+        try
+        {
+            _players.Remove(name);
+            var path = Path.Combine(CustomDir, name);
+            if (File.Exists(path)) File.Delete(path);
+        }
+        catch { /* in use or already gone - nothing useful to do */ }
+    }
+
+    private static bool SamePath(string a, string b) =>
+        string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Plays only if the same key hasn't fired within <paramref name="minGap"/>.</summary>
     public static void PlayThrottled(string? preset, string key, TimeSpan minGap)
@@ -37,12 +98,21 @@ public static class SoundService
     {
         if (_players.TryGetValue(preset, out var existing)) return existing;
 
+        string path;
         var segs = Segments(preset);
-        if (segs == null) return null;
-
-        Directory.CreateDirectory(Dir);
-        var path = Path.Combine(Dir, $"{preset.Replace(' ', '_').ToLowerInvariant()}.wav");
-        if (!File.Exists(path)) WriteWav(path, segs);
+        if (segs != null)
+        {
+            Directory.CreateDirectory(Dir);
+            path = Path.Combine(Dir, $"{preset.Replace(' ', '_').ToLowerInvariant()}.wav");
+            if (!File.Exists(path)) WriteWav(path, segs);
+        }
+        else
+        {
+            // Not a built-in preset - treat it as a user sound (bare name in the custom folder,
+            // or an absolute path the user pointed at).
+            path = Path.IsPathRooted(preset) ? preset : Path.Combine(CustomDir, preset);
+            if (!File.Exists(path)) return null;
+        }
 
         var player = new SoundPlayer(path);
         player.Load();

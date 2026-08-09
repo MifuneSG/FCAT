@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
+using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FCAT.Models;
@@ -18,6 +20,8 @@ public partial class IntelFeedViewModel : ObservableObject
     private readonly ZkillService _zkill;
     private readonly SystemSearchService _systems;
     private readonly SettingsService _settings;
+    private readonly AlertHub _alertHub;
+    private readonly CustomAlertService _customAlerts;
     private readonly IntelChannelService _intel = new();
 
     private CancellationTokenSource? _cts;
@@ -25,16 +29,46 @@ public partial class IntelFeedViewModel : ObservableObject
     private readonly HashSet<long> _seenKills = [];
     private readonly Dictionary<int, string> _names = [];   // type/system id -> name cache
 
-    public IntelFeedViewModel(EsiService esi, ZkillService zkill, SystemSearchService systems, SettingsService settings)
+    // Systems worth shouting about when the intel channel names them.
+    private string _watchedSystem = string.Empty;
+    private HashSet<string> _watchedAdjacent = new(StringComparer.OrdinalIgnoreCase);
+
+    public IntelFeedViewModel(EsiService esi, ZkillService zkill, SystemSearchService systems,
+                              SettingsService settings, AlertHub alertHub, CustomAlertService customAlerts)
     {
         _esi = esi;
         _zkill = zkill;
         _systems = systems;
         _settings = settings;
+        _alertHub = alertHub;
+        _customAlerts = customAlerts;
         _intel.ReportReceived += OnReport;
+
+        EntriesView = CollectionViewSource.GetDefaultView(Entries);
+        EntriesView.Filter = o => _filter == "All"
+                                || (o is IntelEntry e && (_filter == "Kills" ? e.IsKill : !e.IsKill));
     }
 
     public ObservableCollection<IntelEntry> Entries { get; } = [];
+
+    /// <summary>Filtered view the feed binds to (All / Kills / Reports).</summary>
+    public ICollectionView EntriesView { get; }
+
+    [ObservableProperty] private string _filter = "All";
+    public bool IsAll     => Filter == "All";
+    public bool IsKills   => Filter == "Kills";
+    public bool IsReports => Filter == "Reports";
+
+    partial void OnFilterChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsAll));
+        OnPropertyChanged(nameof(IsKills));
+        OnPropertyChanged(nameof(IsReports));
+    }
+
+    [RelayCommand]
+    private void SetFilter(string mode) { Filter = mode; EntriesView.Refresh(); }
+
     [ObservableProperty] private string _channelStatus = "Intel channel: not found";
 
     /// <summary>Point the feed at the FC's current system + region (called when they jump).</summary>
@@ -121,8 +155,19 @@ public partial class IntelFeedViewModel : ObservableObject
         }
     }
 
+    /// <summary>The systems an intel call-out should raise an alert for - where you are, and (if the
+    /// FC wants it) the systems one gate out. Pushed in when the constellation loads.</summary>
+    public void SetWatchedSystems(string current, IEnumerable<string> adjacent)
+    {
+        _watchedSystem   = current ?? string.Empty;
+        _watchedAdjacent = new HashSet<string>(adjacent ?? [], StringComparer.OrdinalIgnoreCase);
+    }
+
     private void OnReport(DateTime time, string speaker, string message)
     {
+        // Every intel line is offered to the FC's own rules, even the ones that aren't system reports.
+        _customAlerts.OnIntelMessage(message);
+
         // A real intel report names a system (char > system > ship, or "<system> nv/clr"). Questions
         // ("any hostiles in X?") and chatter aren't reports. (Kill links were already filtered upstream.)
         if (message.EndsWith('?')) return;
@@ -134,6 +179,32 @@ public partial class IntelFeedViewModel : ObservableObject
             Time = time, Kind = IntelKind.Report,
             System = m.Name, Status = status, Detail = BuildDetail(message, m.Token), Meta = speaker,
         });
+
+        RaiseIntelAlertIfWatched(m.Name, status, speaker, message);
+    }
+
+    /// <summary>
+    /// Shouts when the intel channel names your system (critical) or one next door (warning). A
+    /// "clear" call is the opposite of a threat, so it never alerts - it only shows in the feed.
+    /// </summary>
+    private void RaiseIntelAlertIfWatched(string system, IntelStatus status, string speaker, string message)
+    {
+        if (!_settings.Current.IntelHostileAlertEnabled) return;
+        if (status == IntelStatus.Clear) return;
+
+        bool here = system.Equals(_watchedSystem, StringComparison.OrdinalIgnoreCase);
+        bool next = !here && _settings.Current.IntelHostileAdjacentToo && _watchedAdjacent.Contains(system);
+        if (!here && !next) return;
+
+        var where = here ? "your system" : "next door";
+        App.Current.Dispatcher.Invoke(() => _alertHub.Raise(new FcAlert
+        {
+            Timestamp        = DateTime.Now,
+            AlertType        = AlertType.IntelHostile,
+            SeverityOverride = here ? AlertSeverity.Critical : AlertSeverity.Warning,
+            Detail           = $"{system} ({where}) — {message.Trim()} [{speaker}]",
+            RawLogLine       = message,
+        }));
     }
 
     private static readonly HashSet<string> StatusWords = new(StringComparer.OrdinalIgnoreCase)
