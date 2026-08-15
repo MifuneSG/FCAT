@@ -77,7 +77,8 @@ public partial class SystemIntelViewModel : ObservableObject
     private List<Incursion>   _incursions = [];
     private Dictionary<int, FwSystem> _fw = [];
     private DateTime _activityAt;
-    private readonly Dictionary<int, string> _nameCache = [];
+    private readonly Dictionary<int, string> _nameCache   = [];
+    private readonly Dictionary<int, string> _tickerCache = [];
 
     // Session caches so re-pulls (and revisited constellations) stay cheap on ESI.
     private readonly Dictionary<int, EsiSystem> _systemCache  = [];
@@ -350,7 +351,21 @@ public partial class SystemIntelViewModel : ObservableObject
         var k = _kills.GetValueOrDefault(sys.SystemId);
         ShipKills = k.ship; PodKills = k.pod; NpcKills = k.npc;
         SysJumps  = _jumps.GetValueOrDefault(sys.SystemId);
+
+        // Only NPC stations - player Upwell structures aren't enumerable, so the tile says "NPC".
+        StationCount = sys.Stations?.Length ?? 0;
+
+        var sovId = _sov.GetValueOrDefault(sys.SystemId);
+        SovHolder = sovId is > 0 ? _nameCache.GetValueOrDefault(sovId.Value, string.Empty) : string.Empty;
+        SovTicker = sovId is > 0 ? _tickerCache.GetValueOrDefault(sovId.Value, string.Empty) : string.Empty;
+        OnPropertyChanged(nameof(HasSov));
     }
+
+    [ObservableProperty] private int    _stationCount;
+    [ObservableProperty] private string _sovHolder = string.Empty;
+    [ObservableProperty] private string _sovTicker = string.Empty;
+
+    public bool HasSov => SovHolder.Length > 0;
 
     private static string SovEventLabel(string type) => type switch
     {
@@ -370,18 +385,28 @@ public partial class SystemIntelViewModel : ObservableObject
     /// Fills the three boards an FC actually reads a map for. All of it runs off the bundled gate
     /// graph plus the activity data we already poll, so it costs nothing extra on ESI.
     /// </summary>
-    private void BuildRangeBoards(int systemId)
+    private void BuildRangeBoards(int viewedSystemId)
     {
-        _reach = DotlanLayout.JumpsWithin(systemId, RangeJumps);
+        // "In range" means in range of the FLEET, so these measure from where the FC actually is,
+        // not from whatever system they clicked to look around. Escapes are different: they're the
+        // ways out of the constellation on screen, so they stay relative to what's being viewed.
+        var origin = _homeSystemId != 0 ? _homeSystemId : viewedSystemId;
+        _reach = DotlanLayout.JumpsWithin(origin, RangeJumps);
 
-        BuildInRange(systemId);
-        BuildContent(systemId);
-        BuildEscapes();
+        BuildInRange(origin);
+        BuildContent(origin);
+        BuildEscapes(DotlanLayout.JumpsWithin(viewedSystemId, RangeJumps));
+
+        RangeOriginName = origin == viewedSystemId ? string.Empty : NameOf(origin);
 
         OnPropertyChanged(nameof(HasInRange));
         OnPropertyChanged(nameof(HasContent));
         OnPropertyChanged(nameof(HasEscapes));
     }
+
+    /// <summary>Set only while exploring: names the system the range boards measure from, so a
+    /// pinned view can't quietly imply the numbers are relative to what's on screen.</summary>
+    [ObservableProperty] private string _rangeOriginName = string.Empty;
 
     /// <summary>1. What's in range to fight - PvP happening within reach, closest and hottest first.</summary>
     private void BuildInRange(int systemId)
@@ -463,14 +488,14 @@ public partial class SystemIntelViewModel : ObservableObject
     /// 3. What are my escapes - the ways out of this constellation, quietest first, because an exit
     /// with a fight on it isn't an escape.
     /// </summary>
-    private void BuildEscapes()
+    private void BuildEscapes(Dictionary<int, int> fromViewed)
     {
         Escapes.Clear();
         var rows = _mapExits
             .Select(e =>
             {
                 var k = _kills.GetValueOrDefault(e.SystemId);
-                var jumps = _reach.GetValueOrDefault(e.SystemId, 1);
+                var jumps = fromViewed.GetValueOrDefault(e.SystemId, 1);
                 return new EscapeRow(e.Name, jumps, k.ship + k.pod,
                     _sov.GetValueOrDefault(e.SystemId) is > 0 ? "sov" : string.Empty);
             })
@@ -838,15 +863,24 @@ public partial class SystemIntelViewModel : ObservableObject
             hot ? pvp.ToString() : string.Empty, hot, pulse, isExit, isHome);
     }
 
-    /// <summary>Resolves alliance names for every sov-held system in the constellation (one batch).</summary>
+    /// <summary>Resolves alliance names for every sov-held system in the constellation (one batch),
+    /// plus the ticker for the system you're standing in. Tickers are one call each, so only the
+    /// handful of sov holders in a constellation get looked up, and only once per session.</summary>
     private async Task ResolveSovNamesAsync(List<EsiSystem> systems)
     {
-        var ids = systems.Select(s => _sov.GetValueOrDefault(s.SystemId))
-                         .Where(a => a is > 0).Select(a => a!.Value)
-                         .Where(a => !_nameCache.ContainsKey(a)).Distinct().ToList();
-        if (ids.Count == 0) return;
-        foreach (var (id, name) in await _esi.ResolveNamesAsync(ids))
-            if (name.Length > 0) _nameCache[id] = name;
+        var sovIds = systems.Select(s => _sov.GetValueOrDefault(s.SystemId))
+                            .Where(a => a is > 0).Select(a => a!.Value).Distinct().ToList();
+
+        var needNames = sovIds.Where(a => !_nameCache.ContainsKey(a)).ToList();
+        if (needNames.Count > 0)
+            foreach (var (id, name) in await _esi.ResolveNamesAsync(needNames))
+                if (name.Length > 0) _nameCache[id] = name;
+
+        var needTickers = sovIds.Where(a => !_tickerCache.ContainsKey(a)).ToList();
+        if (needTickers.Count == 0) return;
+        var fetched = await Task.WhenAll(needTickers.Select(async id => (id, info: await _esi.GetAlliancePublicInfoAsync(id))));
+        foreach (var (id, info) in fetched)
+            if (info != null && info.Ticker.Length > 0) _tickerCache[id] = info.Ticker;
     }
 
     private async Task EnsureActivityAsync(bool force)

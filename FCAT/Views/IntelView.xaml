@@ -373,9 +373,28 @@
                                     <TextBlock Text="{Binding System.SysJumps}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold"/>
                                     <TextBlock Text="JUMPS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="9"/>
                                 </StackPanel>
+                                <StackPanel Width="54" Margin="0,0,0,8" ToolTip="NPC stations only - player citadels aren't listed by ESI">
+                                    <TextBlock Text="{Binding System.StationCount}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold"/>
+                                    <TextBlock Text="STATIONS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="9"/>
+                                </StackPanel>
                             </WrapPanel>
 
-                            <!-- 1. WHAT IS IN RANGE TO FIGHT -->
+                            <!-- Sov holder for the system on screen -->
+                            <StackPanel Margin="0,0,0,8" Visibility="{Binding System.HasSov, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="SOV" Style="{StaticResource SectionLabel}" Margin="0,0,0,2"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding System.SovTicker}" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,7,0"
+                                               Visibility="{Binding System.SovTicker, Converter={StaticResource StringToVisibility}}"/>
+                                    <TextBlock Text="{Binding System.SovHolder}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- 1. WHAT IS IN RANGE TO FIGHT (measured from where the FC is, not
+                                 from a system they've clicked to explore) -->
+                            <TextBlock Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,4,0,0"
+                                       Visibility="{Binding System.RangeOriginName, Converter={StaticResource StringToVisibility}}">
+                                <Run Text="range measured from "/><Run Text="{Binding System.RangeOriginName, Mode=OneWay}" FontWeight="SemiBold"/>
+                            </TextBlock>
                             <Grid Margin="0,4,0,6">
                                 <TextBlock Text="IN RANGE" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
                                 <Button Command="{Binding System.CycleRangeCommand}" Style="{StaticResource GhostButton}"
