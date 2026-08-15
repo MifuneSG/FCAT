@@ -9,34 +9,8 @@
 
     <UserControl.Resources>
         <!-- Dark themed text box -->
-        <Style x:Key="DarkTextBox" TargetType="TextBox">
-            <Setter Property="Background"      Value="#0f1622"/>
-            <Setter Property="Foreground"      Value="{StaticResource EveTextPrimary}"/>
-            <Setter Property="CaretBrush"      Value="{DynamicResource EveAccent}"/>
-            <Setter Property="BorderBrush"     Value="{DynamicResource EveHairlineStrong}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="FontFamily"      Value="{StaticResource FontMono}"/>
-            <Setter Property="FontSize"        Value="12"/>
-            <Setter Property="Padding"         Value="10,8"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="7">
-                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <!-- Settings' inputs are paths and channel prefixes, so they use the monospaced variant. -->
+        <Style x:Key="DarkTextBox" TargetType="TextBox" BasedOn="{StaticResource PathTextBox}"/>
     </UserControl.Resources>
 
     <Grid Background="Transparent">

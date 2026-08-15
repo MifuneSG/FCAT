@@ -10,11 +10,14 @@ using FCAT.Services;
 
 namespace FCAT.ViewModels;
 
-/// <summary>A node in the constellation map (a solar system). IsExit = a system in another
-/// constellation reachable by one gate, drawn at the edge as a way out. Pulse = a kill has landed
-/// since the last poll (drives the fresh-kill pulse). SovLabel is surfaced on hover only.</summary>
-/// <summary>IsCurrent = the system on screen. IsHome = where the FC actually is, which differs once
-/// they click off to explore - the map keeps marking home so they don't lose their own position.</summary>
+/// <summary>
+/// A node in the constellation map (a solar system).
+///
+/// IsExit = a system in another constellation reachable by one gate, drawn at the edge as a way out.
+/// Pulse = a kill has landed since the last poll. SovLabel is surfaced on hover only.
+/// IsCurrent = the system on screen; IsHome = where the FC actually is, which differs once they
+/// click off to explore - the map keeps marking home so they don't lose their own position.
+/// </summary>
 public record MapNode(double NodeLeft, double NodeTop,
                       int SystemId, string Name, string SovLabel, string Stats, bool IsCurrent,
                       string KillBadge, bool Hot, bool Pulse, bool IsExit, bool IsHome);
@@ -537,6 +540,12 @@ public partial class SystemIntelViewModel : ObservableObject
     // gate length, and everything else is relative to it.
     private const double IdealDist = 1.0;
 
+    // Cached so the escape list can be rebuilt without re-hitting ESI.
+    private List<EsiSystem> _mapSystems = [];
+    private List<(int a, int b)> _mapLinks = [];
+    private List<EsiSystem> _mapExits = [];
+    private List<(int a, int b)> _mapExitEdges = [];
+
     /// <summary>
     /// Pulls the organic force layout onto an integer lattice, the way the in-game 2D map reads:
     /// systems sit on shared rows and columns so their gate links run horizontally or vertically
@@ -546,12 +555,6 @@ public partial class SystemIntelViewModel : ObservableObject
     /// that are all ~1 unit apart to the NEAREST integer cell naturally lands neighbours on the same
     /// row or column, where clustering by tolerance just gave every node its own lane.
     /// </summary>
-    // Cached so the escape list can be rebuilt without re-hitting ESI.
-    private List<EsiSystem> _mapSystems = [];
-    private List<(int a, int b)> _mapLinks = [];
-    private List<EsiSystem> _mapExits = [];
-    private List<(int a, int b)> _mapExitEdges = [];
-
     private Dictionary<int, Vector> Latticize(Dictionary<int, Vector> pos, List<(int a, int b)> edges)
     {
         var ids = pos.Keys.ToList();
@@ -779,11 +782,6 @@ public partial class SystemIntelViewModel : ObservableObject
     private const double IdealPixel = 74;
 
     /// <summary>
-    /// Positions taken straight from Dotlan's region layout, cropped to the systems on screen and
-    /// scaled up to a comfortable on-screen spacing. Returns null when the layout isn't available or
-    /// doesn't cover these systems, so the caller falls back to FCAT's own layout.
-    /// </summary>
-    /// <summary>
     /// Fixed pixels per Dotlan unit. Systems sit roughly 40-70 units apart in Dotlan's region SVG,
     /// so this puts them ~70-125px apart on screen whatever the constellation looks like.
     /// </summary>
@@ -826,8 +824,8 @@ public partial class SystemIntelViewModel : ObservableObject
         var hot = pvp > 0;
         var pulse = pvp > _prevPvp.GetValueOrDefault(sys.SystemId);   // a kill landed since the last poll
 
-        // Sov owner and the activity line are resolved for the hover tooltip only - since the map
-        // moved to its own page, the per-system numbers live on the node rather than a side rail.
+        // Sov owner and the activity line are resolved for the hover tooltip only - the per-system
+        // numbers ride on the node itself rather than a side rail.
         var sovId = _sov.GetValueOrDefault(sys.SystemId);
         var sovLabel = sovId is > 0 ? _nameCache.GetValueOrDefault(sovId.Value, "") : "";
         var stats = $"{pvp} kills · {_jumps.GetValueOrDefault(sys.SystemId)} jumps · {k.npc} NPC";

@@ -531,7 +531,11 @@
                             <TextBlock Text="Clear" FontFamily="{StaticResource FontUI}" FontSize="12"/>
                         </Button>
                         <Button Command="{Binding Scan.CopySummaryCommand}" Style="{StaticResource SecondaryButton}" Padding="14,0" Height="34" Margin="0,0,8,0">
-                            <TextBlock Text="Copy for comms" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                            <TextBlock Text="Copy text" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                        </Button>
+                        <Button Command="{Binding Scan.CopyImageCommand}" Style="{StaticResource SecondaryButton}" Padding="14,0" Height="34" Margin="0,0,8,0"
+                                ToolTip="Copy the scan as a picture, ready to paste straight into Discord">
+                            <TextBlock Text="Copy image" FontFamily="{StaticResource FontUI}" FontSize="12"/>
                         </Button>
                         <Button Command="{Binding Scan.AnalyzeCommand}" Style="{StaticResource PrimaryButton}" Padding="20,0" Height="34">
                             <TextBlock Text="Analyze" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
@@ -552,31 +556,162 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Border Grid.Row="5" BorderBrush="{DynamicResource EveHairline}" BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="0,10,0,0"
-                            Visibility="{Binding Scan.HasResult, Converter={StaticResource BoolToVisibility}}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <ItemsControl ItemsSource="{Binding Scan.Ships}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type vm:DScanShip}">
-                                        <Grid Margin="0,0,6,4">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="44"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontMono}" FontSize="12" FontWeight="SemiBold">
-                                                <Run Text="{Binding Count, Mode=OneWay}"/><Run Text="×"/>
-                                            </TextBlock>
-                                            <TextBlock Grid.Column="1" Text="{Binding TypeName}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                            <Border Grid.Column="2" CornerRadius="4" Padding="6,1" Background="{Binding Color}">
-                                                <TextBlock Text="{Binding RoleTag}" Foreground="#0b0e14" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold"/>
-                                            </Border>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </Border>
+                    <Grid Grid.Row="5" Margin="0,8,0,0"
+                          Visibility="{Binding Scan.HasResult, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="18"/>
+                            <ColumnDefinition Width="238"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Primary board: hulls on a d-scan, alliances on a local -->
+                        <Border Grid.Column="0" BorderBrush="{DynamicResource EveHairline}" BorderThickness="0,1,0,0" Padding="0,10,0,0">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="SHIPS" Style="{StaticResource SectionLabel}" Margin="0,0,0,8"
+                                               Visibility="{Binding Scan.IsShipResult, Converter={StaticResource BoolToVisibility}}"/>
+                                    <ItemsControl ItemsSource="{Binding Scan.Ships}"
+                                                  Visibility="{Binding Scan.IsShipResult, Converter={StaticResource BoolToVisibility}}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type vm:DScanShip}">
+                                                <Grid Margin="0,0,6,4">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="44"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding CountText}" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontMono}" FontSize="12" FontWeight="SemiBold"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding TypeName}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                    <Border Grid.Column="2" CornerRadius="4" Padding="6,1" Background="{Binding Color}">
+                                                        <TextBlock Text="{Binding RoleTag}" Foreground="#0b0e14" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold"/>
+                                                    </Border>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <TextBlock Text="ALLIANCES" Style="{StaticResource SectionLabel}" Margin="0,0,0,8"
+                                               Visibility="{Binding Scan.IsLocalResult, Converter={StaticResource BoolToVisibility}}"/>
+                                    <ItemsControl ItemsSource="{Binding Scan.Alliances}"
+                                                  Visibility="{Binding Scan.IsLocalResult, Converter={StaticResource BoolToVisibility}}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type vm:ScanOrg}">
+                                                <Grid Margin="0,0,6,4">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="44"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontMono}" FontSize="12" FontWeight="SemiBold">
+                                                        <Run Text="{Binding Count, Mode=OneWay}"/><Run Text="×"/>
+                                                    </TextBlock>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Ticker}" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11" FontWeight="SemiBold" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                               Visibility="{Binding HasTicker, Converter={StaticResource BoolToVisibility}}"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Column="3" Text="{Binding Tag}" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+
+                        <!-- Secondary board: classes, mass and recons on a d-scan; corps on a local -->
+                        <Border Grid.Column="2" BorderBrush="{DynamicResource EveHairline}" BorderThickness="0,1,0,0" Padding="0,10,0,0">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <!-- D-scan side -->
+                                    <StackPanel Visibility="{Binding Scan.IsShipResult, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="SHIP CLASSES" Style="{StaticResource SectionLabel}" Margin="0,0,0,8"
+                                                   Visibility="{Binding Scan.HasShipClasses, Converter={StaticResource BoolToVisibility}}"/>
+                                        <ItemsControl ItemsSource="{Binding Scan.ShipClasses}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type vm:ScanClass}">
+                                                    <Grid Margin="0,0,0,4">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="32"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Column="0" Text="{Binding Count}" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontMono}" FontSize="12" FontWeight="SemiBold"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <StackPanel Margin="0,14,0,0" Visibility="{Binding Scan.HasMass, Converter={StaticResource BoolToVisibility}}">
+                                            <TextBlock Text="MASS" Style="{StaticResource SectionLabel}" Margin="0,0,0,6"/>
+                                            <TextBlock Text="{Binding Scan.MassText}" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontMono}" FontSize="14" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding Scan.MassNote}" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                        </StackPanel>
+
+                                        <StackPanel Margin="0,16,0,0">
+                                            <TextBlock Text="COMBAT RECONS" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Immune to d-scan. Add what you think is out there." Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                            <StackPanel>
+                                                <Grid Margin="0,0,0,5">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="46"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                    <Border Grid.Column="0" Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="5" Height="24">
+                                                        <TextBox Text="{Binding Scan.ReconHuginn, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0" Foreground="{StaticResource EveTextPrimary}" CaretBrush="{DynamicResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11" Padding="6,0" VerticalContentAlignment="Center"/>
+                                                    </Border>
+                                                    <TextBlock Grid.Column="1" Text="Huginn" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11.5" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                </Grid>
+                                                <Grid Margin="0,0,0,5">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="46"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                    <Border Grid.Column="0" Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="5" Height="24">
+                                                        <TextBox Text="{Binding Scan.ReconLachesis, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0" Foreground="{StaticResource EveTextPrimary}" CaretBrush="{DynamicResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11" Padding="6,0" VerticalContentAlignment="Center"/>
+                                                    </Border>
+                                                    <TextBlock Grid.Column="1" Text="Lachesis" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11.5" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                </Grid>
+                                                <Grid Margin="0,0,0,5">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="46"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                    <Border Grid.Column="0" Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="5" Height="24">
+                                                        <TextBox Text="{Binding Scan.ReconRook, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0" Foreground="{StaticResource EveTextPrimary}" CaretBrush="{DynamicResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11" Padding="6,0" VerticalContentAlignment="Center"/>
+                                                    </Border>
+                                                    <TextBlock Grid.Column="1" Text="Rook" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11.5" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                </Grid>
+                                                <Grid Margin="0,0,0,8">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="46"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                    <Border Grid.Column="0" Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="5" Height="24">
+                                                        <TextBox Text="{Binding Scan.ReconCurse, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0" Foreground="{StaticResource EveTextPrimary}" CaretBrush="{DynamicResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11" Padding="6,0" VerticalContentAlignment="Center"/>
+                                                    </Border>
+                                                    <TextBlock Grid.Column="1" Text="Curse" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11.5" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </StackPanel>
+                                            <Button Command="{Binding Scan.ApplyReconsCommand}" Style="{StaticResource GhostButton}" Height="28" HorizontalAlignment="Left" Padding="14,0">
+                                                <TextBlock Text="Add to scan" FontFamily="{StaticResource FontUI}" FontSize="11"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- Local side -->
+                                    <StackPanel Visibility="{Binding Scan.IsLocalResult, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="CORPORATIONS" Style="{StaticResource SectionLabel}" Margin="0,0,0,8"/>
+                                        <ItemsControl ItemsSource="{Binding Scan.Corporations}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type vm:ScanOrg}">
+                                                    <Grid Margin="0,0,0,4">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="32"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Column="0" Text="{Binding Count}" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontMono}" FontSize="12" FontWeight="SemiBold"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                        <!-- Marked only when hostile; in a home Local nearly every corp is blue and tagging them all is noise -->
+                                                        <TextBlock Grid.Column="2" Text="NEUT" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold" VerticalAlignment="Center" Margin="6,0,0,0"
+                                                                   Visibility="{Binding IsNeutral, Converter={StaticResource BoolToVisibility}}"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
                 </Grid>
             </Border>
 

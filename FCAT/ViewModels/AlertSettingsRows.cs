@@ -55,9 +55,6 @@ public partial class AlertConfigRow : ObservableObject
     [ObservableProperty] private string _sound;
     [ObservableProperty] private bool   _enabled;
 
-    /// <summary>A user sound keeps its filename, minus the extension.</summary>
-    public string SoundLabel => Sound.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) ? Sound[..^4] : Sound;
-
     public string SeverityLabel => Severity switch
     {
         AlertSeverity.Critical => "CRITICAL",
@@ -65,21 +62,28 @@ public partial class AlertConfigRow : ObservableObject
         _                      => "INFO",
     };
 
-    partial void OnSoundChanged(string value) => OnPropertyChanged(nameof(SoundLabel));
+    /// <summary>Picking a cue plays it, so you hear what you chose without a separate test.
+    /// Only fires on a real change - the constructor seeds the backing field directly.</summary>
+    private bool _quietSound;
+
+    partial void OnSoundChanged(string value)
+    {
+        if (!_quietSound) SoundService.Play(value);
+    }
+
+    /// <summary>Changes the cue without previewing it. Used when a sound is deleted out from under
+    /// the row - hearing the replacement fire is noise, not feedback.</summary>
+    public void SetSoundQuietly(string value)
+    {
+        if (Sound.Equals(value, StringComparison.OrdinalIgnoreCase)) return;
+        _quietSound = true;
+        Sound = value;
+        _quietSound = false;
+    }
 
     partial void OnEnabledChanged(bool value)
     {
         if (Rule != null) Rule.Enabled = value;
-    }
-
-    /// <summary>Steps to the next cue - built-in presets first, then any imported files.</summary>
-    [RelayCommand]
-    private void CycleSound()
-    {
-        var choices = SoundService.Presets.Concat(SoundService.CustomSounds()).ToArray();
-        var i = Array.FindIndex(choices, c => c.Equals(Sound, StringComparison.OrdinalIgnoreCase));
-        Sound = choices[(i + 1) % choices.Length];
-        SoundService.Play(Sound);
     }
 
     [RelayCommand] private void ToggleEnabled() => Enabled = !Enabled;

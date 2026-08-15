@@ -27,7 +27,7 @@ public class AppSettings
     /// Cleared by the "Clear saved ping" button in Settings.</summary>
     public CustomPingState CustomPing { get; set; } = new();
 
-    /// <summary>Colour theme - "Nebula" (violet, default) or "Carbon" (amber/gold).</summary>
+    /// <summary>Colour theme: Nebula (violet, default), Carbon, Photon or Rust. See ThemeService.</summary>
     public string Theme { get; set; } = "Nebula";
 
     // Alert sounds. Each value is either a built-in preset name or a user-imported .wav filename.

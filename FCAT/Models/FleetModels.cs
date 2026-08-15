@@ -157,11 +157,15 @@ public class UniverseIdsResult
     public List<EsiNameResult>? InventoryTypes { get; set; }
 }
 
-/// <summary>Minimal info from GET /v1/universe/groups/{id}/ - used to tell ships from drones/structures.</summary>
+/// <summary>Info from GET /v1/universe/groups/{id}/ - tells ships from drones/structures, and
+/// names the ship class ("Interdictor", "Heavy Assault Cruiser") for the d-scan class breakdown.</summary>
 public class EsiGroupInfo
 {
     [JsonPropertyName("category_id")]
     public int CategoryId { get; set; }   // 6 = Ship
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
 }
 
 /// <summary>One entry from POST /v1/characters/affiliation/ - a pilot's corp/alliance.</summary>

@@ -25,6 +25,34 @@ public class DoctrinePreset
 }
 
 /// <summary>
+/// A saved fleet setup - every ping field for one kind of fleet, e.g. "QRF / Home Defense", so an
+/// FC picks it and pings in one step instead of refilling the form.
+///
+/// The doctrine and the two channel links are stored by NAME rather than as objects. The profile's
+/// doctrine and comms lists are rebuilt from the seed on every launch, so anything holding the old
+/// instances would silently stop matching after a seed update.
+/// </summary>
+public class PingSetup
+{
+    public string Name { get; set; } = string.Empty;
+
+    public string Hurf           { get; set; } = string.Empty;
+    public string FormupSystem   { get; set; } = string.Empty;
+    public int    FormupSystemId { get; set; }
+    public string Comms          { get; set; } = string.Empty;
+    public string DoctrineName   { get; set; } = string.Empty;   // matched against the profile's presets
+    public string DoctrineText   { get; set; } = string.Empty;   // free-typed doctrine on Custom profiles
+    public string Ships          { get; set; } = string.Empty;
+    public string Implants       { get; set; } = "No";
+    public string Fittings       { get; set; } = "Default";
+    public string MainAnchor     { get; set; } = string.Empty;
+    public string LogiAnchor     { get; set; } = string.Empty;
+    public string Notes          { get; set; } = string.Empty;
+    public string BoostChannel   { get; set; } = string.Empty;   // CapturedChannel.Label
+    public string LogiChannel    { get; set; } = string.Empty;   // CapturedChannel.Label
+}
+
+/// <summary>
 /// A ping/MOTD profile. Typically one per alliance (INIT) plus a personal/Custom one for people
 /// who don't use alliance-level channels. Holds the editable autofill lists and the captured
 /// clickable channel links.
@@ -44,4 +72,7 @@ public class PingProfile
     // Capture-first clickable links, captured from a live fleet MOTD via ESI.
     public List<CapturedChannel> BoostLinks { get; set; } = [];
     public List<CapturedChannel> LogiLinks  { get; set; } = [];
+
+    /// <summary>The FC's own saved fleet setups for this profile. Survives the seed refresh.</summary>
+    public List<PingSetup> Setups { get; set; } = [];
 }

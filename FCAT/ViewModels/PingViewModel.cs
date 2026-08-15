@@ -46,6 +46,11 @@ public partial class PingViewModel : ObservableObject
         if (auth.AuthenticatedCharacterId > 0)
             _charIds[auth.AuthenticatedCharacterName] = auth.AuthenticatedCharacterId;
 
+        // Group the doctrine dropdown by category. Configured on the default view, so the combo
+        // picks it up just by binding to Doctrines.
+        System.Windows.Data.CollectionViewSource.GetDefaultView(Doctrines)
+            .GroupDescriptions.Add(new System.Windows.Data.PropertyGroupDescription(nameof(DoctrinePreset.Category)));
+
         RestoreCustomPing();
         LoadProfileLists();
         _ = _systemSearch.EnsureLoadedAsync();
@@ -155,11 +160,146 @@ public partial class PingViewModel : ObservableObject
         LogiLinks.Clear();
         Doctrines.Clear();
         CommsOptions.Clear();
+        Setups.Clear();
         foreach (var c in SelectedProfile?.BoostLinks    ?? []) BoostLinks.Add(c);
         foreach (var c in SelectedProfile?.LogiLinks     ?? []) LogiLinks.Add(c);
-        foreach (var d in SelectedProfile?.Doctrines     ?? []) Doctrines.Add(d);
+        // Sorted here rather than in the seed, so a doctrine added to the list later lands in the
+        // right place without anyone having to insert it by hand. The dropdown groups on Category
+        // and takes its group order from the order items appear, so this drives both.
+        foreach (var d in (SelectedProfile?.Doctrines ?? [])
+                          .OrderBy(d => CategoryRank(d.Category))
+                          .ThenBy(d => d.Name, StringComparer.OrdinalIgnoreCase))
+            Doctrines.Add(d);
         foreach (var c in SelectedProfile?.CommsChannels ?? []) CommsOptions.Add(c);
+        foreach (var s in SelectedProfile?.Setups        ?? []) Setups.Add(s);
         SelectedDoctrine = null;
+        SelectedSetup    = null;
+        OnPropertyChanged(nameof(HasSetups));
+    }
+
+    // Saved fleet setups
+    // A setup is every ping field for one kind of fleet ("QRF / Home Defense"), so a recurring
+    // fleet is one pick rather than a refilled form. FC name is deliberately not stored - that's
+    // always whoever is logged in.
+    public ObservableCollection<PingSetup> Setups { get; } = [];
+
+    public bool HasSetups => Setups.Count > 0;
+
+    [ObservableProperty] private PingSetup? _selectedSetup;
+
+    // Set while selecting a setup we just saved, so re-selecting it doesn't overwrite the very
+    // fields it was captured from.
+    private bool _reselectingSetup;
+
+    partial void OnSelectedSetupChanged(PingSetup? value)
+    {
+        if (value != null && !_reselectingSetup) ApplySetup(value);
+        DeleteSetupCommand.NotifyCanExecuteChanged();
+    }
+
+    private void ApplySetup(PingSetup s)
+    {
+        Hurf         = s.Hurf;
+        CommsText    = s.Comms;
+        Ships        = s.Ships;
+        ImplantsText = s.Implants;
+        Fittings     = s.Fittings;
+        DoctrineText = s.DoctrineText;
+        MainAnchor   = s.MainAnchor;
+        LogiAnchor   = s.LogiAnchor;
+        Notes        = s.Notes;
+
+        // Setting the text alone would re-run the autocomplete search and drop the id.
+        _suppressSearch = true;
+        FormupText = s.FormupSystem;
+        _formupId  = s.FormupSystemId;
+        _suppressSearch = false;
+
+        SelectedDoctrine = Doctrines.FirstOrDefault(d => d.Name == s.DoctrineName);
+        SelectedBoost    = BoostLinks.FirstOrDefault(c => c.Label == s.BoostChannel);
+        SelectedLogi     = LogiLinks.FirstOrDefault(c => c.Label == s.LogiChannel);
+
+        StatusMessage = $"Loaded \"{s.Name}\".";
+        Refresh();
+    }
+
+    private PingSetup CaptureSetup(string name) => new()
+    {
+        Name           = name,
+        Hurf           = Hurf,
+        FormupSystem   = FormupText,
+        FormupSystemId = _formupId,
+        Comms          = CommsText,
+        DoctrineName   = SelectedDoctrine?.Name ?? string.Empty,
+        DoctrineText   = DoctrineText,
+        Ships          = Ships,
+        Implants       = ImplantsText,
+        Fittings       = Fittings,
+        MainAnchor     = MainAnchor,
+        LogiAnchor     = LogiAnchor,
+        Notes          = Notes,
+        BoostChannel   = SelectedBoost?.Label ?? string.Empty,
+        LogiChannel    = SelectedLogi?.Label  ?? string.Empty,
+    };
+
+    // Naming a new setup happens inline rather than in a dialog, matching the rest of the app.
+    [ObservableProperty] private bool   _isNamingSetup;
+    [ObservableProperty] private string _newSetupName = string.Empty;
+
+    [RelayCommand]
+    private void StartSaveSetup()
+    {
+        NewSetupName  = SelectedSetup?.Name ?? string.Empty;
+        IsNamingSetup = true;
+    }
+
+    [RelayCommand] private void CancelSaveSetup() => IsNamingSetup = false;
+
+    [RelayCommand]
+    private void ConfirmSaveSetup()
+    {
+        var name = (NewSetupName ?? string.Empty).Trim();
+        if (name.Length == 0) { StatusMessage = "Give the setup a name first."; return; }
+        if (SelectedProfile == null) return;
+
+        var setup = CaptureSetup(name);
+
+        // Same name overwrites, so re-saving a tweaked setup doesn't pile up duplicates.
+        var existing = SelectedProfile.Setups.FindIndex(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        if (existing >= 0)
+        {
+            SelectedProfile.Setups[existing] = setup;
+            var row = Setups.FirstOrDefault(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (row != null) Setups[Setups.IndexOf(row)] = setup;
+        }
+        else
+        {
+            SelectedProfile.Setups.Add(setup);
+            Setups.Add(setup);
+        }
+
+        _settings.Save();
+        _reselectingSetup = true;
+        SelectedSetup = setup;
+        _reselectingSetup = false;
+        OnPropertyChanged(nameof(HasSetups));
+
+        IsNamingSetup = false;
+        StatusMessage = existing >= 0 ? $"Updated \"{name}\"." : $"Saved \"{name}\".";
+    }
+
+    private bool CanDeleteSetup() => SelectedSetup != null;
+
+    [RelayCommand(CanExecute = nameof(CanDeleteSetup))]
+    private void DeleteSetup()
+    {
+        if (SelectedSetup is not { } s || SelectedProfile == null) return;
+        SelectedProfile.Setups.RemoveAll(x => x.Name.Equals(s.Name, StringComparison.OrdinalIgnoreCase));
+        Setups.Remove(s);
+        _settings.Save();
+        SelectedSetup = null;
+        OnPropertyChanged(nameof(HasSetups));
+        StatusMessage = $"Deleted \"{s.Name}\".";
     }
 
     // Input fields (every change re-renders both outputs)
@@ -231,6 +371,18 @@ public partial class PingViewModel : ObservableObject
     // Comms + Doctrine dropdowns (from the profile)
     public ObservableCollection<string>         CommsOptions { get; } = [];   // editable combo: pick or free-type
     public ObservableCollection<DoctrinePreset> Doctrines    { get; } = [];   // pick from the profile's doctrines
+
+    /// <summary>
+    /// Doctrine categories in fleet-size order, smallest first. The big fleets sit at the bottom of
+    /// the dropdown, where you scroll for them deliberately rather than hitting them on the way past.
+    /// </summary>
+    private static readonly string[] CategoryOrder = ["Skirmish", "Tactical", "Capitals"];
+
+    private static int CategoryRank(string? category)
+    {
+        var i = Array.FindIndex(CategoryOrder, c => c.Equals(category, StringComparison.OrdinalIgnoreCase));
+        return i < 0 ? CategoryOrder.Length : i;   // an unrecognised category sorts after the known ones
+    }
 
     partial void OnCommsTextChanged(string value) => Refresh();
 

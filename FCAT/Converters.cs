@@ -54,62 +54,8 @@ public class StringToVisibilityConverter : IValueConverter
         => throw new NotImplementedException();
 }
 
-// true -> cyan accent (for active-tab underlines), false -> transparent
-public class BoolToAccentBrushConverter : IValueConverter
-{
-    private static readonly Brush On = new SolidColorBrush(Color.FromRgb(0x4d, 0xb8, 0xd4));
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        => value is true ? On : Brushes.Transparent;
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        => throw new NotImplementedException();
-}
-
-// Maps EVE role strings to a display colour brush
-public class RoleToColorConverter : IValueConverter
-{
-    private static readonly SolidColorBrush Gold   = new(Color.FromRgb(0xC8, 0xA9, 0x51));
-    private static readonly SolidColorBrush Cyan   = new(Color.FromRgb(0x4C, 0x9B, 0xE8));
-    private static readonly SolidColorBrush Orange = new(Color.FromRgb(0xE3, 0x8A, 0x20));
-    private static readonly SolidColorBrush Dim    = new(Color.FromRgb(0x6E, 0x7F, 0x9A));
-
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        => value is string role ? role switch
-        {
-            "fleet_commander" => Gold,
-            "wing_commander"  => Cyan,
-            "squad_commander" => Orange,
-            _                 => Dim
-        } : Dim;
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        => throw new NotImplementedException();
-}
-
-// Nav-rail active state: compares the shell's ActiveNav string to a button's key (ConverterParameter).
-// Returns true when this nav item is the active one.
-public class NavActiveConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        => string.Equals(value as string, parameter as string, StringComparison.OrdinalIgnoreCase);
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        => throw new NotImplementedException();
-}
-
-// Same comparison, but yields the cyan accent brush when active and a dim brush otherwise -
-// used to colour the nav icon + label for the active item.
-public class NavActiveBrushConverter : IValueConverter
-{
-    public Brush ActiveBrush { get; set; } = new SolidColorBrush(Color.FromRgb(0x4d, 0xb8, 0xd4));
-    public Brush InactiveBrush { get; set; } = new SolidColorBrush(Color.FromRgb(0x5c, 0x64, 0x73));
-
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        => string.Equals(value as string, parameter as string, StringComparison.OrdinalIgnoreCase)
-            ? ActiveBrush : InactiveBrush;
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        => throw new NotImplementedException();
-}
-
-// Multi-binding form for use in a shared Style trigger: [0]=ActiveNav, [1]=button's Tag (its key).
+// Nav-rail active state, as a multi-binding for a shared Style trigger:
+// [0]=ActiveNav, [1]=button's Tag (its key).
 // Returns true when the button represents the active nav item.
 public class NavActiveMultiConverter : IMultiValueConverter
 {

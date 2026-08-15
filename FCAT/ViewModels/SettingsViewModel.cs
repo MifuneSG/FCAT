@@ -50,23 +50,25 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private bool _isLoggedIn;
     [ObservableProperty] private bool _missingScopes;
 
-    private static readonly (string Scope, string Label)[] ScopeLabels =
-    [
-        ("esi-fleets.read_fleet.v1",        "Read fleet roster"),
-        ("esi-fleets.write_fleet.v1",       "Manage fleet (invite / move / kick / MOTD)"),
-        ("esi-location.read_location.v1",   "Read your location"),
-        ("esi-location.read_online.v1",     "Alt online status"),
-        ("esi-location.read_ship_type.v1",  "Alt current ship"),
-        ("esi-universe.read_structures.v1", "Resolve docked-structure names"),
-    ];
+    // Plain-English name per scope. The LIST of scopes comes from EsiAuthService, not from here -
+    // this only supplies wording, so adding a scope to the login request can't quietly go unlisted.
+    private static readonly Dictionary<string, string> ScopeLabels = new()
+    {
+        ["esi-fleets.read_fleet.v1"]        = "Read fleet roster",
+        ["esi-fleets.write_fleet.v1"]       = "Manage fleet (invite / move / kick / MOTD)",
+        ["esi-location.read_location.v1"]   = "Read your location",
+        ["esi-location.read_online.v1"]     = "Alt online status",
+        ["esi-location.read_ship_type.v1"]  = "Alt current ship",
+        ["esi-universe.read_structures.v1"] = "Resolve docked-structure names",
+    };
 
     private void BuildScopeHealth()
     {
         ScopeHealth.Clear();
         IsLoggedIn = _auth.AuthenticatedCharacterId > 0;
         var granted = _auth.GrantedScopes();
-        foreach (var (scope, label) in ScopeLabels)
-            ScopeHealth.Add(new ScopeStatus(label, granted.Contains(scope)));
+        foreach (var scope in EsiAuthService.RequiredScopes)
+            ScopeHealth.Add(new ScopeStatus(ScopeLabels.GetValueOrDefault(scope, scope), granted.Contains(scope)));
         MissingScopes = IsLoggedIn && ScopeHealth.Any(s => !s.Granted);
     }
 

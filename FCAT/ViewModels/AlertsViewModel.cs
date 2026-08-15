@@ -6,6 +6,9 @@ using FCAT.Services;
 
 namespace FCAT.ViewModels;
 
+/// <summary>One entry in a sound dropdown: what gets saved, and what the FC reads.</summary>
+public record SoundChoice(string Value, string Label);
+
 /// <summary>
 /// The Alerts page: the session feed, plus all alert configuration in one place.
 ///
@@ -25,6 +28,7 @@ public partial class AlertsViewModel : ObservableObject
         Hub = hub;
         _settings = settings;
         _alertSoundsEnabled = settings.Current.AlertSoundsEnabled;
+        LoadSoundChoices();
         LoadRows();
     }
 
@@ -43,6 +47,36 @@ public partial class AlertsViewModel : ObservableObject
 
     // The one list of every alert FCAT can raise
     public ObservableCollection<AlertConfigRow> Rows { get; } = [];
+
+    /// <summary>Every cue an alert can use - the built-in presets plus any .wav the FC imported.
+    /// The stored value keeps the filename (that's what plays it); the label drops the extension.
+    ///
+    /// Only ever added to or removed from, never rebuilt. The sound dropdowns bind SelectedValue
+    /// against this, so clearing it would blank every row's cue and save the blanks.</summary>
+    public ObservableCollection<SoundChoice> SoundChoices { get; } = [];
+
+    /// <summary>Just the imported ones, for the manage-sounds list.</summary>
+    public ObservableCollection<SoundChoice> CustomSoundChoices { get; } = [];
+
+    public bool HasCustomSounds => CustomSoundChoices.Count > 0;
+
+    private static SoundChoice Choice(string fileName) => new(fileName,
+        fileName.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) ? fileName[..^4] : fileName);
+
+    private void LoadSoundChoices()
+    {
+        foreach (var p in SoundService.Presets) SoundChoices.Add(new SoundChoice(p, p));
+        foreach (var f in SoundService.CustomSounds()) AddSoundChoice(f);
+    }
+
+    private void AddSoundChoice(string fileName)
+    {
+        if (SoundChoices.Any(c => c.Value.Equals(fileName, StringComparison.OrdinalIgnoreCase))) return;
+        var choice = Choice(fileName);
+        SoundChoices.Add(choice);
+        CustomSoundChoices.Add(choice);
+        OnPropertyChanged(nameof(HasCustomSounds));
+    }
 
     [ObservableProperty] private bool _alertSoundsEnabled = true;
     [RelayCommand] private void ToggleSounds() { AlertSoundsEnabled = !AlertSoundsEnabled; Save(); }
@@ -69,11 +103,19 @@ public partial class AlertsViewModel : ObservableObject
             "A module shut off from low cap", AlertSeverity.Warning, s.CapTroubleSound, On(AlertType.CapTrouble)));
 
         foreach (var r in s.CustomAlerts) Rows.Add(AlertConfigRow.ForRule(r));
+
+        foreach (var row in Rows) Track(row);
     }
+
+    /// <summary>
+    /// Writes the list back whenever a row changes. Rows carry their own on/off and sound state, so
+    /// without this a muted alert or a changed cue only lasted until the app closed.
+    /// </summary>
+    private void Track(AlertConfigRow row) => row.PropertyChanged += (_, _) => Save();
 
     private string SoundOf(AlertType t) => Rows.FirstOrDefault(r => r.BuiltIn == t)?.Sound ?? "None";
 
-    /// <summary>Writes the whole list back to settings. Cheap, so it runs on every toggle.</summary>
+    /// <summary>Writes the whole list back to settings. Cheap, so every row change calls it.</summary>
     [RelayCommand]
     private void Save()
     {
@@ -139,10 +181,58 @@ public partial class AlertsViewModel : ObservableObject
         if (dlg.ShowDialog() != true) return;
 
         var name = SoundService.ImportSound(dlg.FileName);
-        Status = name == null
-            ? "Couldn't use that file. Alert sounds must be .wav (mp3 and ogg won't play)."
-            : $"Added \"{name}\". Click an alert's sound to cycle to it.";
-        if (name != null) SoundService.Play(name);
+        if (name == null)
+        {
+            Status = "Couldn't use that file. Alert sounds must be .wav (mp3 and ogg won't play).";
+            return;
+        }
+        AddSoundChoice(name);
+        Status = $"Added \"{name}\". Pick it from any alert's sound list.";
+    }
+
+    // Manage sounds
+    [ObservableProperty] private bool _isManagingSounds;
+
+    [RelayCommand] private void ManageSounds()      => IsManagingSounds = true;
+    [RelayCommand] private void CloseManageSounds() => IsManagingSounds = false;
+
+    [RelayCommand] private static void PreviewSound(SoundChoice? choice) => SoundService.Play(choice?.Value);
+
+    /// <summary>
+    /// Removes an imported sound and the file behind it. Anything still using it is moved to a
+    /// built-in first - dropping the reference would leave the alert silently muted instead.
+    /// </summary>
+    [RelayCommand]
+    private void DeleteSound(SoundChoice? choice)
+    {
+        if (choice == null) return;
+        const string Fallback = "Beep";
+
+        var moved = 0;
+        foreach (var row in Rows.Where(r => r.Sound.Equals(choice.Value, StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            row.SetSoundQuietly(Fallback);   // fires the row's save
+            moved++;
+        }
+        if (NewSound.Equals(choice.Value, StringComparison.OrdinalIgnoreCase))
+        {
+            _quietNewSound = true;
+            NewSound = Fallback;
+            _quietNewSound = false;
+        }
+
+        SoundService.DeleteCustomSound(choice.Value);
+        foreach (var c in SoundChoices.Where(c => c.Value.Equals(choice.Value, StringComparison.OrdinalIgnoreCase)).ToList())
+            SoundChoices.Remove(c);
+        foreach (var c in CustomSoundChoices.Where(c => c.Value.Equals(choice.Value, StringComparison.OrdinalIgnoreCase)).ToList())
+            CustomSoundChoices.Remove(c);
+
+        OnPropertyChanged(nameof(HasCustomSounds));
+        if (!HasCustomSounds) IsManagingSounds = false;
+
+        Status = moved > 0
+            ? $"Deleted \"{choice.Label}\". {moved} alert{(moved == 1 ? "" : "s")} moved to {Fallback}."
+            : $"Deleted \"{choice.Label}\".";
     }
 
     [ObservableProperty] private string _status = string.Empty;
@@ -204,13 +294,12 @@ public partial class AlertsViewModel : ObservableObject
     [RelayCommand] private void SetNewMatch(string s)    => NewMatch    = s;
     [RelayCommand] private void SetNewSeverity(string s) => NewSeverity = s;
 
-    [RelayCommand]
-    private void CycleNewSound()
+    private bool _quietNewSound;
+
+    /// <summary>Preview the cue as it's picked, so the choice is made by ear.</summary>
+    partial void OnNewSoundChanged(string value)
     {
-        var choices = SoundService.Presets.Concat(SoundService.CustomSounds()).ToArray();
-        var i = Array.FindIndex(choices, c => c.Equals(NewSound, StringComparison.OrdinalIgnoreCase));
-        NewSound = choices[(i + 1) % choices.Length];
-        SoundService.Play(NewSound);
+        if (!_quietNewSound) SoundService.Play(value);
     }
 
     [RelayCommand]
@@ -260,7 +349,9 @@ public partial class AlertsViewModel : ObservableObject
         };
         _settings.Current.CustomAlerts.Add(rule);
         _settings.Save();
-        Rows.Add(AlertConfigRow.ForRule(rule));
+        var row = AlertConfigRow.ForRule(rule);
+        Rows.Add(row);
+        Track(row);
 
         IsCreating = false;
         Status = $"Alert \"{rule.Name}\" added.";

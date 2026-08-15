@@ -51,6 +51,7 @@ public static class InitProfileSeed
     // INIT Mumble comms channels (plain text in the MOTD - Mumble isn't an in-game channel link).
     public static List<string> CommsChannels() =>
     [
+        "Fleet Help",
         "Actually Inactive Main",
         "Astartes Main",
         "Reinforcements",
@@ -86,10 +87,16 @@ public static class InitProfileSeed
         new() { Category = "Skirmish", Name = "Cheesy - Omen Navy Issue",    Ships = "Logi (Scalpel) > Boosts (Stork/Bifrost) > DPS (Omen Navy Issue) > Else", FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/187/" },
         new() { Category = "Skirmish", Name = "Daisy Cutter - Bombers",      Ships = "Purifier > Hound",                                                      FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/23/" },
         new() { Category = "Skirmish", Name = "Haunter - Svipul",            Ships = "Logi (Kirin) > Boosts (Stork/Bifrost) > DPS (Svipul) > Else",            FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/162/" },
-        new() { Category = "Skirmish", Name = "Kikistuka - Kikimora",        Ships = "Logi (Kirin) > Boosts (Stork/Bifrost) > DPS (Kikimora) > Else",          FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/20/" },
+        // Kikistuka and Stoats fly the same hull - the prop mod is the whole difference, so the
+        // ships line spells it out rather than leaving two near-identical entries in the dropdown.
+        new() { Category = "Skirmish", Name = "Kikistuka - Kikimora",        Ships = "Logi (Kirin) > Boosts (Stork/Bifrost) > DPS (Kikimora, AB fit) > Else",  FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/20/" },
+        new() { Category = "Tactical", Name = "Lightbringers - Zealots",     Ships = "Logi (Guardian/Oneiros) > Boosts (Damnation/Eos) > DPS (Zealot/Deimos) > Support (Muninn/Armageddon/Nestor) > Else", FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/13/" },
         new() { Category = "Skirmish", Name = "Ok Beamer - Maller",          Ships = "Logi (Augoror) > Boosts (Prophecy) > DPS (Maller) > Else",               FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/120/" },
         new() { Category = "Skirmish", Name = "Meat Grinders - Hurricane",   Ships = "Logi (Osprey/Scythe) > Boosts (Stork/Bifrost) > DPS (Hurricane) > Else", FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/175/" },
+        new() { Category = "Skirmish", Name = "Roly Poly - Cerberus",        Ships = "Logi (Basilisk) > Boosts (Claymore) > DPS (Cerberus) > Support (Broadsword) > Tackle (Lachesis) > EWAR (Huginn) > Else", FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/144/" },
         new() { Category = "Skirmish", Name = "Skol - Munnin",               Ships = "Logi (Scimitar/Scythe) > Boosts (Claymore) > DPS (Munnin) > Else",       FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/14/" },
         new() { Category = "Skirmish", Name = "Sm0l Beamers - Retributions", Ships = "Logi (Deacon) > Boosts (Pontifex/Magus) > DPS (Retris) > Else",          FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/75/" },
+        new() { Category = "Skirmish", Name = "Stoats - Kikimora",           Ships = "Logi (Kirin) > Boosts (Stork/Bifrost) > DPS (Kikimora, MWD fit) > Else", FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/78/" },
+        new() { Category = "Skirmish", Name = "Thundercats - Eagles",        Ships = "Logi (Basilisk) > Boosts (Claymore/Vulture) > DPS (Eagle) > Tackle (Lachesis) > EWAR (Huginn) > Else", FittingUrl = "https://zero.the-initiative.rocks/fittings/doctrine/16/" },
     ];
 }

@@ -169,7 +169,6 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- master controls -->
@@ -189,6 +188,11 @@
                         <Button Command="{Binding ImportSoundCommand}" Style="{StaticResource GhostButton}" Height="32" Padding="14,0" Margin="0,0,8,0"
                                 ToolTip="Add your own .wav so any alert can use it">
                             <TextBlock Text="+ Add sound" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                        </Button>
+                        <Button Command="{Binding ManageSoundsCommand}" Style="{StaticResource GhostButton}" Height="32" Padding="14,0" Margin="0,0,8,0"
+                                ToolTip="Preview or delete the sounds you've added"
+                                Visibility="{Binding HasCustomSounds, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="Your sounds" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12"/>
                         </Button>
 
                         <Rectangle Width="1" Fill="{DynamicResource EveHairline}" Margin="4,4,12,4"/>
@@ -277,10 +281,14 @@
                                         </StackPanel>
 
                                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Button Command="{Binding CycleSoundCommand}" Style="{StaticResource SecondaryButton}" Height="28" Padding="10,0" Margin="0,0,4,0"
-                                                    ToolTip="Click to change the sound">
-                                                <TextBlock FontFamily="{StaticResource FontUI}" FontSize="11"><Run Text="♪ "/><Run Text="{Binding SoundLabel, Mode=OneWay}"/></TextBlock>
-                                            </Button>
+                                            <!-- ItemTemplate, not DisplayMemberPath: the app's ComboBox template
+                                                 renders the closed box through ItemTemplate, which
+                                                 DisplayMemberPath doesn't populate. -->
+                                            <ComboBox Width="132" Height="28" Margin="0,0,4,0" ToolTip="The cue this alert plays"
+                                                      ItemsSource="{Binding DataContext.SoundChoices, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                      SelectedValuePath="Value" SelectedValue="{Binding Sound}">
+                                                <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate></ComboBox.ItemTemplate>
+                                            </ComboBox>
                                             <Button Command="{Binding DataContext.TestCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}" Style="{StaticResource GhostButton}" Height="28" Padding="9,0" Margin="0,0,4,0" ToolTip="Fire it now">
                                                 <TextBlock Text="▶" FontSize="11" Foreground="{DynamicResource EveAccent}"/>
@@ -310,11 +318,17 @@
                     </ItemsControl>
                 </ScrollViewer>
 
-                <!-- NEW ALERT - a few questions rather than one big form -->
-                <Border Grid.Row="3" Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="8"
-                        Padding="18,16" Margin="0,10,0,0"
-                        Visibility="{Binding IsCreating, Converter={StaticResource BoolToVisibility}}">
-                    <StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- NEW ALERT OVERLAY - a few questions rather than one big form, asked over the page the
+             same way the fleet's move-pilot picker does, so the list underneath stays put -->
+        <Grid Grid.Row="0" Grid.RowSpan="3" Background="#b0050810"
+              Visibility="{Binding IsCreating, Converter={StaticResource BoolToVisibility}}">
+            <Border Style="{StaticResource Card}" Width="470"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Margin="24,20,24,18">
+                    <TextBlock Text="NEW ALERT" Style="{StaticResource SectionLabel}" Margin="0,0,0,14"/>
                         <!-- step 1: what to watch -->
                         <StackPanel Visibility="{Binding IsStep1, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Text="What should FCAT watch?" Foreground="{StaticResource EveTextPrimary}"
@@ -406,9 +420,11 @@
                                         </Style></TextBlock.Style>
                                     </TextBlock>
                                 </Button>
-                                <Button Command="{Binding CycleNewSoundCommand}" Style="{StaticResource SecondaryButton}" Height="32" Padding="13,0" ToolTip="Click to change the sound">
-                                    <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12"><Run Text="♪ "/><Run Text="{Binding NewSound}"/></TextBlock>
-                                </Button>
+                                <ComboBox Width="132" Height="32" ToolTip="The cue this alert plays"
+                                          ItemsSource="{Binding SoundChoices}"
+                                          SelectedValuePath="Value" SelectedValue="{Binding NewSound}">
+                                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate></ComboBox.ItemTemplate>
+                                </ComboBox>
                             </StackPanel>
 
                             <TextBlock Text="CALL IT" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,0,0,4"/>
@@ -441,9 +457,63 @@
                                 <TextBlock Text="Create alert" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
                             </Button>
                         </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- YOUR SOUNDS OVERLAY - preview or remove imported .wav files -->
+        <Grid Grid.Row="0" Grid.RowSpan="3" Background="#b0050810"
+              Visibility="{Binding IsManagingSounds, Converter={StaticResource BoolToVisibility}}">
+            <Border Style="{StaticResource Card}" Width="420" MaxHeight="440"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Grid Margin="24,20,24,18">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                        <TextBlock Text="YOUR SOUNDS" Style="{StaticResource SectionLabel}"/>
+                        <TextBlock Text="Deleting one moves any alert using it back to Beep."
+                                   Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                                   TextWrapping="Wrap" Margin="0,4,0,0"/>
                     </StackPanel>
-                </Border>
-            </Grid>
-        </Border>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding CustomSoundChoices}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:SoundChoice}">
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Label}" Foreground="{StaticResource EveTextSecondary}"
+                                                   FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        <Button Grid.Column="1" Style="{StaticResource GhostButton}" Height="28" Padding="9,0" Margin="6,0,0,0" ToolTip="Play it"
+                                                Command="{Binding DataContext.PreviewSoundCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}">
+                                            <TextBlock Text="▶" FontSize="11" Foreground="{DynamicResource EveAccent}"/>
+                                        </Button>
+                                        <Button Grid.Column="2" Style="{StaticResource GhostButton}" Height="28" Padding="9,0" Margin="4,0,0,0" ToolTip="Delete this sound"
+                                                Command="{Binding DataContext.DeleteSoundCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}">
+                                            <TextBlock Text="✕" FontSize="11" Foreground="{DynamicResource EveCritical}"/>
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <Button Grid.Row="2" Command="{Binding CloseManageSoundsCommand}" Style="{StaticResource GhostButton}"
+                            Height="32" Margin="0,12,0,0">
+                        <TextBlock Text="Done" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                    </Button>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

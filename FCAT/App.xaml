@@ -36,7 +36,6 @@
         <SolidColorBrush x:Key="EveTextDim"        Color="#8a8fac"/>   <!-- labels / hints -->
 
         <!-- Back-compat aliases (older bindings still reference these names) -->
-        <SolidColorBrush x:Key="EveDeepBg"         Color="#00000000"/>
         <SolidColorBrush x:Key="EveBorderBrush"    Color="#2b2b40"/>
         <SolidColorBrush x:Key="EveGoldBrush"      Color="#d4a449"/>
         <SolidColorBrush x:Key="EveGoldDimBrush"   Color="#7a6530"/>
@@ -67,12 +66,7 @@
         <local:CountToVisibilityConverter  x:Key="CountToVisibility"/>
         <local:CountToInvisibilityConverter x:Key="CountToInvisibility"/>
         <local:StringToVisibilityConverter x:Key="StringToVisibility"/>
-        <local:RoleToColorConverter        x:Key="RoleColor"/>
         <local:UrlToImageConverter         x:Key="UrlToImage"/>
-        <local:BoolToAccentBrushConverter  x:Key="TabAccent"/>
-        <local:NavActiveConverter          x:Key="NavActive"/>
-        <local:NavActiveBrushConverter     x:Key="NavActiveBrush"
-            ActiveBrush="#a98ce0" InactiveBrush="#64668a"/>
         <local:NavActiveMultiConverter     x:Key="NavActiveMulti"/>
 
         <!-- CARD - flat surface, hairline border, soft rounded corners -->
@@ -271,6 +265,42 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <!-- DARK TEXT BOX - the app's single-line/multiline text input.
+             The content host sits inside Padding, so a single-line box must size itself; pinning
+             Height clips the text. Give the control NEXT to it the fixed height instead. -->
+        <Style x:Key="DarkTextBox" TargetType="TextBox">
+            <Setter Property="Background"      Value="#0f1622"/>
+            <Setter Property="Foreground"      Value="{StaticResource EveTextPrimary}"/>
+            <Setter Property="CaretBrush"      Value="{DynamicResource EveAccent}"/>
+            <Setter Property="BorderBrush"     Value="{DynamicResource EveHairlineStrong}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontFamily"      Value="{StaticResource FontUI}"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="Padding"         Value="9,6"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Settings holds file paths and channel prefixes, which read better monospaced. -->
+        <Style x:Key="PathTextBox" TargetType="TextBox" BasedOn="{StaticResource DarkTextBox}">
+            <Setter Property="FontFamily" Value="{StaticResource FontMono}"/>
+            <Setter Property="Padding"    Value="10,8"/>
         </Style>
 
         <!-- SMALL UPPERCASE SECTION LABEL -->

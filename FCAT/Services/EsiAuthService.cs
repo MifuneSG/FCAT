@@ -226,14 +226,21 @@ public class EsiAuthService(HttpClient httpClient, CharacterStore store)
             var context = await listener.GetContextAsync().WaitAsync(cts.Token);
             var query = HttpUtility.ParseQueryString(context.Request.Url?.Query ?? string.Empty);
 
+            // Check state before answering, so a request that isn't ours is told so rather than
+            // being shown a success page.
+            var ok = query["state"] == expectedState;
+            var message = ok
+                ? "FCAT: authentication complete. You can close this window."
+                : "FCAT: this response didn't match the login FCAT started. Nothing was authorized.";
+
             var responseHtml = "<html><body style='font-family:Segoe UI;background:#0b0e14;color:#e6ebf2'>" +
-                               "<h2>FCAT: authentication complete. You can close this window.</h2></body></html>";
+                               $"<h2>{message}</h2></body></html>";
             var buffer = Encoding.UTF8.GetBytes(responseHtml);
             context.Response.ContentLength64 = buffer.Length;
             await context.Response.OutputStream.WriteAsync(buffer);
             context.Response.Close();
 
-            return query["state"] == expectedState ? query["code"] : null;
+            return ok ? query["code"] : null;
         }
         catch (OperationCanceledException) { return null; }
         finally { listener.Stop(); }

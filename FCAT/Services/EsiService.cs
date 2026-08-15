@@ -334,13 +334,14 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
         return result;
     }
 
-    /// <summary>Fetches category_id for each group (GET /v3/universe/groups/{id}/), parallel + capped.</summary>
-    public async Task<Dictionary<int, int>> GetGroupCategoriesAsync(IEnumerable<int> groupIds)
+    /// <summary>Fetches group info - category_id + class name (GET /v1/universe/groups/{id}/),
+    /// parallel + capped.</summary>
+    public async Task<Dictionary<int, EsiGroupInfo>> GetGroupInfosAsync(IEnumerable<int> groupIds)
     {
         var ids = groupIds.Distinct().ToList();
         if (ids.Count == 0) return [];
 
-        var result    = new Dictionary<int, int>();
+        var result    = new Dictionary<int, EsiGroupInfo>();
         var semaphore = new SemaphoreSlim(8, 8);
         var lockObj   = new object();
 
@@ -351,13 +352,23 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
             {
                 var info = await GetPublicAsync<EsiGroupInfo>($"/v1/universe/groups/{id}/");
                 if (info != null)
-                    lock (lockObj) result[id] = info.CategoryId;
+                    lock (lockObj) result[id] = info;
             }
             finally { semaphore.Release(); }
         });
 
         await Task.WhenAll(tasks);
         return result;
+    }
+
+    /// <summary>
+    /// category_id for each group. Thin projection over <see cref="GetGroupInfosAsync"/> for callers
+    /// that only need to tell a ship from a drone.
+    /// </summary>
+    public async Task<Dictionary<int, int>> GetGroupCategoriesAsync(IEnumerable<int> groupIds)
+    {
+        var infos = await GetGroupInfosAsync(groupIds);
+        return infos.ToDictionary(kv => kv.Key, kv => kv.Value.CategoryId);
     }
 
     public async Task<Dictionary<int, string>> ResolveNamesAsync(IEnumerable<int> ids)

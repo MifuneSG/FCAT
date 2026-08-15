@@ -77,7 +77,11 @@ public static class SoundService
         try
         {
             _players.Remove(name);
-            var path = Path.Combine(CustomDir, name);
+            // Strip any directory part first. Names come from our own listing today, but a
+            // hand-edited settings file could carry "..\..\something" and delete outside the folder.
+            var file = Path.GetFileName(name);
+            if (string.IsNullOrEmpty(file)) return;
+            var path = Path.Combine(CustomDir, file);
             if (File.Exists(path)) File.Delete(path);
         }
         catch { /* in use or already gone - nothing useful to do */ }
@@ -108,9 +112,12 @@ public static class SoundService
         }
         else
         {
-            // Not a built-in preset - treat it as a user sound (bare name in the custom folder,
-            // or an absolute path the user pointed at).
-            path = Path.IsPathRooted(preset) ? preset : Path.Combine(CustomDir, preset);
+            // Not a built-in preset, so it's an imported sound. Resolved by filename inside the
+            // custom folder only - ImportSound always stores a bare name, and honouring a full path
+            // would let a hand-edited settings file point an alert at any file on disk.
+            var file = Path.GetFileName(preset);
+            if (string.IsNullOrEmpty(file)) return null;
+            path = Path.Combine(CustomDir, file);
             if (!File.Exists(path)) return null;
         }
 
