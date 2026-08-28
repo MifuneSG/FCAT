@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aa-fcat-connector"
+dynamic = ["version"]
+description = "Read-only Alliance Auth endpoints for FCAT, the Fleet Commander Assistance Tool."
+readme = "README.md"
+license = { text = "MIT" }
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "Mifune SwordGod" }]
+keywords = ["eve-online", "allianceauth", "fcat"]
+classifiers = [
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+]
+
+# Alliance Auth brings Django with it. The source apps are deliberately NOT listed:
+# each endpoint is optional and switches itself off when its app is absent, so this
+# installs cleanly on an auth running neither fittings nor structures.
+dependencies = ["allianceauth>=4.0.0"]
+
+[project.urls]
+Homepage = "https://github.com/MifuneSG/FCAT/tree/main/aa-connector"
+Source = "https://github.com/MifuneSG/FCAT"
+Issues = "https://github.com/MifuneSG/FCAT/issues"
+
+# Version lives in fcatconnector/__init__.py so there is only one place to bump.
+[tool.setuptools.dynamic]
+version = { attr = "fcatconnector.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["fcatconnector*"]
+
+# Without this the template is left out of the wheel and the page 500s.
+[tool.setuptools.package-data]
+fcatconnector = ["templates/**/*.html"]

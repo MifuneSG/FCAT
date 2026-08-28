@@ -29,3 +29,16 @@ fcat_out.txt
 # ─── Velopack build output (publish folder + generated installers/release assets) ───
 publish/
 Releases/
+
+# ─── Python (the Alliance Auth connector in aa-connector/) ───
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+aa-connector/dist/
+aa-connector/build/
+
+# ─── Connector dev harness (local only, not part of the shipped plugin) ───
+aa-connector/dev/
+aa-connector/DEVELOPING.md
+aa-connector/.gitattributes

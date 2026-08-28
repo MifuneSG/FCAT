@@ -1,0 +1,18 @@
+# Copy these into your Alliance Auth local.py, then restart auth and run migrations.
+#
+# INSTALLED_APPS registers the connector.
+#
+# APPS_WITH_PUBLIC_VIEWS is what lets FCAT's API calls reach it. Auth wraps every plugin URL in
+# main_character_required, which is login_required underneath, so without this line a request
+# carrying an API key and no browser session is redirected to the login page. It applies to the
+# three /fcat/api/ views only, and those still resolve the key to a user and answer as that user.
+# See README.md for the longer version.
+
+INSTALLED_APPS += [
+    "fcatconnector",
+]
+
+# Append to this list if your instance already has one.
+APPS_WITH_PUBLIC_VIEWS = [
+    "fcatconnector",
+]

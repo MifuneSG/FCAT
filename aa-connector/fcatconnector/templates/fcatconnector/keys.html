@@ -1,0 +1,66 @@
+{% extends 'allianceauth/base-bs5.html' %}
+{% load i18n %}
+
+{% block page_title %}{% translate "FCAT Connector" %}{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+    <div class="card-body">
+        <h4 class="card-title">{% translate "Connect FCAT" %}</h4>
+        <p class="text-muted mb-3">
+            {% blocktranslate %}A key lets your copy of FCAT read doctrines and structures as you.
+            It carries no access of its own: every request is answered against your own permissions,
+            so FCAT can never show you anything you could not open here yourself.{% endblocktranslate %}
+        </p>
+
+        <form method="post" action="{% url 'fcatconnector:create_key' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">{% translate "Generate key" %}</button>
+        </form>
+        <p class="text-muted small mt-2 mb-0">
+            {% translate "The key is shown once and stored hashed. If you lose it, revoke it and make another." %}
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">{% translate "Your keys" %}</h5>
+        {% if keys %}
+        <table class="table table-sm align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>{% translate "Name" %}</th>
+                    <th>{% translate "Key" %}</th>
+                    <th>{% translate "Created" %}</th>
+                    <th>{% translate "Last used" %}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key in keys %}
+                <tr{% if not key.is_active %} class="text-muted"{% endif %}>
+                    <td>{{ key.name|default:"-" }}</td>
+                    <td><code>{{ key.prefix }}...</code></td>
+                    <td>{{ key.created_at|date:"Y-m-d H:i" }}</td>
+                    <td>{{ key.last_used_at|date:"Y-m-d H:i"|default:"never" }}</td>
+                    <td class="text-end">
+                        {% if key.is_active %}
+                        <form method="post" action="{% url 'fcatconnector:revoke_key' key.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm">{% translate "Revoke" %}</button>
+                        </form>
+                        {% else %}
+                        <span class="badge bg-secondary">{% translate "Revoked" %}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted mb-0">{% translate "No keys yet." %}</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

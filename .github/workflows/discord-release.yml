@@ -14,6 +14,9 @@ on:
 
 jobs:
   announce:
+    # App releases only. The Alliance Auth plugin ships from this repo too, tagged
+    # connector-vX.Y.Z, and its audience is auth admins rather than the FC Discord.
+    if: startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
     steps:
       - name: Post release changelog to Discord
