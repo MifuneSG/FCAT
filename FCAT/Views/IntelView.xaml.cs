@@ -33,6 +33,13 @@ public partial class IntelView : UserControl
         MapCentre.Y = e.NewSize.Height / 2;
     }
 
+    // The hunt map DOES fit its region to the viewport (unlike the minimap above, which holds a fixed
+    // scale), so the layout has to be rebuilt whenever the panel resizes.
+    private void OnHuntMapSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (DataContext is IntelViewModel vm) vm.Hunt.SetMapSize(e.NewSize.Width, e.NewSize.Height);
+    }
+
     // Left-click a system to focus the panel on it (explore outward via exits).
     private void OnNodeClick(object sender, MouseButtonEventArgs e)
     {
