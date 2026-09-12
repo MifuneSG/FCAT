@@ -29,12 +29,30 @@ public static class DotlanLayout
 
     private static readonly Lazy<Bundle> Data = new(Load);
 
+    /// <summary>
+    /// The reverse of the layout: system id -> region name. Built once on first use by walking the
+    /// bundle, because jump range crosses regions freely and anything measuring in light years needs
+    /// to name the region a system is in without a round trip through its constellation.
+    /// </summary>
+    private static readonly Lazy<Dictionary<int, string>> RegionIndex = new(() =>
+    {
+        var index = new Dictionary<int, string>();
+        foreach (var (region, systems) in Data.Value.Layout)
+            foreach (var id in systems.Keys)
+                index[id] = region;
+        return index;
+    });
+
     /// <summary>Positions for one region, or null if we have no layout for it (wormhole space).</summary>
     public static Dictionary<int, Point>? ForRegion(string? regionName)
     {
         if (string.IsNullOrWhiteSpace(regionName)) return null;
         return Data.Value.Layout.TryGetValue(regionName, out var systems) ? systems : null;
     }
+
+    /// <summary>The region a system sits in, or null if the bundle doesn't cover it.</summary>
+    public static string? RegionOf(int systemId)
+        => RegionIndex.Value.TryGetValue(systemId, out var region) ? region : null;
 
     /// <summary>
     /// The systems one gate from <paramref name="systemId"/>, or null if we don't have it.

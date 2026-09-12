@@ -370,4 +370,23 @@ public class EsiTypeInfo
     // Bare hull mass in kg - excludes fit, which ESI doesn't expose for other pilots.
     [JsonPropertyName("mass")]
     public double Mass { get; set; }
+
+    /// <summary>
+    /// The type's dogma attributes - EVE's own per-type stat table. Only populated when the caller
+    /// asked for them; ESI returns the array on the same type endpoint, so reading a hull's jump
+    /// range costs no extra request.
+    /// </summary>
+    [JsonPropertyName("dogma_attributes")]
+    public EsiDogmaAttribute[]? DogmaAttributes { get; set; }
+
+    /// <summary>One dogma attribute's value, or null if this type doesn't carry it.</summary>
+    public double? Attribute(int attributeId)
+        => DogmaAttributes?.FirstOrDefault(a => a.AttributeId == attributeId)?.Value;
+}
+
+/// <summary>One entry in a type's dogma attribute table (see <see cref="EsiTypeInfo.Attribute"/>).</summary>
+public class EsiDogmaAttribute
+{
+    [JsonPropertyName("attribute_id")] public int    AttributeId { get; set; }
+    [JsonPropertyName("value")]        public double Value       { get; set; }
 }

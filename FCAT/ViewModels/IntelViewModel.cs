@@ -19,30 +19,44 @@ public partial class IntelViewModel : ObservableObject
     public DScanViewModel        Scan   { get; }
     public SystemIntelViewModel  System { get; }
     public IntelFeedViewModel    Feed   { get; }
+    public HuntViewModel         Hunt   { get; }
 
     public IntelViewModel(EsiService esi, EsiAuthService auth, ZkillService zkill,
                           SystemSearchService systems, SettingsService settings, ShellViewModel shell,
-                          SystemIntelViewModel system, AlertHub alertHub, CustomAlertService customAlerts)
+                          SystemIntelViewModel system, AlertHub alertHub, CustomAlertService customAlerts,
+                          JumpDrives drives)
     {
         _shell = shell;
         Scan   = new DScanViewModel(esi, auth);
         System = system;
         Feed   = new IntelFeedViewModel(esi, zkill, systems, settings, alertHub, customAlerts);
+        Hunt   = new HuntViewModel(esi, auth, systems, drives, settings);
 
         // Point the kill feed at whatever system the FC is in, and tell it which systems to shout about.
         System.SystemChanged += Feed.SetSystem;
         System.LocationContextChanged += Feed.SetWatchedSystems;
     }
 
-    // Pane switcher: Map is primary (the constellation overview rides alongside it), D-scan behind a tab.
+    // Pane switcher: the minimap is primary (the constellation overview rides alongside it), with
+    // the scan tools and the hunt board behind their own tabs.
     [ObservableProperty] private string _activePane = "Map";
     public bool IsMapPane   => ActivePane == "Map";
     public bool IsDscanPane => ActivePane == "Dscan";
+    public bool IsHuntPane  => ActivePane == "Hunt";
+
+    /// <summary>The current-system header belongs to the minimap, not the other panes.</summary>
+    public bool ShowMapHeader => IsMapPane;
 
     partial void OnActivePaneChanged(string value)
     {
         OnPropertyChanged(nameof(IsMapPane));
         OnPropertyChanged(nameof(IsDscanPane));
+        OnPropertyChanged(nameof(IsHuntPane));
+        OnPropertyChanged(nameof(ShowMapHeader));
+
+        // Hunt loads the system index and reads jump ranges off ESI, so it waits until it's opened
+        // rather than doing that work for an FC who never uses it.
+        if (IsHuntPane) _ = Hunt.StartAsync();
     }
 
     [RelayCommand] private void SetPane(string pane) => ActivePane = pane;

@@ -30,6 +30,16 @@ public class AppSettings
     /// <summary>Colour theme: Nebula (violet, default), Carbon, Photon or Rust. See ThemeService.</summary>
     public string Theme { get; set; } = "Nebula";
 
+    // Hunt: remembered so the FC's own hull and skills aren't re-picked every session.
+    /// <summary>Jump-capable hull class the hunt board measures with. See JumpDrives.Classes.</summary>
+    public string HuntHullClass { get; set; } = "Black Ops";
+
+    /// <summary>Jump Drive Calibration level, 0-5. Most FCs flying these have it maxed.</summary>
+    public int HuntCalibration { get; set; } = 5;
+
+    /// <summary>Hunt board ordering: "Activity" (where the ratting is) or "Coverage" (where to stage).</summary>
+    public string HuntRankMode { get; set; } = "Activity";
+
     // Alert sounds. Each value is either a built-in preset name or a user-imported .wav filename.
     public bool   AlertSoundsEnabled { get; set; } = true;
     public string TackledSound       { get; set; } = "Alarm";

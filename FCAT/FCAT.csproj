@@ -25,6 +25,9 @@
     <!-- 2D map layout (system positions per region), extracted once from Dotlan's published SVGs.
          Bundled so the map needs no network at all - see DotlanLayout.cs for the attribution note. -->
     <EmbeddedResource Include="Assets\dotlan-layout.json" />
+    <!-- Real 3D system positions in light years, for jump-range work. Bundled because ESI serves
+         one system per call and Hunt measures against every system in New Eden at once. -->
+    <EmbeddedResource Include="Assets\system-space.json" />
   </ItemGroup>
 
   <ItemGroup>

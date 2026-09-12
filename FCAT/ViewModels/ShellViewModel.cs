@@ -289,9 +289,13 @@ public partial class ShellViewModel : ObservableObject
     {
         ActiveNav = "intel";
         _intel ??= new IntelViewModel(_esi, _auth, _zkill, _systemSearch, _settings, this, SystemIntel,
-                                      _alertHub, CustomAlerts);
+                                      _alertHub, CustomAlerts, JumpDrives);
         CurrentPage = _intel;
     }
+
+    /// <summary>Jump ranges per hull class, shared so the ESI lookup behind them happens once.</summary>
+    private JumpDrives? _jumpDrives;
+    public JumpDrives JumpDrives => _jumpDrives ??= new JumpDrives(_esi);
 
     /// <summary>The FC's own alert rules, evaluated against the intel channel and the gamelog.</summary>
     private CustomAlertService? _customAlerts;
