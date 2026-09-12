@@ -49,6 +49,17 @@ public class AppSettings
     public string DpsLossSound       { get; set; } = "Low Buzz";
     public string LogiRatioSound     { get; set; } = "Low Buzz";
     public string IntelHostileSound  { get; set; } = "Siren";
+    public string AltOfflineSound    { get; set; } = "Double Beep";
+    public string AltPoddedSound     { get; set; } = "Low Buzz";
+    public string AltKillsSound      { get; set; } = "Beep";
+    public string CloakDroppedSound  { get; set; } = "Alarm";
+
+    /// <summary>
+    /// An extra regex the gamelog is checked against for a cloak failure, on top of the two lines
+    /// FCAT already knows. EVE has changed this wording before and localised clients differ, so an
+    /// FC who sees a line FCAT misses can add it without waiting for a release. Empty = off.
+    /// </summary>
+    public string CloakDroppedLogPattern { get; set; } = string.Empty;
 
     /// <summary>Alert types the FC has muted, by <c>AlertType</c> name. Muting stops the sound only -
     /// the alert still appears in the feed and the AAR log.</summary>

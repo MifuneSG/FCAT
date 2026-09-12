@@ -70,10 +70,8 @@ public partial class FleetViewModel : ObservableObject
 
         _sessionLog.StartSession(fleetId, auth.AuthenticatedCharacterName);
 
-        _combatLog.AlertRaised += OnAlertRaised;
-        _combatLog.LineParsed += OnGameLogLine;   // feed the FC's own gamelog rules
-        _combatLog.StartWatching(_settings.Current.GamelogsPath);
-
+        // The gamelog watcher belongs to the app now (see App.xaml.cs) - it runs whether or not a
+        // fleet is up, and it follows every client rather than just this character's.
         _boost.Updated += OnBoostUpdated;
         _boost.StartWatching(_settings.Current.ChatlogsPath, _settings.Current.BoostChannelPrefix);
         BoostChannelName = _esi.DemoMode ? "Boost III (demo)" : _boost.ActiveChannel ?? "not found";
@@ -230,9 +228,6 @@ public partial class FleetViewModel : ObservableObject
         _pollCts?.Cancel();
         _pollCts?.Dispose();
         _pollCts = null;
-        _combatLog.StopWatching();
-        _combatLog.AlertRaised -= OnAlertRaised;
-        _combatLog.LineParsed -= OnGameLogLine;
         _boost.Updated -= OnBoostUpdated;
         _boost.StopWatching();
         IsLive = false;
@@ -1140,9 +1135,5 @@ public partial class FleetViewModel : ObservableObject
     // Alert handler
     // All alerts flow through the app-lifetime AlertHub (sound, auto-clear, overlay) so they
     // persist regardless of which page is open.
-    private void OnAlertRaised(FcAlert alert) => App.Current.Dispatcher.Invoke(() => _alertHub.Raise(alert));
-
-    private void OnGameLogLine(string line) => _shell.CustomAlerts.OnGameLogLine(line);
-
     private void RaiseAlert(FcAlert alert) => _alertHub.Raise(alert);
 }

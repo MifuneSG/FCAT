@@ -109,6 +109,10 @@ public partial class AlertHub : ObservableObject
             AlertType.DpsLoss      => cfg.DpsLossSound,
             AlertType.LogiRatio    => cfg.LogiRatioSound,
             AlertType.IntelHostile => cfg.IntelHostileSound,
+            AlertType.AltOffline   => cfg.AltOfflineSound,
+            AlertType.AltPodded    => cfg.AltPoddedSound,
+            AlertType.AltKills     => cfg.AltKillsSound,
+            AlertType.CloakDropped => cfg.CloakDroppedSound,
             _                      => "None",
         };
     }

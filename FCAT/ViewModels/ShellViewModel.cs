@@ -19,11 +19,16 @@ public partial class ShellViewModel : ObservableObject
     private readonly ZkillService _zkill;
     private readonly BattleReportService _battleReport;
     private readonly UpdaterService _updater;
+    private readonly AltTracker _altTracker;
+
+    /// <summary>The one shared alt poll, exposed so pages read it instead of polling their own.</summary>
+    public AltTracker AltTracker => _altTracker;
 
     public ShellViewModel(EsiAuthService auth, EsiService esi, CombatLogService combatLog,
                           SettingsService settings, AlertHub alertHub, SessionLog sessionLog,
                           SystemSearchService systemSearch, ZkillService zkill,
-                          BattleReportService battleReport, UpdaterService updater)
+                          BattleReportService battleReport, UpdaterService updater,
+                          AltTracker altTracker)
     {
         _auth = auth;
         _esi = esi;
@@ -35,6 +40,7 @@ public partial class ShellViewModel : ObservableObject
         _zkill = zkill;
         _battleReport = battleReport;
         _updater = updater;
+        _altTracker = altTracker;
         _auth.ActiveCharacterChanged += OnActiveCharacterChanged;
         CurrentPage = new LoginViewModel(_auth, this);
 
@@ -191,6 +197,10 @@ public partial class ShellViewModel : ObservableObject
         IsLoggedIn = true;
         ShellCharacterName = _auth.AuthenticatedCharacterName;
         ShellPortraitUrl = $"https://images.evetech.net/characters/{_auth.AuthenticatedCharacterId}/portrait?size=64";
+
+        // The log watcher needs to know who we're flying to tell "your" alerts from an alt's.
+        _combatLog.ActiveCharacterName = _auth.AuthenticatedCharacterName;
+        _altTracker.Start();
     }
 
     // Nav-rail commands
@@ -215,6 +225,7 @@ public partial class ShellViewModel : ObservableObject
             if (_auth.AuthenticatedCharacterId == 0)
             {
                 IsLoggedIn = false;
+                _altTracker.Stop();   // nothing left to poll, and no token to poll it with
                 CurrentPage = new LoginViewModel(_auth, this);
             }
             else if (IsLoggedIn)
