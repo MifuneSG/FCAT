@@ -23,10 +23,13 @@ public partial class AlertsViewModel : ObservableObject
     public AlertHub Hub { get; }
     public ObservableCollection<FcAlert> Alerts => Hub.Alerts;
 
-    public AlertsViewModel(AlertHub hub, SettingsService settings)
+    private readonly AltTracker _alts;
+
+    public AlertsViewModel(AlertHub hub, SettingsService settings, AltTracker alts)
     {
         Hub = hub;
         _settings = settings;
+        _alts = alts;
         _alertSoundsEnabled = settings.Current.AlertSoundsEnabled;
         LoadSoundChoices();
         LoadRows();
@@ -102,6 +105,20 @@ public partial class AlertsViewModel : ObservableObject
         Rows.Add(AlertConfigRow.ForBuiltIn(AlertType.CapTrouble, "Cap out",
             "A module shut off from low cap", AlertSeverity.Warning, s.CapTroubleSound, On(AlertType.CapTrouble)));
 
+        // Only shown once the FC has an alt worth watching - see AltTracker.IsCovertRole. Listing
+        // four alerts that can never fire would be four rows of noise for everyone else.
+        if (_alts.HasCovertAlt)
+        {
+            Rows.Add(AlertConfigRow.ForBuiltIn(AlertType.CloakDropped, "Cloak dropped",
+                "Your cloak dropped, or would not go up", AlertSeverity.Critical, s.CloakDroppedSound, On(AlertType.CloakDropped)));
+            Rows.Add(AlertConfigRow.ForBuiltIn(AlertType.AltPodded, "Alt podded",
+                "An alt's ship became a pod in space", AlertSeverity.Warning, s.AltPoddedSound, On(AlertType.AltPodded)));
+            Rows.Add(AlertConfigRow.ForBuiltIn(AlertType.AltOffline, "Alt offline",
+                "An alt dropped off", AlertSeverity.Warning, s.AltOfflineSound, On(AlertType.AltOffline)));
+            Rows.Add(AlertConfigRow.ForBuiltIn(AlertType.AltKills, "Kills near an alt",
+                "Kills appeared in the system an alt is in", AlertSeverity.Info, s.AltKillsSound, On(AlertType.AltKills)));
+        }
+
         foreach (var r in s.CustomAlerts) Rows.Add(AlertConfigRow.ForRule(r));
 
         foreach (var row in Rows) Track(row);
@@ -113,7 +130,9 @@ public partial class AlertsViewModel : ObservableObject
     /// </summary>
     private void Track(AlertConfigRow row) => row.PropertyChanged += (_, _) => Save();
 
-    private string SoundOf(AlertType t) => Rows.FirstOrDefault(r => r.BuiltIn == t)?.Sound ?? "None";
+    /// <summary>The row's cue, or the saved one if that alert isn't listed right now. Without the
+    /// fallback, saving while the alt rows are hidden would blank their cues.</summary>
+    private string SoundOf(AlertType t, string saved) => Rows.FirstOrDefault(r => r.BuiltIn == t)?.Sound ?? saved;
 
     /// <summary>Writes the whole list back to settings. Cheap, so every row change calls it.</summary>
     [RelayCommand]
@@ -122,15 +141,24 @@ public partial class AlertsViewModel : ObservableObject
         var s = _settings.Current;
         s.AlertSoundsEnabled = AlertSoundsEnabled;
 
-        s.TackledSound      = SoundOf(AlertType.Tackled);
-        s.CapTroubleSound   = SoundOf(AlertType.CapTrouble);
-        s.BoostLostSound    = SoundOf(AlertType.BoostLost);
-        s.LogiChainSound    = SoundOf(AlertType.LogiChain);
-        s.DpsLossSound      = SoundOf(AlertType.DpsLoss);
-        s.LogiRatioSound    = SoundOf(AlertType.LogiRatio);
-        s.IntelHostileSound = SoundOf(AlertType.IntelHostile);
-        s.MutedAlertTypes   = Rows.Where(r => r.BuiltIn != null && !r.Enabled)
-                                  .Select(r => r.BuiltIn!.Value.ToString()).ToList();
+        s.TackledSound      = SoundOf(AlertType.Tackled,      s.TackledSound);
+        s.CapTroubleSound   = SoundOf(AlertType.CapTrouble,   s.CapTroubleSound);
+        s.BoostLostSound    = SoundOf(AlertType.BoostLost,    s.BoostLostSound);
+        s.LogiChainSound    = SoundOf(AlertType.LogiChain,    s.LogiChainSound);
+        s.DpsLossSound      = SoundOf(AlertType.DpsLoss,      s.DpsLossSound);
+        s.LogiRatioSound    = SoundOf(AlertType.LogiRatio,    s.LogiRatioSound);
+        s.IntelHostileSound = SoundOf(AlertType.IntelHostile, s.IntelHostileSound);
+        s.AltOfflineSound   = SoundOf(AlertType.AltOffline,   s.AltOfflineSound);
+        s.AltPoddedSound    = SoundOf(AlertType.AltPodded,    s.AltPoddedSound);
+        s.AltKillsSound     = SoundOf(AlertType.AltKills,     s.AltKillsSound);
+        s.CloakDroppedSound = SoundOf(AlertType.CloakDropped, s.CloakDroppedSound);
+
+        // Only rewrite mutes for the alerts actually on screen. An alt alert muted while an alt was
+        // labelled would otherwise come back unmuted the moment that label changed.
+        var listed = Rows.Where(r => r.BuiltIn != null).Select(r => r.BuiltIn!.Value.ToString()).ToHashSet();
+        s.MutedAlertTypes = s.MutedAlertTypes.Where(m => !listed.Contains(m))
+            .Concat(Rows.Where(r => r.BuiltIn != null && !r.Enabled).Select(r => r.BuiltIn!.Value.ToString()))
+            .Distinct().ToList();
 
         foreach (var row in Rows.Where(r => r.Rule != null))
         {

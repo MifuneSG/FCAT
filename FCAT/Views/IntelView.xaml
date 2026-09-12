@@ -40,7 +40,10 @@
         <!-- Page header -->
         <StackPanel Grid.Row="0" Margin="34,24,34,16">
             <TextBlock Text="INTELLIGENCE" Style="{StaticResource PageEyebrow}"/>
-            <TextBlock Text="Intel Tools" Style="{StaticResource PageTitle}"/>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Intel Tools" Style="{StaticResource PageTitle}"/>
+                <v:HintIcon Margin="8,6,0,0" Text="Minimap, scan pane, hunting tool and your intel channel feed.&#xA;&#xA;Kills and jumps come from CCP's hourly dumps. Read them as where things have been happening, not what is happening right now.&#xA;&#xA;The intel feed and anything you paste in are the only live parts."/>
+            </StackPanel>
         </StackPanel>
 
         <!-- Main: map / d-scan on the left, intel feed as a full-height column on the right. The
@@ -443,7 +446,10 @@
                             <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,10,0,10"/>
 
                             <!-- 2. WHAT CONTENT IS AROUND ME -->
-                            <TextBlock Text="CONTENT" Style="{StaticResource SectionLabel}" Margin="0,0,0,6"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="CONTENT" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
+                                <v:HintIcon Text="Ratting, sov timers, incursions and faction war around you. Ratting ranks on the rise in NPC kills rather than the total, because a big total just means it's a ratting pocket. A rising one means someone is out there now."/>
+                            </StackPanel>
                             <ItemsControl ItemsSource="{Binding System.Content}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type vm:ContentRow}">
@@ -486,7 +492,10 @@
                             <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,10,0,10"/>
 
                             <!-- 3. HOW DO I GET OUT -->
-                            <TextBlock Text="ESCAPES" Style="{StaticResource SectionLabel}" Margin="0,0,0,6"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="ESCAPES" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
+                                <v:HintIcon Text="Ways out of the constellation, quietest first. A gate with a fight on it isn't an escape, so kills push it down."/>
+                            </StackPanel>
                             <ItemsControl ItemsSource="{Binding System.Escapes}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type vm:EscapeRow}">
@@ -620,8 +629,11 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
 
-                                    <TextBlock Text="ALLIANCES" Style="{StaticResource SectionLabel}" Margin="0,0,0,8"
-                                               Visibility="{Binding Scan.IsLocalResult, Converter={StaticResource BoolToVisibility}}"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8"
+                                                Visibility="{Binding Scan.IsLocalResult, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="ALLIANCES" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <v:HintIcon Text="Who is in the room by alliance, with their share of it. Nothing is marked blue or red, since corp and alliance ids are all FCAT has to judge on."/>
+                                    </StackPanel>
                                     <ItemsControl ItemsSource="{Binding Scan.Alliances}"
                                                   Visibility="{Binding Scan.IsLocalResult, Converter={StaticResource BoolToVisibility}}">
                                         <ItemsControl.ItemTemplate>
@@ -718,7 +730,10 @@
 
                                     <!-- Local side -->
                                     <StackPanel Visibility="{Binding Scan.IsLocalResult, Converter={StaticResource BoolToVisibility}}">
-                                        <TextBlock Text="CORPORATIONS" Style="{StaticResource SectionLabel}" Margin="0,0,0,8"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                            <TextBlock Text="CORPORATIONS" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
+                                            <v:HintIcon Text="The same pilots by corp. Everyone is in a corp and usually an alliance too, so this board runs higher than the one above it."/>
+                                        </StackPanel>
                                         <ItemsControl ItemsSource="{Binding Scan.Corporations}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate DataType="{x:Type vm:ScanOrg}">

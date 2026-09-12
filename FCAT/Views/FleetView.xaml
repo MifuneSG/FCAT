@@ -1,6 +1,7 @@
 <UserControl x:Class="FCAT.Views.FleetView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="clr-namespace:FCAT.Views"
              xmlns:vm="clr-namespace:FCAT.ViewModels"
              xmlns:models="clr-namespace:FCAT.Models"
              xmlns:svc="clr-namespace:FCAT.Services"
@@ -103,7 +104,10 @@
 
                 <StackPanel Grid.Column="0" VerticalAlignment="Center">
                     <TextBlock Text="FLEET OPERATIONS" Style="{StaticResource PageEyebrow}"/>
-                    <TextBlock Text="Fleet Ops" Style="{StaticResource PageTitle}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Fleet Ops" Style="{StaticResource PageTitle}"/>
+                        <v:HintIcon Margin="8,6,0,0" Text="Roster, composition and cap chain, live off ESI.&#xA;&#xA;You have to be the fleet boss. Wing and squad commanders get nothing back from ESI, which is why the page can come up empty.&#xA;&#xA;It reads the fleet type off the hulls and changes what it watches, so a blops gang isn't nagged about logistics.&#xA;&#xA;Right-click a pilot to set their role. Worth doing for T3s: fits aren't in ESI, so a Loki reads as DPS no matter how it's fit."/>
+                    </StackPanel>
                 </StackPanel>
 
                 <Rectangle Grid.Column="1" Width="1" Height="20" Margin="14,0"
@@ -857,6 +861,7 @@
                     <StackPanel Margin="16,12,16,12">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <TextBlock Text="LOGI CHAIN" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
+                            <v:HintIcon Text="The order to call, worked out from who's in fleet. FCAT can't see the in-game logi channel or who is actually repping whom, so this is what the chain should be, not what it is."/>
                             <TextBlock Text="cap order, top caps bottom, loops" Foreground="{StaticResource EveTextDim}"
                                        FontFamily="{StaticResource FontUI}" FontSize="10" VerticalAlignment="Center" Margin="8,0,0,0"/>
                         </StackPanel>

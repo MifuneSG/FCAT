@@ -1,6 +1,7 @@
 <UserControl x:Class="FCAT.Views.AccountView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="clr-namespace:FCAT.Views"
              xmlns:vm="clr-namespace:FCAT.ViewModels"
              d:DataContext="{d:DesignInstance vm:AccountViewModel}"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -18,7 +19,10 @@
           <Grid MaxWidth="980" HorizontalAlignment="Center">
             <StackPanel VerticalAlignment="Bottom">
                 <TextBlock Text="ACCOUNT" Style="{StaticResource PageEyebrow}"/>
-                <TextBlock Text="Characters" Style="{StaticResource PageTitle}"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Characters" Style="{StaticResource PageTitle}"/>
+                    <v:HintIcon Margin="8,6,0,0" Text="Add your alts and label each one. The label isn't cosmetic: Cyno and Scout are what turn the alt alerts on, so an unlabelled alt is one FCAT won't warn you about.&#xA;&#xA;You get their system, their ship, and whether they're docked or in fleet. Labelled alts show on the minimap too, so a scout three jumps out is a dot you can see.&#xA;&#xA;You never get what's on grid with them. There is no Local, d-scan or overview for another character."/>
+                </StackPanel>
             </StackPanel>
             <Button Command="{Binding AddCharacterCommand}" Style="{StaticResource PrimaryButton}"
                     Height="38" Padding="18,0" HorizontalAlignment="Right" VerticalAlignment="Bottom">

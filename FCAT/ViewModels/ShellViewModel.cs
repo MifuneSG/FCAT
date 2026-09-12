@@ -263,7 +263,7 @@ public partial class ShellViewModel : ObservableObject
     {
         ActiveNav = "alerts";
         _alertHub.MarkRead();   // opening the page clears the unread badge
-        CurrentPage = new AlertsViewModel(_alertHub, _settings);
+        CurrentPage = new AlertsViewModel(_alertHub, _settings, _altTracker);
     }
 
     // The live fleet-monitoring session. Kept alive across navigation so the alert overlay and
