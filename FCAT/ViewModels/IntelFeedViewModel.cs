@@ -185,10 +185,11 @@ public partial class IntelFeedViewModel : ObservableObject
         _watchedAdjacent = new HashSet<string>(adjacent ?? [], StringComparer.OrdinalIgnoreCase);
     }
 
-    private void OnReport(DateTime time, string speaker, string message)
+    private void OnReport(DateTime time, string speaker, string message, bool backfill)
     {
-        // Every intel line is offered to the FC's own rules, even the ones that aren't system reports.
-        _customAlerts.OnIntelMessage(message);
+        // Every intel line is offered to the FC's own rules, even the ones that aren't system
+        // reports - but not the history replayed when a log is first opened.
+        if (!backfill) _customAlerts.OnIntelMessage(message);
 
         // A real intel report names a system (char > system > ship, or "<system> nv/clr"). Questions
         // ("any hostiles in X?") and chatter aren't reports. (Kill links were already filtered upstream.)
@@ -202,7 +203,7 @@ public partial class IntelFeedViewModel : ObservableObject
             System = m.Name, Status = status, Detail = BuildDetail(message, m.Token), Meta = speaker,
         });
 
-        RaiseIntelAlertIfWatched(m.Name, status, speaker, message);
+        if (!backfill) RaiseIntelAlertIfWatched(m.Name, status, speaker, message);
     }
 
     /// <summary>

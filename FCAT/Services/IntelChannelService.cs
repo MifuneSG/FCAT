@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -11,16 +12,49 @@ namespace FCAT.Services;
 /// </summary>
 public partial class IntelChannelService : IDisposable
 {
-    [GeneratedRegex(@"^\[ \d{4}\.\d{2}\.\d{2} (\d{2}:\d{2}:\d{2}) \] ([^>]+?) > (.+)$")]
+    [GeneratedRegex(@"^\[ (\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2}) \] ([^>]+?) > (.+)$")]
     private static partial Regex ChatLineRegex();
 
     private FileSystemWatcher? _watcher;
-    private string? _watchedFile;
-    private long _lastFilePosition;
-    private bool _seekedToEnd;
 
-    /// <summary>(timestamp, speaker, message) for each new intel line.</summary>
-    public event Action<DateTime, string, string>? ReportReceived;
+    /// <summary>
+    /// How far we have read into each channel file. EVE writes one chatlog per running client, so
+    /// an FC with six clients open has six files for the same channel, all appended at once.
+    /// Following only "the newest" one means the newest flips every time another client writes, and
+    /// a single shared read position then rewinds and replays the whole file as fresh intel.
+    /// </summary>
+    private readonly Dictionary<string, long> _positions = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The poll runs on the UI thread and the file watcher on a threadpool thread, and both read.
+    /// Serialise them: the read state below is plain dictionaries, and a torn write there would
+    /// lose a read position and replay a log.
+    /// </summary>
+    private readonly object _readLock = new();
+
+    /// <summary>
+    /// When each line was last reported, keyed by speaker + text. Every client in the channel
+    /// records the same line, so without this one call-out alerts once per open client.
+    /// </summary>
+    private readonly Dictionary<string, DateTime> _lastSeen = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Clients do not agree on the clock to the second - the same line is written a second apart
+    /// across six logs - so an exact timestamp match is not enough to fold the copies together.
+    /// Measured against real logs the split is clean: copies land within a second of each other,
+    /// while the same pilot genuinely repeating a call-out is tens of seconds later at the least.
+    /// </summary>
+    private static readonly TimeSpan SameLineWindow = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// (timestamp, speaker, message, backfill) for each new intel line. Backfill is the history
+    /// read when a file is first seen: it belongs in the feed, but it must not raise alerts -
+    /// a call-out from twenty minutes ago is not something to shout about on launch.
+    /// </summary>
+    public event Action<DateTime, string, string, bool>? ReportReceived;
+
+    /// <summary>True while replaying a file's existing tail rather than following new writes.</summary>
+    private bool _backfilling;
 
     public string? ActiveChannel { get; private set; }
 
@@ -75,40 +109,38 @@ public partial class IntelChannelService : IDisposable
             _watcher.Dispose();
             _watcher = null;
         }
-        _watchedFile = null;
-        _lastFilePosition = 0;
-        _seekedToEnd = false;
+        lock (_readLock) _positions.Clear();
     }
 
     /// <summary>Poll for new lines (the watcher is unreliable while EVE holds the file open).</summary>
     public void Refresh()
     {
         if (!Directory.Exists(LogDirectory)) return;
-        var latest = LatestFile();
 
-        if (latest == null)
+        var files = MatchingFiles();
+        if (files.Count == 0)
         {
             // No intel channel for the current region - show nothing rather than another region's spam.
-            _watchedFile = null;
             ActiveChannel = null;
+            lock (_readLock) _positions.Clear();
             return;
         }
 
-        if (!string.Equals(latest, _watchedFile, StringComparison.OrdinalIgnoreCase))
-        {
-            _watchedFile = latest;
-            _lastFilePosition = 0;
-            _seekedToEnd = false;
-            ActiveChannel = ChannelNameFromFile(latest);
-        }
-        ReadNewLines();
+        ActiveChannel = ChannelNameFromFile(files[0]);   // newest writer, for the status line only
+        foreach (var f in files) ReadNewLines(f);
+
+        // A client that closed leaves a file nobody will append to again.
+        lock (_readLock)
+            foreach (var gone in _positions.Keys.Except(files, StringComparer.OrdinalIgnoreCase).ToList())
+                _positions.Remove(gone);
     }
 
-    private string? LatestFile() =>
+    /// <summary>Every file for this channel that matches the current region, newest writer first.</summary>
+    private List<string> MatchingFiles() =>
         Directory.GetFiles(LogDirectory, $"*{ChannelPrefix}*.txt")
                  .Where(MatchesRegion)
                  .OrderByDescending(File.GetLastWriteTime)
-                 .FirstOrDefault();
+                 .ToList();
 
     /// <summary>True if the channel's name matches the current region (or there's no region filter).
     /// Handles abbreviations like "I. Ftn Intel" -> "Fountain" via a subsequence check.</summary>
@@ -136,16 +168,7 @@ public partial class IntelChannelService : IDisposable
         return ti == token.Length;
     }
 
-    private void AttachToLatest()
-    {
-        var latest = LatestFile();
-        if (latest == null) { ActiveChannel = null; return; }
-        _watchedFile = latest;
-        _lastFilePosition = 0;
-        _seekedToEnd = false;
-        ActiveChannel = ChannelNameFromFile(latest);
-        ReadNewLines();
-    }
+    private void AttachToLatest() => Refresh();
 
     private static string ChannelNameFromFile(string path)
     {
@@ -156,41 +179,61 @@ public partial class IntelChannelService : IDisposable
 
     private void OnFileChanged(object sender, FileSystemEventArgs e)
     {
-        if (e.FullPath != _watchedFile &&
-            Path.GetFileName(e.FullPath).Contains(ChannelPrefix, StringComparison.OrdinalIgnoreCase))
-        {
-            AttachToLatest();
-            return;
-        }
-        if (e.FullPath == _watchedFile) ReadNewLines();
+        if (!Path.GetFileName(e.FullPath).Contains(ChannelPrefix, StringComparison.OrdinalIgnoreCase)) return;
+        if (!MatchesRegion(e.FullPath)) return;
+        ReadNewLines(e.FullPath);
     }
 
-    private void ReadNewLines()
+    private void ReadNewLines(string path)
     {
-        if (_watchedFile == null) return;
+        lock (_readLock)
         try
         {
-            using var stream = new FileStream(_watchedFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
-            // On first attach, start ~24 KB before the end so the feed shows recent reports immediately
-            // (not the whole - possibly huge - history). Keep the offset even for UTF-16 alignment;
-            // a partial first line just fails the regex and is skipped.
-            if (!_seekedToEnd)
+            var firstSight = !_positions.TryGetValue(path, out var from);
+            if (firstSight)
             {
-                var start = stream.Length - 24_000;
-                if (start < 0) start = 0;
-                if (start % 2 != 0) start--;
-                _lastFilePosition = start;
-                _seekedToEnd = true;
+                // First sight of this file: start ~24 KB before the end so the feed shows recent
+                // reports immediately rather than the whole - possibly huge - history. Keep the
+                // offset even for UTF-16 alignment; a partial first line just fails the regex.
+                from = stream.Length - 24_000;
+                if (from < 0) from = 0;
+                if (from % 2 != 0) from--;
             }
 
-            stream.Seek(_lastFilePosition, SeekOrigin.Begin);
+            // A file can be truncated or rolled - never seek past the end.
+            if (from > stream.Length) from = 0;
+
+            stream.Seek(from, SeekOrigin.Begin);
             using var reader = new StreamReader(stream, Encoding.Unicode, detectEncodingFromByteOrderMarks: true);
             string? line;
-            while ((line = reader.ReadLine()) != null) ParseLine(line);
-            _lastFilePosition = stream.Position;
+            _backfilling = firstSight;
+            try
+            {
+                while ((line = reader.ReadLine()) != null) ParseLine(line);
+            }
+            finally { _backfilling = false; }
+            _positions[path] = stream.Position;
         }
         catch (IOException) { /* locked - retry next poll */ }
+    }
+
+    /// <summary>False if this line was already reported - another client's copy, or a re-read.</summary>
+    private bool FirstSighting(string key, DateTime logTime)
+    {
+        if (_lastSeen.TryGetValue(key, out var prev) && (logTime - prev).Duration() <= SameLineWindow)
+            return false;
+
+        _lastSeen[key] = logTime;
+
+        if (_lastSeen.Count > 2000)
+        {
+            var cutoff = logTime - TimeSpan.FromMinutes(15);
+            foreach (var stale in _lastSeen.Where(kv => kv.Value < cutoff).Select(kv => kv.Key).ToList())
+                _lastSeen.Remove(stale);
+        }
+        return true;
     }
 
     private void ParseLine(string line)
@@ -210,7 +253,16 @@ public partial class IntelChannelService : IDisposable
 
         var message = Regex.Replace(raw, "<[^>]+>", "").Trim();   // strip remaining link markup
         if (message.Length == 0) return;
-        ReportReceived?.Invoke(DateTime.Now, speaker, message);
+
+        // Judge repeats on the log's own clock, not ours: a re-read happens now, but the line still
+        // carries the time it was said. An unparseable stamp just skips the check rather than
+        // folding every such line onto one key.
+        if (DateTime.TryParseExact(m.Groups[1].Value, "yyyy.MM.dd HH:mm:ss",
+                                   CultureInfo.InvariantCulture, DateTimeStyles.None, out var logTime)
+            && !FirstSighting(speaker + "|" + message, logTime))
+            return;
+
+        ReportReceived?.Invoke(DateTime.Now, speaker, message, _backfilling);
     }
 
     public void Dispose() => StopWatching();
