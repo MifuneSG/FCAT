@@ -502,6 +502,10 @@ public partial class HuntViewModel : ObservableObject
         var rangeById = _inRange.ToDictionary(x => x.SystemId, x => x.LightYears);
         var labelled  = Rows.Take(MaxMapLabels).Select(r => r.SystemId).ToHashSet();
 
+        // Built into a list first: the labels can only be spread once every position is known, and
+        // HuntMapNode is a plain record, so a nudge applied after binding would never be picked up.
+        var built = new List<HuntMapNode>();
+
         foreach (var (id, point) in layout)
         {
             var inRange  = rangeById.ContainsKey(id);
@@ -523,13 +527,16 @@ public partial class HuntViewModel : ObservableObject
                      : delta > 0            ? "Rising"
                      :                        "None";
 
-            MapNodes.Add(new HuntMapNode(
+            built.Add(new HuntMapNode(
                 offX + (point.X - minX) * scale - NodeHalf,
                 offY + (point.Y - minY) * scale - NodeHalf,
                 id, name, inRange, isOrigin, tone, ring, DotSize(isOrigin, inRange, level),
                 ShowLabel: isOrigin || labelled.Contains(id),
                 Tip: $"{name}\n{rangeLine}", RangeLine: rangeLine, StatsLine: StatsLineFor(id)));
         }
+
+        SpreadCollidingLabels(built);
+        foreach (var node in built) MapNodes.Add(node);
 
         // Gates, drawn once per pair. They aren't how you travel here, but they're how the region reads.
         var centres = MapNodes.ToDictionary(n => n.SystemId, n => (X: n.Left + NodeHalf, Y: n.Top + NodeHalf));
@@ -619,5 +626,42 @@ public partial class HuntViewModel : ObservableObject
         if (value.Trim().Length >= 2)
             foreach (var match in _search.Search(value.Trim())) OriginSuggestions.Add(match);
         OnPropertyChanged(nameof(HasSuggestions));
+    }
+
+    /// <summary>
+    /// Names sit under their dot. The map scales to the pane but the names do not, so in a narrow
+    /// window two dots can end up close enough that their plates print over each other - "CHA2-Q"
+    /// and "B32-14" running together into one unreadable word. Step the later one down a line.
+    /// Every labelled system keeps its name; nothing is dropped to make room.
+    /// </summary>
+    private static void SpreadCollidingLabels(List<HuntMapNode> nodes)
+    {
+        const double lineHeight = 13;
+        const int    maxSteps   = 3;
+
+        // A plate is only as wide as the name on it, not the 160px box it is laid out in.
+        static double HalfPlate(string name) => name.Length * 3.4 + 6;
+
+        var placed = new List<(double Left, double Right, double Y)>();
+
+        foreach (var node in nodes.Where(n => n.ShowLabel)
+                                  .OrderBy(n => n.Top).ThenBy(n => n.Left))
+        {
+            var centre = node.Left + HuntMapNode.NodeBox / 2;
+            var half   = HalfPlate(node.Name);
+            var drop   = 0.0;
+
+            for (var step = 0; step < maxSteps; step++)
+            {
+                var y = node.Top + drop;
+                var clash = placed.Any(p => Math.Abs(p.Y - y) < lineHeight
+                                         && centre - half < p.Right && centre + half > p.Left);
+                if (!clash) break;
+                drop += lineHeight;
+            }
+
+            node.LabelDrop = drop;
+            placed.Add((centre - half, centre + half, node.Top + drop));
+        }
     }
 }

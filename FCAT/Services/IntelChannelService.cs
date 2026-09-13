@@ -33,10 +33,14 @@ public partial class IntelChannelService : IDisposable
     private readonly object _readLock = new();
 
     /// <summary>
-    /// When each line was last reported, keyed by speaker + text. Every client in the channel
+    /// Every time each line has been reported, keyed by speaker + text. Every client in the channel
     /// records the same line, so without this one call-out alerts once per open client.
+    ///
+    /// It records all the times, not just the latest. A pilot repeats a call-out minutes apart, and
+    /// the files are not read in one chronological order, so a later log replaying the FIRST
+    /// occurrence looks like a fresh line when it is only compared against the most recent one.
     /// </summary>
-    private readonly Dictionary<string, DateTime> _lastSeen = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<DateTime>> _seenTimes = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Clients do not agree on the clock to the second - the same line is written a second apart
@@ -53,8 +57,12 @@ public partial class IntelChannelService : IDisposable
     /// </summary>
     public event Action<DateTime, string, string, bool>? ReportReceived;
 
-    /// <summary>True while replaying a file's existing tail rather than following new writes.</summary>
-    private bool _backfilling;
+    /// <summary>
+    /// How much of a log's existing tail reaches the feed when the file is first seen. The read
+    /// window is 24 KB per file and the FC runs a client per character, so replaying all of it put
+    /// hundreds of old lines into a hundred-row feed and pushed out everything else, kills included.
+    /// </summary>
+    private const int BackfillLines = 30;
 
     public string? ActiveChannel { get; private set; }
 
@@ -135,12 +143,24 @@ public partial class IntelChannelService : IDisposable
                 _positions.Remove(gone);
     }
 
-    /// <summary>Every file for this channel that matches the current region, newest writer first.</summary>
-    private List<string> MatchingFiles() =>
-        Directory.GetFiles(LogDirectory, $"*{ChannelPrefix}*.txt")
-                 .Where(MatchesRegion)
-                 .OrderByDescending(File.GetLastWriteTime)
-                 .ToList();
+    /// <summary>
+    /// EVE never reuses a chat log, so the directory accumulates one per channel per client per
+    /// session - seventy-odd files here going back a fortnight. Only the ones still being written
+    /// belong to the session in progress; following the rest replays days-old intel as if it were
+    /// current.
+    /// </summary>
+    private static readonly TimeSpan LiveWindow = TimeSpan.FromHours(12);
+
+    /// <summary>Files for this channel that match the region and are still live, newest first.</summary>
+    private List<string> MatchingFiles()
+    {
+        var cutoff = DateTime.Now - LiveWindow;
+        return Directory.GetFiles(LogDirectory, $"*{ChannelPrefix}*.txt")
+                        .Where(f => File.GetLastWriteTime(f) >= cutoff)
+                        .Where(MatchesRegion)
+                        .OrderByDescending(File.GetLastWriteTime)
+                        .ToList();
+    }
 
     /// <summary>True if the channel's name matches the current region (or there's no region filter).
     /// Handles abbreviations like "I. Ftn Intel" -> "Fountain" via a subsequence check.</summary>
@@ -181,6 +201,7 @@ public partial class IntelChannelService : IDisposable
     {
         if (!Path.GetFileName(e.FullPath).Contains(ChannelPrefix, StringComparison.OrdinalIgnoreCase)) return;
         if (!MatchesRegion(e.FullPath)) return;
+        if (File.GetLastWriteTime(e.FullPath) < DateTime.Now - LiveWindow) return;
         ReadNewLines(e.FullPath);
     }
 
@@ -207,14 +228,18 @@ public partial class IntelChannelService : IDisposable
 
             stream.Seek(from, SeekOrigin.Begin);
             using var reader = new StreamReader(stream, Encoding.Unicode, detectEncodingFromByteOrderMarks: true);
+
+            // On first sight, collect rather than report: only the tail end of the history is worth
+            // showing, and that can only be known once the whole window has been read.
+            var backfill = firstSight ? new List<(DateTime Time, string Speaker, string Message)>() : null;
+
             string? line;
-            _backfilling = firstSight;
-            try
-            {
-                while ((line = reader.ReadLine()) != null) ParseLine(line);
-            }
-            finally { _backfilling = false; }
+            while ((line = reader.ReadLine()) != null) ParseLine(line, backfill);
             _positions[path] = stream.Position;
+
+            if (backfill != null)
+                foreach (var (time, speaker, message) in backfill.TakeLast(BackfillLines))
+                    ReportReceived?.Invoke(time, speaker, message, true);
         }
         catch (IOException) { /* locked - retry next poll */ }
     }
@@ -222,21 +247,24 @@ public partial class IntelChannelService : IDisposable
     /// <summary>False if this line was already reported - another client's copy, or a re-read.</summary>
     private bool FirstSighting(string key, DateTime logTime)
     {
-        if (_lastSeen.TryGetValue(key, out var prev) && (logTime - prev).Duration() <= SameLineWindow)
-            return false;
+        if (!_seenTimes.TryGetValue(key, out var times))
+            _seenTimes[key] = times = [];
 
-        _lastSeen[key] = logTime;
+        if (times.Any(t => (logTime - t).Duration() <= SameLineWindow)) return false;
 
-        if (_lastSeen.Count > 2000)
+        times.Add(logTime);
+
+        if (_seenTimes.Count > 2000)
         {
-            var cutoff = logTime - TimeSpan.FromMinutes(15);
-            foreach (var stale in _lastSeen.Where(kv => kv.Value < cutoff).Select(kv => kv.Key).ToList())
-                _lastSeen.Remove(stale);
+            var cutoff = logTime - TimeSpan.FromHours(1);
+            foreach (var stale in _seenTimes.Where(kv => kv.Value.TrueForAll(t => t < cutoff))
+                                            .Select(kv => kv.Key).ToList())
+                _seenTimes.Remove(stale);
         }
         return true;
     }
 
-    private void ParseLine(string line)
+    private void ParseLine(string line, List<(DateTime Time, string Speaker, string Message)>? backfill)
     {
         line = line.TrimStart('﻿', '￾');
         var m = ChatLineRegex().Match(line);
@@ -257,12 +285,19 @@ public partial class IntelChannelService : IDisposable
         // Judge repeats on the log's own clock, not ours: a re-read happens now, but the line still
         // carries the time it was said. An unparseable stamp just skips the check rather than
         // folding every such line onto one key.
-        if (DateTime.TryParseExact(m.Groups[1].Value, "yyyy.MM.dd HH:mm:ss",
-                                   CultureInfo.InvariantCulture, DateTimeStyles.None, out var logTime)
-            && !FirstSighting(speaker + "|" + message, logTime))
-            return;
+        var stamped = DateTime.TryParseExact(m.Groups[1].Value, "yyyy.MM.dd HH:mm:ss",
+                                             CultureInfo.InvariantCulture, DateTimeStyles.None, out var logTime);
+        if (stamped && !FirstSighting(speaker + "|" + message, logTime)) return;
 
-        ReportReceived?.Invoke(DateTime.Now, speaker, message, _backfilling);
+        // Report when it was SAID, not when we read it. Chat logs are stamped in EVE time, which is
+        // UTC. Using the read time made every replayed line look like it had just come in, and put
+        // a whole backfill at one identical timestamp.
+        var said = stamped
+            ? DateTime.SpecifyKind(logTime, DateTimeKind.Utc).ToLocalTime()
+            : DateTime.Now;
+
+        if (backfill != null) backfill.Add((said, speaker, message));
+        else ReportReceived?.Invoke(said, speaker, message, false);
     }
 
     public void Dispose() => StopWatching();

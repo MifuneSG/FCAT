@@ -111,7 +111,7 @@
                                            FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 <Button Command="{Binding System.ReturnToCurrentCommand}" Style="{StaticResource GhostButton}"
                                         Padding="7,1" Margin="9,0,0,0" ToolTip="Snap back to the system you're actually in">
-                                    <TextBlock Text="← back to you" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="10"/>
+                                    <TextBlock Text="← back to you" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="11"/>
                                 </Button>
                             </StackPanel>
                         </Border>
@@ -237,7 +237,7 @@
                                                         <TextBlock Text="{Binding Stats}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,3,0,0"/>
                                                         <TextBlock Text="{Binding AltTip}" Foreground="{StaticResource EveGoldSoft}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,3,0,0"
                                                                    Visibility="{Binding HasAlt, Converter={StaticResource BoolToVisibility}}"/>
-                                                        <TextBlock Text="Click to focus · right-click for Dotlan / zKillboard" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,4,0,0"/>
+                                                        <TextBlock Text="Click to focus · right-click for Dotlan / zKillboard" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,4,0,0"/>
                                                     </StackPanel>
                                                 </Grid.ToolTip>
                                                 <Grid.ContextMenu>
@@ -409,19 +409,19 @@
                             <WrapPanel Margin="0,2,0,8">
                                 <StackPanel Width="54" Margin="0,0,0,8">
                                     <TextBlock Text="{Binding System.ShipKills}" Foreground="{DynamicResource EveCritical}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold"/>
-                                    <TextBlock Text="KILLS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10"/>
+                                    <TextBlock Text="KILLS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"/>
                                 </StackPanel>
                                 <StackPanel Width="54" Margin="0,0,0,8">
                                     <TextBlock Text="{Binding System.NpcKills}" Foreground="{DynamicResource EveAmber}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold"/>
-                                    <TextBlock Text="NPC" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10"/>
+                                    <TextBlock Text="NPC" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"/>
                                 </StackPanel>
                                 <StackPanel Width="54" Margin="0,0,0,8">
                                     <TextBlock Text="{Binding System.SysJumps}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold"/>
-                                    <TextBlock Text="JUMPS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10"/>
+                                    <TextBlock Text="JUMPS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"/>
                                 </StackPanel>
                                 <StackPanel Width="54" Margin="0,0,0,8" ToolTip="NPC stations only - player citadels aren't listed by ESI">
                                     <TextBlock Text="{Binding System.StationCount}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold"/>
-                                    <TextBlock Text="STATIONS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10"/>
+                                    <TextBlock Text="STATIONS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"/>
                                 </StackPanel>
                             </WrapPanel>
 
@@ -431,7 +431,7 @@
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="{Binding System.SovTicker}" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,7,0"
                                                Visibility="{Binding System.SovTicker, Converter={StaticResource StringToVisibility}}"/>
-                                    <TextBlock Text="{Binding System.SovHolder}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding System.SovHolder}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                 </StackPanel>
                             </StackPanel>
 
@@ -472,7 +472,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                             <TextBlock Text="Nothing fighting in range." Foreground="{StaticResource EveTextDim}"
-                                       FontFamily="{StaticResource FontUI}" FontSize="10" FontStyle="Italic" Margin="0,0,0,2"
+                                       FontFamily="{StaticResource FontUI}" FontSize="11" FontStyle="Italic" Margin="0,0,0,2"
                                        Visibility="{Binding System.HasInRange, Converter={StaticResource BoolToInvisibility}}"/>
 
                             <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,10,0,10"/>
@@ -518,7 +518,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                             <TextBlock Text="Quiet around here." Foreground="{StaticResource EveTextDim}"
-                                       FontFamily="{StaticResource FontUI}" FontSize="10" FontStyle="Italic"
+                                       FontFamily="{StaticResource FontUI}" FontSize="11" FontStyle="Italic"
                                        Visibility="{Binding System.HasContent, Converter={StaticResource BoolToInvisibility}}"/>
 
                             <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,10,0,10"/>
@@ -570,7 +570,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                             <TextBlock Text="No exits found." Foreground="{StaticResource EveTextDim}"
-                                       FontFamily="{StaticResource FontUI}" FontSize="10" FontStyle="Italic"
+                                       FontFamily="{StaticResource FontUI}" FontSize="11" FontStyle="Italic"
                                        Visibility="{Binding System.HasEscapes, Converter={StaticResource BoolToInvisibility}}"/>
                         </StackPanel>
                     </ScrollViewer>
@@ -709,7 +709,7 @@
                                                             <ColumnDefinition Width="*"/>
                                                         </Grid.ColumnDefinitions>
                                                         <TextBlock Grid.Column="0" Text="{Binding Count}" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontMono}" FontSize="12" FontWeight="SemiBold"/>
-                                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                                     </Grid>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
@@ -718,40 +718,40 @@
                                         <StackPanel Margin="0,14,0,0" Visibility="{Binding Scan.HasMass, Converter={StaticResource BoolToVisibility}}">
                                             <TextBlock Text="MASS" Style="{StaticResource SectionLabel}" Margin="0,0,0,6"/>
                                             <TextBlock Text="{Binding Scan.MassText}" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontMono}" FontSize="14" FontWeight="SemiBold"/>
-                                            <TextBlock Text="{Binding Scan.MassNote}" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                            <TextBlock Text="{Binding Scan.MassNote}" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,0"/>
                                         </StackPanel>
 
                                         <StackPanel Margin="0,16,0,0">
                                             <TextBlock Text="COMBAT RECONS" Style="{StaticResource SectionLabel}" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Immune to d-scan. Add what you think is out there." Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                            <TextBlock Text="Immune to d-scan. Add what you think is out there." Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"/>
                                             <StackPanel>
                                                 <Grid Margin="0,0,0,5">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="46"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                                     <Border Grid.Column="0" Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="5" Height="24">
                                                         <TextBox Text="{Binding Scan.ReconHuginn, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0" Foreground="{StaticResource EveTextPrimary}" CaretBrush="{DynamicResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11" Padding="6,0" VerticalContentAlignment="Center"/>
                                                     </Border>
-                                                    <TextBlock Grid.Column="1" Text="Huginn" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11.5" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                    <TextBlock Grid.Column="1" Text="Huginn" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                                 </Grid>
                                                 <Grid Margin="0,0,0,5">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="46"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                                     <Border Grid.Column="0" Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="5" Height="24">
                                                         <TextBox Text="{Binding Scan.ReconLachesis, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0" Foreground="{StaticResource EveTextPrimary}" CaretBrush="{DynamicResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11" Padding="6,0" VerticalContentAlignment="Center"/>
                                                     </Border>
-                                                    <TextBlock Grid.Column="1" Text="Lachesis" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11.5" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                    <TextBlock Grid.Column="1" Text="Lachesis" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                                 </Grid>
                                                 <Grid Margin="0,0,0,5">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="46"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                                     <Border Grid.Column="0" Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="5" Height="24">
                                                         <TextBox Text="{Binding Scan.ReconRook, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0" Foreground="{StaticResource EveTextPrimary}" CaretBrush="{DynamicResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11" Padding="6,0" VerticalContentAlignment="Center"/>
                                                     </Border>
-                                                    <TextBlock Grid.Column="1" Text="Rook" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11.5" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                    <TextBlock Grid.Column="1" Text="Rook" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                                 </Grid>
                                                 <Grid Margin="0,0,0,8">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="46"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                                     <Border Grid.Column="0" Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="5" Height="24">
                                                         <TextBox Text="{Binding Scan.ReconCurse, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0" Foreground="{StaticResource EveTextPrimary}" CaretBrush="{DynamicResource EveAccent}" FontFamily="{StaticResource FontMono}" FontSize="11" Padding="6,0" VerticalContentAlignment="Center"/>
                                                     </Border>
-                                                    <TextBlock Grid.Column="1" Text="Curse" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11.5" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                    <TextBlock Grid.Column="1" Text="Curse" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                                 </Grid>
                                             </StackPanel>
                                             <Button Command="{Binding Scan.ApplyReconsCommand}" Style="{StaticResource GhostButton}" Height="28" HorizontalAlignment="Left" Padding="14,0">
@@ -776,7 +776,7 @@
                                                             <ColumnDefinition Width="Auto"/>
                                                         </Grid.ColumnDefinitions>
                                                         <TextBlock Grid.Column="0" Text="{Binding Count}" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontMono}" FontSize="12" FontWeight="SemiBold"/>
-                                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                                         <TextBlock Grid.Column="2" Text="{Binding ShareText}" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontMono}" FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0"/>
                                                     </Grid>
                                                 </DataTemplate>
@@ -805,7 +805,7 @@
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
                   <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0" ClipToBounds="True">
-                    <TextBlock Text="RANGE FROM" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <TextBlock Text="RANGE FROM" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0" />
                     <ItemsControl VerticalAlignment="Center" ItemsSource="{Binding Chain}">
                       <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -887,7 +887,7 @@
                     <TextBlock Foreground="{DynamicResource EveAmber}" FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Bottom" Margin="10,0,0,4" TextTrimming="CharacterEllipsis" Text="{Binding ChainNote}" Visibility="{Binding ChainNote, Converter={StaticResource StringToVisibility}}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                    <TextBlock Text="RANK BY" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <TextBlock Text="RANK BY" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0" />
                     <Button CommandParameter="Activity" Style="{StaticResource GhostButton}" Padding="11,4" Margin="12,0,0,0" ToolTip="Rank by where the ratting is" Command="{Binding SetRankModeCommand}">
                       <TextBlock Text="Activity" FontFamily="{StaticResource FontUI}" FontSize="11">
                         <TextBlock.Style>
@@ -940,11 +940,11 @@
                         <ColumnDefinition Width="Auto" SharedSizeGroup="HuntLinks" />
                       </Grid.ColumnDefinitions>
                       <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="26,0,0,0">
-                        <TextBlock Text="SYSTEM" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBlock Text="SYSTEM" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0" />
                         <v:HintIcon Text="Everything listed is one jump, so distance can't rank it. Activity sorts by where the ratting is, coverage by what staging there would open up." />
                       </StackPanel>
                       <Grid Grid.Column="1" Width="124" Margin="8,0,0,0">
-                        <TextBlock HorizontalAlignment="Left" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="Bold" MinWidth="44" TextAlignment="Right">
+                        <TextBlock HorizontalAlignment="Left" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="Bold" MinWidth="44" TextAlignment="Right">
                           <TextBlock.Style>
                             <Style TargetType="TextBlock">
                               <Setter Property="Text" Value="NPC 1H" />
@@ -957,7 +957,7 @@
                           </TextBlock.Style>
                         </TextBlock>
                       </Grid>
-                      <TextBlock Grid.Column="2" Text="RANGE" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="Bold" MinWidth="46" TextAlignment="Right" Margin="8,0,0,0" />
+                      <TextBlock Grid.Column="2" Text="RANGE" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="Bold" MinWidth="46" TextAlignment="Right" Margin="8,0,0,0" />
                       <Border Grid.Column="3" Margin="12,0,0,0" />
                     </Grid>
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -1089,7 +1089,7 @@
                         <ItemsControl.ItemContainerStyle>
                           <Style TargetType="ContentPresenter">
                             <Setter Property="Canvas.Left" Value="{Binding LabelLeft}" />
-                            <Setter Property="Canvas.Top" Value="{Binding Top}" />
+                            <Setter Property="Canvas.Top" Value="{Binding LabelTop}" />
                           </Style>
                         </ItemsControl.ItemContainerStyle>
                         <ItemsControl.ItemTemplate>
@@ -1099,7 +1099,7 @@
                               <!-- A backing tint, so a name stays readable over the gate links. -->
                               <Border CornerRadius="3" Background="#A612121D" Padding="3,0"
                                       HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,-11">
-                                <TextBlock FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold"
+                                <TextBlock FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{StaticResource EveTextPrimary}"
                                            HorizontalAlignment="Center" Text="{Binding Name}" />
                               </Border>
@@ -1127,7 +1127,7 @@
                                   <TextBlock Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold" Margin="10,6,10,1" Text="{Binding Name}" />
                                   <TextBlock Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="10,0,10,4" Text="{Binding RangeLine}" />
                                   <Separator />
-                                  <TextBlock Text="LAST HOUR" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="Bold" Margin="10,4,10,2" />
+                                  <TextBlock Text="LAST HOUR" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="Bold" Margin="10,4,10,2" />
                                   <TextBlock Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="10,0,10,5" Text="{Binding StatsLine}" />
                                   <Separator />
                                   <MenuItem Header="Add mid-point" Command="{Binding PlacementTarget.Tag.AddMidpointFromMapCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
@@ -1230,7 +1230,7 @@
                             <Border CornerRadius="5" Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" Padding="2" Margin="0,0,12,0">
                                 <StackPanel Orientation="Horizontal">
                                     <Button Style="{StaticResource FilterBtn}" Command="{Binding Feed.SetFilterCommand}" CommandParameter="All">
-                                        <TextBlock Text="All" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold">
+                                        <TextBlock Text="All" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold">
                                             <TextBlock.Style><Style TargetType="TextBlock">
                                                 <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
                                                 <Style.Triggers><DataTrigger Binding="{Binding Feed.IsAll}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/></DataTrigger></Style.Triggers>
@@ -1238,7 +1238,7 @@
                                         </TextBlock>
                                     </Button>
                                     <Button Style="{StaticResource FilterBtn}" Command="{Binding Feed.SetFilterCommand}" CommandParameter="Kills">
-                                        <TextBlock Text="Kills" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold">
+                                        <TextBlock Text="Kills" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold">
                                             <TextBlock.Style><Style TargetType="TextBlock">
                                                 <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
                                                 <Style.Triggers><DataTrigger Binding="{Binding Feed.IsKills}" Value="True"><Setter Property="Foreground" Value="{StaticResource EveCritical}"/></DataTrigger></Style.Triggers>
@@ -1246,7 +1246,7 @@
                                         </TextBlock>
                                     </Button>
                                     <Button Style="{StaticResource FilterBtn}" Command="{Binding Feed.SetFilterCommand}" CommandParameter="Reports">
-                                        <TextBlock Text="Reports" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold">
+                                        <TextBlock Text="Reports" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold">
                                             <TextBlock.Style><Style TargetType="TextBlock">
                                                 <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
                                                 <Style.Triggers><DataTrigger Binding="{Binding Feed.IsReports}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/></DataTrigger></Style.Triggers>
@@ -1266,7 +1266,7 @@
                         <TextBlock Text="No intel yet" Foreground="{StaticResource EveTextSecondary}"
                                    FontFamily="{StaticResource FontUI}" FontSize="12" HorizontalAlignment="Center"/>
                         <TextBlock Text="Kills in your system and intel-channel reports for your region appear here." Foreground="{StaticResource EveTextDim}"
-                                   FontFamily="{StaticResource FontUI}" FontSize="10" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                   FontFamily="{StaticResource FontUI}" FontSize="11" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0"/>
                     </StackPanel>
 
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -1304,19 +1304,33 @@
                                                         <Style TargetType="Border">
                                                             <Setter Property="Background" Value="#2a3343"/>
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsKill}" Value="True">
+                                                                <!-- one of theirs went down -->
+                                                                <DataTrigger Binding="{Binding Side}" Value="Other">
+                                                                    <Setter Property="Background" Value="#12301f"/>
+                                                                </DataTrigger>
+                                                                <!-- one of ours did -->
+                                                                <DataTrigger Binding="{Binding Side}" Value="Friendly">
                                                                     <Setter Property="Background" Value="#3a1c1c"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Side}" Value="Unknown">
+                                                                    <Setter Property="Background" Value="#33280c"/>
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </Border.Style>
-                                                    <TextBlock Text="{Binding Tag}" FontFamily="{StaticResource FontUI}" FontSize="8" FontWeight="SemiBold">
+                                                    <TextBlock Text="{Binding Tag}" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold">
                                                         <TextBlock.Style>
                                                             <Style TargetType="TextBlock">
                                                                 <Setter Property="Foreground" Value="{DynamicResource EveAccent}"/>
                                                                 <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsKill}" Value="True">
+                                                                    <DataTrigger Binding="{Binding Side}" Value="Other">
+                                                                        <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Side}" Value="Friendly">
                                                                         <Setter Property="Foreground" Value="{StaticResource EveCritical}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Side}" Value="Unknown">
+                                                                        <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
                                                             </Style>
@@ -1338,7 +1352,7 @@
                                                             </Style.Triggers>
                                                         </Style>
                                                     </Border.Style>
-                                                    <TextBlock Text="{Binding StatusText}" FontFamily="{StaticResource FontUI}" FontSize="8" FontWeight="SemiBold">
+                                                    <TextBlock Text="{Binding StatusText}" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold">
                                                         <TextBlock.Style>
                                                             <Style TargetType="TextBlock">
                                                                 <Setter Property="Foreground" Value="{StaticResource EveTextSecondary}"/>

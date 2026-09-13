@@ -100,6 +100,15 @@ public record HuntMapNode(
 
     /// <summary>Label box, shifted so its centre still lands on the dot.</summary>
     public double LabelLeft => Left - (LabelBox - NodeBox) / 2;
+
+    /// <summary>
+    /// Vertical nudge applied when two names would print over each other. Set once the whole map is
+    /// laid out, because whether a name collides depends on its neighbours, not on itself.
+    /// </summary>
+    public double LabelDrop { get; set; }
+
+    /// <summary>Where the label actually sits, once any nudge is taken into account.</summary>
+    public double LabelTop => Top + LabelDrop;
 }
 
 /// <summary>A line between two hops on the hunt map - the route, not a gate.</summary>

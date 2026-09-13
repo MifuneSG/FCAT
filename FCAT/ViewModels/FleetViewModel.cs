@@ -80,7 +80,7 @@ public partial class FleetViewModel : ObservableObject
         // fleet is up, and it follows every client rather than just this character's.
         _boost.Updated += OnBoostUpdated;
         _boost.StartWatching(_settings.Current.ChatlogsPath, _settings.Current.BoostChannelPrefix);
-        BoostChannelName = _esi.DemoMode ? "Boost III (demo)" : _boost.ActiveChannel ?? "not found";
+        BoostChannelName = _esi.DemoMode ? "Boost III (demo)" : BoostChannelStatus();
 
         StartPolling();
     }
@@ -1179,9 +1179,23 @@ public partial class FleetViewModel : ObservableObject
     {
         App.Current.Dispatcher.Invoke(() =>
         {
-            BoostChannelName = _esi.DemoMode ? "Boost III (demo)" : _boost.ActiveChannel ?? "not found";
+            BoostChannelName = _esi.DemoMode ? "Boost III (demo)" : BoostChannelStatus();
             foreach (var vm in _currentMembers) ApplyBoost(vm);
         });
+    }
+
+    /// <summary>
+    /// Say which kind of missing it is. A bare "not found" left the FC with no idea whether nobody
+    /// is in a boost channel or whether the prefix in Setup does not match the channel's real name.
+    /// </summary>
+    private string BoostChannelStatus()
+    {
+        if (!string.IsNullOrEmpty(_boost.ActiveChannel)) return _boost.ActiveChannel;
+
+        var joined = _boost.CandidateChannels();
+        return joined.Count == 0
+            ? "no channels logged"
+            : $"no \"{_boost.ChannelPrefix}\" channel · you have {string.Join(", ", joined)}";
     }
 
     // Alert handler

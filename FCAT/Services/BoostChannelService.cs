@@ -58,6 +58,24 @@ public partial class BoostChannelService : IDisposable
         AttachToLatestBoostLog();
     }
 
+    /// <summary>
+    /// Every boost channel the logs show this account has joined, most recently written first.
+    /// "Not found" on its own does not say whether no boost channel is joined at all or whether the
+    /// configured prefix simply does not match the one in use - naming them answers that.
+    /// </summary>
+    public IReadOnlyList<string> CandidateChannels()
+    {
+        if (!Directory.Exists(LogDirectory)) return [];
+
+        return Directory.GetFiles(LogDirectory, "*.txt")
+                        .OrderByDescending(File.GetLastWriteTime)
+                        .Select(ChannelNameFromFile)
+                        .Where(n => !string.IsNullOrWhiteSpace(n))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Take(3)
+                        .ToList();
+    }
+
     public void StopWatching()
     {
         if (_watcher != null)

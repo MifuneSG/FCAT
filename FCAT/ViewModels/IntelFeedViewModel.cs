@@ -18,7 +18,18 @@ namespace FCAT.ViewModels;
 public partial class IntelFeedViewModel : ObservableObject
 {
     private readonly EsiService _esi;
+    private readonly EsiAuthService _auth;
     private readonly ZkillService _zkill;
+
+    // The FC's own corp/alliance, so a kill can be told apart from a loss. Resolved once.
+    private int _ownAllianceId;
+    private int _ownCorpId;
+
+    /// <summary>
+    /// Capsules. A pod goes down straight after the ship that carried it, so the feed would show
+    /// two rows for one event and a gate camp would bury everything else under "Capsule down".
+    /// </summary>
+    private static readonly HashSet<int> PodTypeIds = [670, 33328];
     private readonly KillStreamService _killStream;
     private readonly SystemSearchService _systems;
     private readonly SettingsService _settings;
@@ -52,11 +63,13 @@ public partial class IntelFeedViewModel : ObservableObject
     private string _watchedSystem = string.Empty;
     private HashSet<string> _watchedAdjacent = new(StringComparer.OrdinalIgnoreCase);
 
-    public IntelFeedViewModel(EsiService esi, ZkillService zkill, KillStreamService killStream,
+    public IntelFeedViewModel(EsiService esi, EsiAuthService auth,
+                              ZkillService zkill, KillStreamService killStream,
                               SystemSearchService systems,
                               SettingsService settings, AlertHub alertHub, CustomAlertService customAlerts)
     {
         _esi = esi;
+        _auth = auth;
         _zkill = zkill;
         _killStream = killStream;
         _killStream.KillSeen += OnStreamKill;
@@ -200,10 +213,23 @@ public partial class IntelFeedViewModel : ObservableObject
 
         if (scope != _killScope) return;   // the pane changed while we were resolving
         _watchedKillSystems = wanted;
+        await EnsureOwnAffiliationAsync();
         if (wanted.Count == 0) return;
 
         foreach (var kill in _killStream.Recent(KillHorizon).Reverse())
             Show(kill);
+    }
+
+    /// <summary>Who the FC flies for - the yardstick for "was that one of ours".</summary>
+    private async Task EnsureOwnAffiliationAsync()
+    {
+        if (_ownCorpId != 0 || _auth.AuthenticatedCharacterId == 0) return;
+
+        var aff = (await _esi.GetAffiliationsAsync([_auth.AuthenticatedCharacterId])).FirstOrDefault();
+        if (aff == null) return;
+
+        _ownCorpId     = aff.CorporationId;
+        _ownAllianceId = aff.AllianceId ?? 0;
     }
 
     /// <summary>A killmail off the live stream. Runs on the stream's thread, so keep it cheap.</summary>
@@ -213,6 +239,7 @@ public partial class IntelFeedViewModel : ObservableObject
     {
         if (kill.Esi == null) return;
         if (!_watchedKillSystems.Contains(kill.Esi.SystemId)) return;
+        if (kill.Esi.Victim != null && PodTypeIds.Contains(kill.Esi.Victim.ShipTypeId)) return;
         if (DateTime.UtcNow - kill.Esi.Time.ToUniversalTime() > KillHorizon) return;
         if (!_seenKills.TryAdd(kill.KillmailId, 0)) return;
 
@@ -223,15 +250,25 @@ public partial class IntelFeedViewModel : ObservableObject
     {
         try
         {
-            var ship = kill.Esi!.Victim != null ? await NameAsync(kill.Esi.Victim.ShipTypeId) : "Ship";
+            var victim = kill.Esi!.Victim;
+            var ship = victim != null ? await NameAsync(victim.ShipTypeId) : "Ship";
             var sys  = await NameAsync(kill.Esi.SystemId);
+
+            // Alliance if they have one, corp otherwise - the same way a killboard reads.
+            var orgId = victim?.AllianceId is > 0 ? victim.AllianceId!.Value : victim?.CorporationId ?? 0;
+            var org   = orgId > 0 ? await NameAsync(orgId) : string.Empty;
+
+            var side = SideOf(victim);
+            var isk  = FormatIsk(kill.Zkb?.TotalValue ?? 0);
+
             Add(new IntelEntry
             {
                 Time   = kill.Esi.Time.ToLocalTime(),
                 Kind   = IntelKind.Kill,
+                Side   = side,
                 System = sys,
                 Detail = $"{ship} down",
-                Meta   = FormatIsk(kill.Zkb?.TotalValue ?? 0),
+                Meta   = org.Length > 0 ? $"{org} · {isk}" : isk,
                 Url    = $"https://zkillboard.com/kill/{kill.KillmailId}/",
             });
         }
@@ -347,6 +384,16 @@ public partial class IntelFeedViewModel : ObservableObject
         var name = (await _esi.ResolveNamesAsync([id])).GetValueOrDefault(id, id.ToString());
         _names[id] = name;
         return name;
+    }
+
+    /// <summary>Ours or theirs. Unknown until the FC's own affiliation has resolved.</summary>
+    private KillSide SideOf(StreamVictim? victim)
+    {
+        if (victim == null || (_ownCorpId == 0 && _ownAllianceId == 0)) return KillSide.Unknown;
+
+        if (_ownAllianceId > 0 && victim.AllianceId == _ownAllianceId) return KillSide.Friendly;
+        if (victim.CorporationId == _ownCorpId) return KillSide.Friendly;
+        return KillSide.Other;
     }
 
     private static string FormatIsk(double isk) => isk switch

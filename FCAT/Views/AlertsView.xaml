@@ -134,7 +134,7 @@
 
                                         <StackPanel Grid.Column="1">
                                             <TextBlock Text="{Binding AlertTag}"
-                                                       FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold">
+                                                       FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
@@ -265,7 +265,7 @@
                 <!-- Overlay clear times. The feed below keeps everything; this is the overlay only. -->
                 <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,14" VerticalAlignment="Center">
                     <TextBlock Text="CLEAR FROM OVERLAY AFTER" Foreground="{StaticResource EveTextDim}"
-                               FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="Bold"
+                               FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="Bold"
                                VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <TextBlock Text="Critical" Foreground="{DynamicResource EveCritical}"
                                FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/>
@@ -341,7 +341,7 @@
                                                 </TextBlock>
                                                 <Border CornerRadius="3" Background="#2a3343" Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center"
                                                         Visibility="{Binding IsCustom, Converter={StaticResource BoolToVisibility}}">
-                                                    <TextBlock Text="YOURS" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="8" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="YOURS" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold"/>
                                                 </Border>
                                             </StackPanel>
                                             <TextBlock Text="{Binding Trigger}" Foreground="{StaticResource EveTextDim}"
@@ -495,7 +495,7 @@
                                 </ComboBox>
                             </StackPanel>
 
-                            <TextBlock Text="CALL IT" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,0,0,4"/>
+                            <TextBlock Text="CALL IT" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,0,0,4"/>
                             <Border Background="#0c1018" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1" CornerRadius="7" Height="34" HorizontalAlignment="Left" Width="240">
                                 <TextBox Text="{Binding NewName, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0"
                                          Foreground="{StaticResource EveTextPrimary}" CaretBrush="{DynamicResource EveAccent}"

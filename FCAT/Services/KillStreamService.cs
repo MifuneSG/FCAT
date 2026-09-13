@@ -24,7 +24,9 @@ public class StreamEsi
 
 public class StreamVictim
 {
-    [JsonPropertyName("ship_type_id")] public int ShipTypeId { get; set; }
+    [JsonPropertyName("ship_type_id")]   public int  ShipTypeId    { get; set; }
+    [JsonPropertyName("corporation_id")] public int  CorporationId { get; set; }
+    [JsonPropertyName("alliance_id")]    public int? AllianceId    { get; set; }
 }
 
 public class StreamZkb
