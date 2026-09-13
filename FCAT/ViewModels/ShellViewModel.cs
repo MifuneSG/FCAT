@@ -20,6 +20,7 @@ public partial class ShellViewModel : ObservableObject
     private readonly SessionLog _sessionLog;
     private readonly SystemSearchService _systemSearch;
     private readonly ZkillService _zkill;
+    private readonly KillStreamService _killStream;
     private readonly BattleReportService _battleReport;
     private readonly UpdaterService _updater;
     private readonly AltTracker _altTracker;
@@ -30,6 +31,7 @@ public partial class ShellViewModel : ObservableObject
     public ShellViewModel(EsiAuthService auth, EsiService esi, CombatLogService combatLog,
                           SettingsService settings, AlertHub alertHub, SessionLog sessionLog,
                           SystemSearchService systemSearch, ZkillService zkill,
+                          KillStreamService killStream,
                           BattleReportService battleReport, UpdaterService updater,
                           AltTracker altTracker)
     {
@@ -41,6 +43,7 @@ public partial class ShellViewModel : ObservableObject
         _sessionLog = sessionLog;
         _systemSearch = systemSearch;
         _zkill = zkill;
+        _killStream = killStream;
         _battleReport = battleReport;
         _updater = updater;
         _altTracker = altTracker;
@@ -344,8 +347,8 @@ public partial class ShellViewModel : ObservableObject
     public void ShowIntel()
     {
         ActiveNav = "intel";
-        _intel ??= new IntelViewModel(_esi, _auth, _zkill, _systemSearch, _settings, this, SystemIntel,
-                                      _alertHub, CustomAlerts, JumpDrives);
+        _intel ??= new IntelViewModel(_esi, _auth, _zkill, _killStream, _systemSearch, _settings, this,
+                                      SystemIntel, _alertHub, CustomAlerts, JumpDrives);
         CurrentPage = _intel;
     }
 

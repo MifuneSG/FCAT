@@ -211,6 +211,12 @@ public class EsiConstellation
     [JsonPropertyName("systems")]   public int[]? Systems  { get; set; }
 }
 
+public class EsiRegion
+{
+    [JsonPropertyName("name")]           public string Name           { get; set; } = string.Empty;
+    [JsonPropertyName("constellations")] public int[]? Constellations { get; set; }
+}
+
 public class EsiNameOnly { [JsonPropertyName("name")] public string Name { get; set; } = string.Empty; }
 
 public class SystemKills

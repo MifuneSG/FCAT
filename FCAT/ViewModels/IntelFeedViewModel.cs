@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -18,6 +19,7 @@ public partial class IntelFeedViewModel : ObservableObject
 {
     private readonly EsiService _esi;
     private readonly ZkillService _zkill;
+    private readonly KillStreamService _killStream;
     private readonly SystemSearchService _systems;
     private readonly SettingsService _settings;
     private readonly AlertHub _alertHub;
@@ -30,23 +32,34 @@ public partial class IntelFeedViewModel : ObservableObject
     private int _regionId;
 
     /// <summary>
+    /// The systems whose kills belong in the feed. Rebuilt whenever the FC moves or the open pane
+    /// changes scope, so the live stream can be filtered without a lookup per killmail.
+    /// </summary>
+    private volatile HashSet<int> _watchedKillSystems = [];
+
+    /// <summary>
     /// Which scale the kill feed searches. It follows the open Intel pane: the minimap is a
     /// constellation, so kills come from the constellation; the hunt board works across regions,
     /// so it widens to the region.
     /// </summary>
     private ZkillService.KillScope _killScope = ZkillService.KillScope.Constellation;
-    private readonly HashSet<long> _seenKills = [];
-    private readonly Dictionary<int, string> _names = [];   // type/system id -> name cache
+    // Both of these are now written from the kill stream's background thread as well as the UI
+    // thread, and a plain HashSet/Dictionary torn by two writers can corrupt itself outright.
+    private readonly ConcurrentDictionary<long, byte> _seenKills = new();
+    private readonly ConcurrentDictionary<int, string> _names = new();   // type/system id -> name
 
     // Systems worth shouting about when the intel channel names them.
     private string _watchedSystem = string.Empty;
     private HashSet<string> _watchedAdjacent = new(StringComparer.OrdinalIgnoreCase);
 
-    public IntelFeedViewModel(EsiService esi, ZkillService zkill, SystemSearchService systems,
+    public IntelFeedViewModel(EsiService esi, ZkillService zkill, KillStreamService killStream,
+                              SystemSearchService systems,
                               SettingsService settings, AlertHub alertHub, CustomAlertService customAlerts)
     {
         _esi = esi;
         _zkill = zkill;
+        _killStream = killStream;
+        _killStream.KillSeen += OnStreamKill;
         _systems = systems;
         _settings = settings;
         _alertHub = alertHub;
@@ -163,50 +176,66 @@ public partial class IntelFeedViewModel : ObservableObject
     }
 
     /// <summary>
-    /// How far back a killmail can be and still be worth showing. zKill's list endpoints lag by
-    /// hours (see ZkillService), so a tight window here silently empties the feed - the old
-    /// two-hour cutoff discarded literally every kill the API returned, in every system.
-    /// Each row carries the kill's own timestamp, so an old one reads as old.
+    /// How recent a kill has to be to matter to an FC. This only works against the live R2Z2
+    /// stream - the older /api/systemID/ list endpoints are cached hours behind, so a window this
+    /// tight against those returned nothing at all, in every system.
     /// </summary>
-    private static readonly TimeSpan KillHorizon = TimeSpan.FromHours(24);
+    private static readonly TimeSpan KillHorizon = TimeSpan.FromMinutes(30);
 
+    /// <summary>
+    /// Rebuild the watched-system set and replay anything the stream already holds for it, so
+    /// switching pane or jumping shows what is nearby straight away instead of on the next kill.
+    /// </summary>
     private async Task PollKillsAsync()
     {
-        var id = _killScope switch
+        var scope = _killScope;
+        var wanted = scope switch
         {
-            ZkillService.KillScope.Constellation => _constellationId,
-            ZkillService.KillScope.Region        => _regionId,
-            _                                    => _currentSystemId,
+            ZkillService.KillScope.Region => _regionId == 0
+                ? [] : await _esi.GetRegionSystemIdsAsync(_regionId),
+            ZkillService.KillScope.Constellation => _constellationId == 0
+                ? [] : await _esi.GetConstellationSystemIdsAsync(_constellationId),
+            _ => _currentSystemId == 0 ? [] : [_currentSystemId],
         };
-        if (id == 0) return;
 
-        var kills = await _zkill.GetRecentKillsAsync(_killScope, id);
+        if (scope != _killScope) return;   // the pane changed while we were resolving
+        _watchedKillSystems = wanted;
+        if (wanted.Count == 0) return;
 
-        // Newest-first from zKill; take the newest few unseen so we don't flood on the first poll.
-        var fresh = new List<ZkillEntry>();
-        foreach (var k in kills)
-            if (k.Zkb != null && _seenKills.Add(k.KillmailId)) fresh.Add(k);
-        fresh = fresh.Take(8).ToList();
+        foreach (var kill in _killStream.Recent(KillHorizon).Reverse())
+            Show(kill);
+    }
 
-        // Build oldest->newest so the newest ends up at the top after inserting at 0.
-        for (var i = fresh.Count - 1; i >= 0; i--)
+    /// <summary>A killmail off the live stream. Runs on the stream's thread, so keep it cheap.</summary>
+    private void OnStreamKill(StreamKill kill) => Show(kill);
+
+    private void Show(StreamKill kill)
+    {
+        if (kill.Esi == null) return;
+        if (!_watchedKillSystems.Contains(kill.Esi.SystemId)) return;
+        if (DateTime.UtcNow - kill.Esi.Time.ToUniversalTime() > KillHorizon) return;
+        if (!_seenKills.TryAdd(kill.KillmailId, 0)) return;
+
+        _ = ShowAsync(kill);
+    }
+
+    private async Task ShowAsync(StreamKill kill)
+    {
+        try
         {
-            var km = await _esi.GetKillmailAsync(fresh[i].KillmailId, fresh[i].Zkb!.Hash);
-            if (km?.Victim == null) continue;
-            if (DateTime.UtcNow - km.KillmailTime > KillHorizon) continue;   // skip stale
-
-            var ship = await NameAsync(km.Victim.ShipTypeId);
-            var sys  = await NameAsync(km.SolarSystemId);
+            var ship = kill.Esi!.Victim != null ? await NameAsync(kill.Esi.Victim.ShipTypeId) : "Ship";
+            var sys  = await NameAsync(kill.Esi.SystemId);
             Add(new IntelEntry
             {
-                Time = km.KillmailTime.ToLocalTime(),
-                Kind = IntelKind.Kill,
+                Time   = kill.Esi.Time.ToLocalTime(),
+                Kind   = IntelKind.Kill,
                 System = sys,
                 Detail = $"{ship} down",
-                Meta = FormatIsk(fresh[i].Zkb!.TotalValue),
-                Url = $"https://zkillboard.com/kill/{km.KillmailId}/",
+                Meta   = FormatIsk(kill.Zkb?.TotalValue ?? 0),
+                Url    = $"https://zkillboard.com/kill/{kill.KillmailId}/",
             });
         }
+        catch { /* a name lookup failed - drop the row rather than take the feed down */ }
     }
 
     /// <summary>
@@ -218,7 +247,7 @@ public partial class IntelFeedViewModel : ObservableObject
         if (scope == _killScope) return;
         _killScope = scope;
         _seenKills.Clear();
-        _ = SafePollKillsAsync();
+        _ = SafePollKillsAsync();   // rebuilds the watched set, then replays what the stream holds
     }
 
     /// <summary>The systems an intel call-out should raise an alert for - where you are, and (if the

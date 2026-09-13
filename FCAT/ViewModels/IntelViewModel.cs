@@ -22,6 +22,7 @@ public partial class IntelViewModel : ObservableObject
     public HuntViewModel         Hunt   { get; }
 
     public IntelViewModel(EsiService esi, EsiAuthService auth, ZkillService zkill,
+                          KillStreamService killStream,
                           SystemSearchService systems, SettingsService settings, ShellViewModel shell,
                           SystemIntelViewModel system, AlertHub alertHub, CustomAlertService customAlerts,
                           JumpDrives drives)
@@ -29,7 +30,7 @@ public partial class IntelViewModel : ObservableObject
         _shell = shell;
         Scan   = new DScanViewModel(esi);
         System = system;
-        Feed   = new IntelFeedViewModel(esi, zkill, systems, settings, alertHub, customAlerts);
+        Feed   = new IntelFeedViewModel(esi, zkill, killStream, systems, settings, alertHub, customAlerts);
         Hunt   = new HuntViewModel(esi, auth, systems, drives, settings);
 
         // Point the kill feed at whatever system the FC is in, and tell it which systems to shout about.

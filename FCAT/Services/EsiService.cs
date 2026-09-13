@@ -259,6 +259,40 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
     public async Task<EsiStargate?>      GetStargateAsync(int id)      => await GetPublicAsync<EsiStargate>($"/v1/universe/stargates/{id}/");
     public async Task<EsiConstellation?> GetConstellationAsync(int id) => await GetPublicAsync<EsiConstellation>($"/v1/universe/constellations/{id}/");
     public async Task<string?>           GetRegionNameAsync(int id)    => (await GetPublicAsync<EsiNameOnly>($"/v1/universe/regions/{id}/"))?.Name;
+    public async Task<EsiRegion?>        GetRegionAsync(int id)        => await GetPublicAsync<EsiRegion>($"/v1/universe/regions/{id}/");
+
+    private readonly Dictionary<int, HashSet<int>> _constellationSystems = [];
+    private readonly Dictionary<int, HashSet<int>> _regionSystems        = [];
+
+    /// <summary>Every solar system in a constellation. Cached - the universe does not move.</summary>
+    public async Task<HashSet<int>> GetConstellationSystemIdsAsync(int constellationId)
+    {
+        if (_constellationSystems.TryGetValue(constellationId, out var known)) return known;
+
+        var con = await GetConstellationAsync(constellationId);
+        var ids = new HashSet<int>(con?.Systems ?? []);
+        if (ids.Count > 0) _constellationSystems[constellationId] = ids;
+        return ids;
+    }
+
+    /// <summary>
+    /// Every solar system in a region. This is one call per constellation, so it is done once and
+    /// cached - a region is roughly twenty requests and then free for the rest of the session.
+    /// </summary>
+    public async Task<HashSet<int>> GetRegionSystemIdsAsync(int regionId)
+    {
+        if (_regionSystems.TryGetValue(regionId, out var known)) return known;
+
+        var region = await GetRegionAsync(regionId);
+        if (region?.Constellations == null) return [];
+
+        var ids = new HashSet<int>();
+        foreach (var con in region.Constellations)
+            ids.UnionWith(await GetConstellationSystemIdsAsync(con));
+
+        if (ids.Count > 0) _regionSystems[regionId] = ids;
+        return ids;
+    }
 
     /// <summary>Full killmail detail (public - needs the killmail id + zKill hash).</summary>
     public async Task<EsiKillmail?> GetKillmailAsync(long killmailId, string hash)

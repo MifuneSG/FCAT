@@ -43,12 +43,19 @@ public partial class App : Application
         var alertHub = new AlertHub(settingsService, sessionLog);
         var systemSearch = new SystemSearchService(esiService);
         var zkillService = new ZkillService(httpClient);
+
+        // The live kill feed follows zKillboard's R2Z2 sequence. Start it with the app rather than
+        // with the Intel page: it only ever knows about kills that land while it is watching, so
+        // the FC's recent-kills window is only populated if it has been running.
+        var killStream = new KillStreamService(httpClient);
         var battleReport = new BattleReportService(zkillService, esiService);
         var updater = new UpdaterService();
         var altTracker = new AltTracker(esiService, authService, alertHub);
 
         var shell = new ShellViewModel(authService, esiService, combatLogService, settingsService, alertHub,
-                                       sessionLog, systemSearch, zkillService, battleReport, updater, altTracker);
+                                       sessionLog, systemSearch, zkillService, killStream, battleReport,
+                                       updater, altTracker);
+        killStream.Start();
 
         // The gamelog watcher runs for the whole session, not just while a fleet page is open. Every
         // client writes its own log, so this is also how an alt's tackle or decloak is noticed at all -
