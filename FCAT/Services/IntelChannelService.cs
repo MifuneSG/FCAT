@@ -51,6 +51,22 @@ public partial class IntelChannelService : IDisposable
         AttachToLatest();
     }
 
+    /// <summary>
+    /// Every intel channel the logs show this account has joined, most recently written first.
+    /// Used to explain an empty feed: no channel at all reads differently to one for another region.
+    /// </summary>
+    public IReadOnlyList<string> CandidateChannels()
+    {
+        if (!Directory.Exists(LogDirectory)) return [];
+
+        return Directory.GetFiles(LogDirectory, $"*{ChannelPrefix}*.txt")
+                        .OrderByDescending(File.GetLastWriteTime)
+                        .Select(ChannelNameFromFile)
+                        .Where(n => !string.IsNullOrWhiteSpace(n))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+    }
+
     public void StopWatching()
     {
         if (_watcher != null)

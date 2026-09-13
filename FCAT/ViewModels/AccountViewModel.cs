@@ -36,6 +36,7 @@ public partial class AccountViewModel : ObservableObject
     private readonly EsiAuthService _auth;
     private readonly EsiService     _esi;
     private readonly ShellViewModel _shell;
+    private readonly AltTracker     _tracker;
     private CancellationTokenSource? _cts;
 
     public ObservableCollection<CharacterRow> Characters { get; } = [];
@@ -44,9 +45,9 @@ public partial class AccountViewModel : ObservableObject
     [ObservableProperty] private bool _isAdding;
     [ObservableProperty] private string _statusMessage = string.Empty;
 
-    public AccountViewModel(EsiAuthService auth, EsiService esi, ShellViewModel shell)
+    public AccountViewModel(EsiAuthService auth, EsiService esi, ShellViewModel shell, AltTracker tracker)
     {
-        _auth = auth; _esi = esi; _shell = shell;
+        _auth = auth; _esi = esi; _shell = shell; _tracker = tracker;
         Rebuild();
     }
 
@@ -63,7 +64,11 @@ public partial class AccountViewModel : ObservableObject
                 Role        = c.Role,
                 IsActive    = c.IsActive,
             };
-            row.RoleChanged = r => _auth.Store.SetRole(row.CharacterId, r);
+            row.RoleChanged = r =>
+            {
+                _auth.Store.SetRole(row.CharacterId, r);
+                _shell.OnAltRolesChanged();
+            };
             Characters.Add(row);
         }
     }
@@ -139,7 +144,12 @@ public partial class AccountViewModel : ObservableObject
         IsAdding = true;
         var ok = await _auth.AuthenticateAsync();
         IsAdding = false;
-        if (ok) { Rebuild(); await PollOnceAsync(); }
+        if (ok)
+        {
+            Rebuild();
+            _shell.OnAltRolesChanged();
+            await _tracker.RefreshNowAsync();   // the new character shows on the map without waiting a poll
+        }
     }
 
     [RelayCommand]
@@ -175,5 +185,7 @@ public partial class AccountViewModel : ObservableObject
         if (row == null) return;
         _auth.RemoveCharacter(row.CharacterId);
         Rebuild();
+        _shell.OnAltRolesChanged();
+        _ = _tracker.RefreshNowAsync();   // drop them off the map now, not on the next poll
     }
 }

@@ -16,7 +16,10 @@
 
         <!-- Page header -->
         <Grid Grid.Row="0" Margin="34,24,34,16">
-          <Grid MaxWidth="980" HorizontalAlignment="Center">
+          <!-- Stretch, not Center: a centred Grid shrinks to its widest child, which stacked the
+               Add button straight on top of the title. Stretch fills the slot and WPF still
+               centres it once MaxWidth caps the width. -->
+          <Grid MaxWidth="980" HorizontalAlignment="Stretch">
             <StackPanel VerticalAlignment="Bottom">
                 <TextBlock Text="ACCOUNT" Style="{StaticResource PageEyebrow}"/>
                 <StackPanel Orientation="Horizontal">

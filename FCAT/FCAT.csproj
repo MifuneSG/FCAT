@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -15,8 +15,11 @@
     <ApplicationIcon>fcat.ico</ApplicationIcon>
     <AssemblyTitle>FCAT · Fleet Commander Assistance Tool</AssemblyTitle>
     <Product>FCAT</Product>
-    <Version>0.15.0-beta</Version>
-    <FileVersion>0.14.0.0</FileVersion>
+    <!-- Keep these together. FileVersion is what Windows shows in the file properties, and it
+         drifted a release behind once already, which made a bug report impossible to place. -->
+    <Version>0.16.0-beta</Version>
+    <FileVersion>0.16.0.0</FileVersion>
+    <AssemblyVersion>0.16.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

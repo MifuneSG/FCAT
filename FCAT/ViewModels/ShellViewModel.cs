@@ -243,7 +243,7 @@ public partial class ShellViewModel : ObservableObject
     public void ShowAccount()
     {
         ActiveNav = "account";
-        CurrentPage = new AccountViewModel(_auth, _esi, this);
+        CurrentPage = new AccountViewModel(_auth, _esi, this, _altTracker);
     }
 
     // Keep the nav-rail avatar + identity in sync when the active character changes (or is removed).
@@ -260,9 +260,25 @@ public partial class ShellViewModel : ObservableObject
             else if (IsLoggedIn)
             {
                 PopulateShellIdentity();   // refresh avatar/name for the new active character
+                OnAltRolesChanged();
             }
         });
     }
+
+    /// <summary>
+    /// A character's role changed, so any page showing per-alt rows is now stale. The alerts page
+    /// builds its rows once on construction, and it outlives navigation, so it has to be told.
+    /// </summary>
+    public void OnAltRolesChanged()
+    {
+        if (CurrentPage is AlertsViewModel alerts) alerts.ReloadRows();
+    }
+
+    /// <summary>
+    /// Re-point the gamelog watcher after the logs path is changed in setup. The watcher starts at
+    /// app launch against the saved path, so without this a corrected path does nothing until restart.
+    /// </summary>
+    public void RestartLogWatcher() => _combatLog.StartWatching(_settings.Current.GamelogsPath);
 
     /// <summary>Latest fleet id the dashboard detected - lets the nav rail enter ops directly.</summary>
     [ObservableProperty] private long _detectedFleetId;

@@ -402,6 +402,32 @@
                     </StackPanel>
                 </Grid>
 
+                <!-- About -->
+                <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,24,0,18"/>
+                <TextBlock Text="ABOUT" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
+                <Grid Margin="0,0,0,9">
+                    <TextBlock Text="{Binding VersionLine}" Foreground="{StaticResource EveTextSecondary}"
+                               FontFamily="{StaticResource FontMono}" FontSize="12" VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Command="{Binding OpenRepoCommand}" Style="{StaticResource GhostButton}"
+                                Height="30" Padding="12,0" Margin="0,0,6,0"
+                                ToolTip="Source, releases and bug reports">
+                            <TextBlock Text="GitHub" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                        </Button>
+                        <Button Command="{Binding OpenDiscordCommand}" Style="{StaticResource GhostButton}"
+                                Height="30" Padding="12,0"
+                                ToolTip="Ask questions, report what broke, suggest things">
+                            <TextBlock Text="Discord" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+                <TextBlock Text="Runs entirely on your machine. Nothing is uploaded, there is no account and nothing behind it. Hover the ? beside any page or section for what it does and where its numbers come from."
+                           Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                           TextWrapping="Wrap" Margin="0,0,0,7"/>
+                <TextBlock Text="Map layout by Wollari at dotlan.net. Kill data from zKillboard. Everything else comes from CCP's ESI. EVE Online and all related assets are property of CCP hf."
+                           Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                           TextWrapping="Wrap"/>
+
                 <Grid Margin="0,24,0,0">
                     <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource EveGreen}"
                                FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center"/>

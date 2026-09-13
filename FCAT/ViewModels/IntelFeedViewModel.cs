@@ -71,9 +71,30 @@ public partial class IntelFeedViewModel : ObservableObject
 
     [ObservableProperty] private string _channelStatus = "Intel channel: not found";
 
+    private string _region = string.Empty;
+
+    /// <summary>
+    /// "Not found" on its own is useless - it could mean no intel channel is joined at all, or that
+    /// the ones joined are for other regions. Name what's there so the FC knows which it is.
+    /// </summary>
+    private void UpdateChannelStatus()
+    {
+        if (!string.IsNullOrEmpty(_intel.ActiveChannel))
+        {
+            ChannelStatus = $"Intel channel: {_intel.ActiveChannel}";
+            return;
+        }
+
+        var joined = _intel.CandidateChannels();
+        ChannelStatus = joined.Count == 0 ? "Intel channel: none joined in game"
+                      : _region.Length > 0 ? $"Intel channel: none for {_region} · you have {string.Join(", ", joined.Take(3))}"
+                      : "Intel channel: not found";
+    }
+
     /// <summary>Point the feed at the FC's current system + region (called when they jump).</summary>
     public void SetSystem(int systemId, string region)
     {
+        _region = region ?? string.Empty;
         _intel.RegionFilter = string.IsNullOrWhiteSpace(region) ? null : region;
         if (systemId != _currentSystemId)
         {
@@ -81,6 +102,7 @@ public partial class IntelFeedViewModel : ObservableObject
             _seenKills.Clear();   // show recent kills for the new system on the next poll
         }
         _intel.Refresh();   // re-select the intel channel for the (possibly new) region
+        UpdateChannelStatus();
     }
 
     // Lifecycle (driven by the view load/unload)
@@ -88,7 +110,7 @@ public partial class IntelFeedViewModel : ObservableObject
     {
         if (_cts != null) return;
         _intel.StartWatching(_settings.Current.ChatlogsPath, _settings.Current.IntelChannelPrefix);
-        ChannelStatus = $"Intel channel: {_intel.ActiveChannel ?? "not found"}";
+        UpdateChannelStatus();
         _cts = new CancellationTokenSource();
         _ = LoopAsync(_cts.Token);
     }
@@ -110,7 +132,7 @@ public partial class IntelFeedViewModel : ObservableObject
             do
             {
                 _intel.Refresh();   // pull new intel-chat lines (watcher is unreliable on open files)
-                ChannelStatus = $"Intel channel: {_intel.ActiveChannel ?? "not found"}";
+                UpdateChannelStatus();
                 if (tick++ % 9 == 0) await SafePollKillsAsync();   // zKill ~every 90s (be gentle on their API)
             }
             while (await timer.WaitForNextTickAsync(ct));

@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FCAT.Models;
@@ -162,6 +164,24 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _statusMessage = string.Empty;
 
     // Derived paths + existence indicators give the user immediate feedback
+    /// <summary>
+    /// What the user should quote in a bug report. The informational version carries the -beta
+    /// suffix that the plain assembly version drops; the +sha the SDK appends is noise here.
+    /// </summary>
+    public string VersionLine
+    {
+        get
+        {
+            var asm = Assembly.GetExecutingAssembly();
+            var v = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+                    ?? asm.GetName().Version?.ToString()
+                    ?? "unknown";
+            var plus = v.IndexOf('+');
+            if (plus > 0) v = v[..plus];
+            return $"Version {v}";
+        }
+    }
+
     public string GamelogsPath  => Path.Combine(EveLogsPath, "Gamelogs");
     public string ChatlogsPath  => Path.Combine(EveLogsPath, "Chatlogs");
     public bool   GamelogsFound => Directory.Exists(GamelogsPath);
@@ -183,6 +203,18 @@ public partial class SettingsViewModel : ObservableObject
     private void ResetToDefault() => EveLogsPath = AppSettings.DefaultLogsPath;
 
     [RelayCommand]
+    private void OpenRepo() => Open("https://github.com/MifuneSG/FCAT");
+
+    [RelayCommand]
+    private void OpenDiscord() => Open("https://discord.gg/fFznkAFen8");
+
+    private static void Open(string url)
+    {
+        // A browser that won't open is not worth taking the settings page down over.
+        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); } catch { }
+    }
+
+    [RelayCommand]
     private void Save()
     {
         _settings.Current.EveLogsPath        = EveLogsPath.Trim();
@@ -195,8 +227,9 @@ public partial class SettingsViewModel : ObservableObject
 
         // Alert configuration lives on the Alerts page now, and saves itself there.
         _settings.Save();
+        _shell.RestartLogWatcher();   // a corrected logs path should not need an app restart
 
-        StatusMessage = "Saved. Applies next time you enter a fleet.";
+        StatusMessage = "Saved. Channel names apply next time you enter a fleet.";
     }
 
     [RelayCommand]

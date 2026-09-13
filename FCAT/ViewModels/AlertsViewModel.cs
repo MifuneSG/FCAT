@@ -16,6 +16,9 @@ public record SoundChoice(string Value, string Label);
 /// built-in alerts and the FC's own rules in separate blocks. Here every alert FCAT can raise is
 /// ONE list, and a new one is created by answering a few questions rather than filling in a form.
 /// </summary>
+/// <summary>One entry in the overlay auto-clear dropdowns. 0 seconds means it never expires.</summary>
+public record ClearChoice(int Seconds, string Label);
+
 public partial class AlertsViewModel : ObservableObject
 {
     private readonly SettingsService _settings;
@@ -31,9 +34,42 @@ public partial class AlertsViewModel : ObservableObject
         _settings = settings;
         _alts = alts;
         _alertSoundsEnabled = settings.Current.AlertSoundsEnabled;
+        _clearCritical = settings.Current.AlertClearSecondsCritical;
+        _clearWarning  = settings.Current.AlertClearSeconds;
+        _clearInfo     = settings.Current.AlertClearSecondsInfo;
         LoadSoundChoices();
         LoadRows();
     }
+
+    /// <summary>
+    /// How long each severity sits on the overlay before it clears itself. The session feed keeps
+    /// everything regardless - this only governs what's drawn over the game.
+    /// </summary>
+    public ObservableCollection<ClearChoice> ClearChoices { get; } =
+    [
+        new(15, "15s"), new(30, "30s"), new(60, "1 min"),
+        new(120, "2 min"), new(300, "5 min"), new(0, "Stays up"),
+    ];
+
+    [ObservableProperty] private int _clearCritical;
+    [ObservableProperty] private int _clearWarning;
+    [ObservableProperty] private int _clearInfo;
+
+    partial void OnClearCriticalChanged(int value) => SaveClearTimes();
+    partial void OnClearWarningChanged(int value)  => SaveClearTimes();
+    partial void OnClearInfoChanged(int value)     => SaveClearTimes();
+
+    private void SaveClearTimes()
+    {
+        _settings.Current.AlertClearSecondsCritical = ClearCritical;
+        _settings.Current.AlertClearSeconds         = ClearWarning;
+        _settings.Current.AlertClearSecondsInfo     = ClearInfo;
+        _settings.Save();
+    }
+
+    /// <summary>Wipe the overlay without touching the session feed - for when a fight ends messy.</summary>
+    [RelayCommand]
+    private void ClearOverlayNow() => Hub.OverlayAlerts.Clear();
 
     // Feed / Configure tabs
     [ObservableProperty] private string _tab = "Feed";
@@ -83,6 +119,9 @@ public partial class AlertsViewModel : ObservableObject
 
     [ObservableProperty] private bool _alertSoundsEnabled = true;
     [RelayCommand] private void ToggleSounds() { AlertSoundsEnabled = !AlertSoundsEnabled; Save(); }
+
+    /// <summary>Rebuild the per-alt rows after a role was changed on the account page.</summary>
+    public void ReloadRows() => LoadRows();
 
     private void LoadRows()
     {

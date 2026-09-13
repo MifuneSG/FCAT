@@ -172,11 +172,12 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
                 <!-- master controls -->
-                <Grid Grid.Row="0" Margin="0,0,0,14">
+                <Grid Grid.Row="0">
                     <StackPanel Orientation="Horizontal">
                         <Button Command="{Binding ToggleSoundsCommand}" Style="{StaticResource SecondaryButton}" Height="32" Padding="14,0" Margin="0,0,8,0">
                             <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12">
@@ -235,12 +236,49 @@
                     </Button>
                 </Grid>
 
-                <TextBlock Grid.Row="1" Text="{Binding Status}" Foreground="{StaticResource EveTextDim}"
+                <!-- Overlay clear times. The feed below keeps everything; this is the overlay only. -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,14" VerticalAlignment="Center">
+                    <TextBlock Text="CLEAR FROM OVERLAY AFTER" Foreground="{StaticResource EveTextDim}"
+                               FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="Bold"
+                               VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Text="Critical" Foreground="{DynamicResource EveCritical}"
+                               FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <ComboBox Width="86" Height="28" SelectedValuePath="Seconds"
+                              ItemsSource="{Binding ClearChoices}" SelectedValue="{Binding ClearCritical}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Text="Warning" Foreground="{DynamicResource EveAmber}"
+                               FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center" Margin="12,0,5,0"/>
+                    <ComboBox Width="86" Height="28" SelectedValuePath="Seconds"
+                              ItemsSource="{Binding ClearChoices}" SelectedValue="{Binding ClearWarning}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Text="Info" Foreground="{StaticResource EveTextSecondary}"
+                               FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center" Margin="12,0,5,0"/>
+                    <ComboBox Width="86" Height="28" SelectedValuePath="Seconds"
+                              ItemsSource="{Binding ClearChoices}" SelectedValue="{Binding ClearInfo}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ComboBox>
+                    <Button Command="{Binding ClearOverlayNowCommand}" Style="{StaticResource GhostButton}"
+                            Height="28" Padding="12,0" Margin="16,0,0,0"
+                            ToolTip="Wipe whatever is on the overlay right now. The feed below keeps it all.">
+                        <TextBlock Text="Clear overlay now" Foreground="{StaticResource EveTextSecondary}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="11"/>
+                    </Button>
+                </StackPanel>
+
+                <TextBlock Grid.Row="2" Text="{Binding Status}" Foreground="{StaticResource EveTextDim}"
                            FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"
                            Visibility="{Binding Status, Converter={StaticResource StringToVisibility}}"/>
 
                 <!-- the one list: built-in alerts and your own, together -->
-                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
                     <ItemsControl ItemsSource="{Binding Rows}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:AlertConfigRow}">
