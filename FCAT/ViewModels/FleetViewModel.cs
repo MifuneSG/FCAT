@@ -35,6 +35,12 @@ public partial class FleetViewModel : ObservableObject
     // FC role overrides for this fleet, keyed by ship type (e.g. Legion -> Logi). Session-only.
     private readonly Dictionary<int, ShipRole> _typeRoleOverrides = [];
 
+    /// <summary>EVE dogma attribute marking a hull as able to come through a covert bridge.</summary>
+    private const int CovertBridgeAttribute = 3320;
+
+    /// <summary>Hull types in this fleet that can take a covert bridge.</summary>
+    private readonly HashSet<int> _covertCapableTypes = [];
+
     // Boost channel reader + per-pilot pod-state tracking for "boost lost" detection
     private readonly BoostChannelService _boost = new();
     private readonly Dictionary<int, bool> _inCapsule = [];
@@ -319,6 +325,9 @@ public partial class FleetViewModel : ObservableObject
             {
                 _groupIdCache[typeId] = info.GroupId;
                 if (info.Mass > 0) _shipMassCache[typeId] = info.Mass;
+                // Whether the hull can take a covert bridge. EVE answers this per type, and it does
+                // not follow from the group - a Falcon can and a Rook can't, both Force Recons.
+                if (info.Attribute(CovertBridgeAttribute) is > 0) _covertCapableTypes.Add(typeId);
             }
         }
 
@@ -740,7 +749,7 @@ public partial class FleetViewModel : ObservableObject
         return br;
     }
 
-    private enum FleetKind { Combat, Mining, Capital }
+    private enum FleetKind { Combat, Mining, Capital, Covert }
 
     private void ComputeStats()
     {
@@ -776,8 +785,13 @@ public partial class FleetViewModel : ObservableObject
         var miningShare = (double)_currentMembers.Count(m => m.ShipRole is ShipRole.Mining or ShipRole.Industrial) / total;
         var capShare    = (double)_currentMembers.Count(m => m.ShipRole is ShipRole.Titan or ShipRole.Supercarrier or ShipRole.CapDPS or ShipRole.CapLogi) / total;
 
+        // A gang where most hulls can take a covert bridge is a covert gang, whatever the hulls are.
+        // Checked after mining and capitals so a Rorqual op isn't reclassified by its scout.
+        var covertShare = (double)_currentMembers.Count(m => _covertCapableTypes.Contains(m.ShipTypeId)) / total;
+
         var kind = miningShare >= 0.4 ? FleetKind.Mining
                  : capShare    >= 0.4 ? FleetKind.Capital
+                 : covertShare >= 0.6 ? FleetKind.Covert
                  : FleetKind.Combat;
 
         // Mainline override: in a combat fleet, if one non-DPS hull is the clear body of the
@@ -862,9 +876,14 @@ public partial class FleetViewModel : ObservableObject
         {
             FleetKind.Mining  => "Mining fleet",
             FleetKind.Capital => "Capital fleet",
+            FleetKind.Covert  => "Covert ops fleet",
             _ when dominantShare >= 0.5 => $"Mainline: {dominantName} ({sharePct}%)",
             _ => string.Empty
         };
+
+        // A covert gang gets its own advisories - the combat ones would nag it about logistics it
+        // deliberately isn't bringing.
+        if (kind == FleetKind.Covert) { CovertAdvisories(); return; }
 
         // Composition advisories (combat fleets only; ratios need a real fleet)
         if (kind != FleetKind.Combat || total < 8) return;
@@ -883,6 +902,39 @@ public partial class FleetViewModel : ObservableObject
         if (tackle == 0)
             Advisories.Add(new FleetAdvisory("No tackle / interdiction", BrAmber,
                 "No tackle or interdiction hull detected. Without points or bubbles, targets just warp off before they die."));
+    }
+
+    /// <summary>
+    /// What actually goes wrong on a covert op: nothing in fleet can open the bridge, or somebody
+    /// brought a hull that can't come through it. Logi ratios and tackle counts are not the question
+    /// here - a blops gang without logi is a blops gang, not a mistake.
+    /// </summary>
+    private void CovertAdvisories()
+    {
+        const int BlackOpsGroupId = 898;
+
+        var canBridge = _currentMembers.Count(m =>
+            _groupIdCache.TryGetValue(m.ShipTypeId, out var g) && g == BlackOpsGroupId);
+
+        if (canBridge == 0)
+            Advisories.Add(new FleetAdvisory("No Black Ops in fleet", BrCritical,
+                "Nothing here can open a bridge. A covert cyno gets the gang nowhere without a blops on the other end."));
+
+        var stranded = _currentMembers
+            .Where(m => m.ShipTypeId > 0 && !_covertCapableTypes.Contains(m.ShipTypeId))
+            .ToList();
+
+        if (stranded.Count > 0)
+        {
+            var hulls = string.Join(", ", stranded
+                .GroupBy(m => string.IsNullOrEmpty(m.ShipTypeName) ? "Unknown" : m.ShipTypeName)
+                .OrderByDescending(g => g.Count())
+                .Take(4)
+                .Select(g => $"{g.Count()}x {g.Key}"));
+
+            Advisories.Add(new FleetAdvisory($"{stranded.Count} can't take the bridge", BrAmber,
+                $"These hulls aren't covert-capable, so they can't come through: {hulls}. They'd have to gate."));
+        }
     }
 
     private WingViewModel CreateWing(long id)

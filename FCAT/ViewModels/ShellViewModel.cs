@@ -7,6 +7,9 @@ using FCAT.Services;
 
 namespace FCAT.ViewModels;
 
+/// <summary>One entry in the demo fleet picker: the sandbox roster, and what to call it.</summary>
+public record DemoFleetChoice(DemoData.Preset Value, string Label);
+
 public partial class ShellViewModel : ObservableObject
 {
     private readonly EsiAuthService _auth;
@@ -123,6 +126,32 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty] private bool _demoMode;
 
     [RelayCommand] private void ToggleDemo() => DemoMode = !DemoMode;
+
+    /// <summary>What the sandbox fleet can be. Each one exercises a different branch of the fleet
+    /// classifier, so the advisories can be tried without waiting for that kind of fleet to form.</summary>
+    public DemoFleetChoice[] DemoPresets { get; } =
+    [
+        new(DemoData.Preset.Combat,  "Subcap fleet"),
+        new(DemoData.Preset.Whaling, "Whaling gang"),
+        new(DemoData.Preset.Mining,  "Mining op"),
+    ];
+
+    private DemoFleetChoice? _demoPreset;
+    public DemoFleetChoice DemoPreset
+    {
+        get => _demoPreset ??= DemoPresets[0];
+        set
+        {
+            if (value == null || value == _demoPreset) return;
+            _demoPreset = value;
+            DemoData.ActivePreset = value.Value;
+            OnPropertyChanged(nameof(DemoPreset));
+
+            // Swapping the roster mid-demo means the running session is watching a fleet that no
+            // longer exists, so it gets torn down and re-detected.
+            if (DemoMode) { EndSession(); ShowMenu(); }
+        }
+    }
 
     partial void OnDemoModeChanged(bool value)
     {

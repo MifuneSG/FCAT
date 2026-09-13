@@ -14,6 +14,19 @@ public record DemoAlt(int CharacterId, string Name, string Role, string SystemNa
 /// </summary>
 public static class DemoData
 {
+    /// <summary>Which sandbox fleet to run. Each exercises a different branch of the fleet
+    /// classifier - a mining op and a blops gang should not be judged like a subcap doctrine.</summary>
+    public enum Preset { Combat, Whaling, Mining }
+
+    /// <summary>The sandbox fleet currently selected. Changing it re-seeds the roster.</summary>
+    public static Preset ActivePreset { get; set; } = Preset.Combat;
+
+    /// <summary>
+    /// EVE dogma attribute marking a hull as able to take a covert bridge. It's the same attribute
+    /// FleetViewModel reads off ESI to spot a covert fleet, named here so the two can't drift.
+    /// </summary>
+    public const int CovertCynoAttribute = 3320;
+
     public const long FleetId = 99_000_001;
 
     public const int    StagingSystemId = 30004759;   // arbitrary stable id for the staging system
@@ -23,22 +36,36 @@ public static class DemoData
     private const long WAnchor = 1, WDps = 2, WLogi = 3;
     private const long SqTackle = 10, SqEwar = 11, SqLine = 12, SqLogi = 13;
 
-    // (typeId, name, groupId, base hull mass kg) - groupId drives ShipRoleClassifier;
-    // mass feeds the fleet-mass tile. Masses are the real ESI hull values.
-    private static readonly (int Id, string Name, int Grp, double Mass)[] Hulls =
+    // (typeId, name, groupId, base hull mass kg, covert-capable) - groupId drives ShipRoleClassifier;
+    // mass feeds the fleet-mass tile; covert stands in for dogma attribute 3320, which demo can't
+    // read from ESI. Masses are the real ESI hull values.
+    private static readonly (int Id, string Name, int Grp, double Mass, bool Covert)[] Hulls =
     {
-        (11987, "Guardian",  832, 11_760_000), // logi
-        (11978, "Scimitar",  832, 11_270_000), // logi
-        (22456, "Sabre",     541,  1_530_000), // interdictor  -> tackle
-        (11196, "Stiletto",  831,  1_173_000), // interceptor  -> tackle
-        (22474, "Damnation", 540, 15_010_000), // command ship -> booster
-        (11961, "Huginn",    906, 11_940_000), // recon        -> ewar
-        (641,   "Megathron",  27, 98_400_000), // battleship   -> DPS
-        (12005, "Ishtar",    358, 11_970_000), // HAC          -> DPS
+        (11987, "Guardian",  832,  11_760_000, false), // logi
+        (11978, "Scimitar",  832,  11_270_000, false), // logi
+        (22456, "Sabre",     541,   1_530_000, false), // interdictor  -> tackle
+        (11196, "Stiletto",  831,   1_173_000, false), // interceptor  -> tackle
+        (22474, "Damnation", 540,  15_010_000, false), // command ship -> booster
+        (11961, "Huginn",    906,  11_940_000, false), // recon        -> ewar
+        (641,   "Megathron",  27,  98_400_000, false), // battleship   -> DPS
+        (12005, "Ishtar",    358,  10_600_000, false), // HAC          -> DPS
+        (22430, "Sin",       898, 141_700_000, true),  // black ops    -> opens the bridge
+        (12034, "Hound",     834,   1_455_000, true),  // stealth bomber
+        (12038, "Purifier",  834,   1_495_000, true),
+        (12032, "Manticore", 834,   1_470_000, true),
+        (11957, "Falcon",    833,  12_230_000, true),  // force recon  -> ewar, covert
+        (11963, "Rapier",    833,  11_040_000, true),
+        (28352, "Rorqual",   883, 800_000_000, false), // capital industrial
+        (22544, "Hulk",      543,  15_000_000, false), // exhumer
+        (22548, "Mackinaw",  543,  17_500_000, false),
+        (22546, "Skiff",     543,  20_000_000, false),
+        (17480, "Procurer",  463,  20_000_000, false), // mining barge
+        (42244, "Porpoise",  941,   4_500_000, false), // industrial command
+        (32880, "Venture",    25,   1_200_000, false), // mining frigate (type override)
     };
 
-    // Composition (besides the FC): hull index, count, role, wing, squad.
-    private static readonly (int Hull, int Count, string Role, long Wing, long Squad)[] Comp =
+    // Composition per preset (besides the FC): hull index, count, role, wing, squad.
+    private static readonly (int Hull, int Count, string Role, long Wing, long Squad)[] CombatComp =
     {
         (0, 4, "squad_member",    WLogi,   SqLogi),   // Guardian x4
         (1, 2, "squad_member",    WLogi,   SqLogi),   // Scimitar x2
@@ -50,6 +77,37 @@ public static class DemoData
         (7, 4, "squad_member",    WDps,    SqLine),   // Ishtar x4
     };
 
+    // A covert gang: recons to hold the target, bombers for damage. No logi, by design - the
+    // combat advisories would nag about that, which is exactly what FleetKind.Covert stops.
+    private static readonly (int Hull, int Count, string Role, long Wing, long Squad)[] WhalingComp =
+    {
+        (12, 2, "squad_commander", WAnchor, SqTackle), // Falcon x2
+        (13, 2, "squad_member",    WAnchor, SqTackle), // Rapier x2
+        (9,  6, "squad_member",    WDps,    SqLine),   // Hound x6
+        (10, 4, "squad_member",    WDps,    SqLine),   // Purifier x4
+        (11, 2, "squad_member",    WDps,    SqLine),   // Manticore x2
+        (7,  1, "squad_member",    WDps,    SqLine),   // Ishtar (the one hull that can't bridge)
+    };
+
+    private static readonly (int Hull, int Count, string Role, long Wing, long Squad)[] MiningComp =
+    {
+        (19, 1, "squad_commander", WAnchor, SqTackle), // Porpoise
+        (15, 6, "squad_member",    WDps,    SqLine),   // Hulk x6
+        (16, 4, "squad_member",    WDps,    SqLine),   // Mackinaw x4
+        (17, 2, "squad_member",    WDps,    SqLine),   // Skiff x2
+        (18, 2, "squad_member",    WDps,    SqLine),   // Procurer x2
+        (20, 2, "squad_member",    WDps,    SqLine),   // Venture x2
+        (2,  1, "squad_member",    WAnchor, SqTackle), // Sabre, the usual escort
+        (4,  1, "squad_member",    WAnchor, SqTackle), // Damnation
+    };
+
+    private static (int Hull, int Count, string Role, long Wing, long Squad)[] Comp => ActivePreset switch
+    {
+        Preset.Whaling => WhalingComp,
+        Preset.Mining  => MiningComp,
+        _              => CombatComp,
+    };
+
     private static readonly string[] NamePool =
     {
         "Vargr Solheim","Tana Vek","Korrin Dax","Sera Lyn","Bjorn Hald","Mira Voss","Ix Karr",
@@ -57,8 +115,10 @@ public static class DemoData
         "Cade Orin","Nyx Hald","Tor Vael","Esa Quill","Rurik Sol","Mae Drell","Kestrel Vyn","Ami Tovar",
     };
 
-    // The 23 non-FC members, built once (stable ids/names/hulls).
-    private static readonly List<FleetMember> Npcs = BuildNpcs();
+    // Built once per preset and cached, so ids/names/hulls stay stable across polls.
+    private static readonly Dictionary<Preset, List<FleetMember>> NpcCache = [];
+    private static List<FleetMember> Npcs =>
+        NpcCache.TryGetValue(ActivePreset, out var built) ? built : NpcCache[ActivePreset] = BuildNpcs();
 
     private static List<FleetMember> BuildNpcs()
     {
@@ -95,7 +155,12 @@ public static class DemoData
         {
             CharacterId   = ownCharId,
             CharacterName = string.IsNullOrEmpty(ownName) ? "You (FC)" : ownName,
-            ShipTypeId    = 641,                    // Megathron
+            ShipTypeId    = ActivePreset switch      // the FC flies the part
+            {
+                Preset.Whaling => 22430,             // Sin - the one that opens the bridge
+                Preset.Mining  => 28352,             // Rorqual
+                _              => 641,               // Megathron
+            },
             Role          = "fleet_commander",
             WingId        = WAnchor,
             SquadId       = SqTackle,
@@ -132,8 +197,19 @@ public static class DemoData
         foreach (var id in typeIds.Distinct())
         {
             var hull = Array.Find(Hulls, h => h.Id == id);
-            if (hull.Id != 0)
-                map[id] = new EsiTypeInfo { GroupId = hull.Grp, Name = hull.Name, Mass = hull.Mass };
+            if (hull.Id == 0) continue;
+
+            map[id] = new EsiTypeInfo
+            {
+                GroupId = hull.Grp,
+                Name    = hull.Name,
+                Mass    = hull.Mass,
+                // Covert capability is a dogma attribute live, so the demo has to answer the same
+                // question the same way or the covert-fleet check would never fire in the sandbox.
+                DogmaAttributes = hull.Covert
+                    ? [new EsiDogmaAttribute { AttributeId = CovertCynoAttribute, Value = 1 }]
+                    : [],
+            };
         }
         return map;
     }

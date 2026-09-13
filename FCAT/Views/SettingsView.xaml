@@ -336,6 +336,7 @@
                 <TextBlock Text="Runs FCAT on a simulated fleet so you can try Fleet Ops, the dashboard and alerts without being in a live fleet. Intel still uses your real current system. Turn off to go back to live data."
                            Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
                            TextWrapping="Wrap" Margin="0,0,0,9"/>
+                <StackPanel Orientation="Horizontal">
                 <Button Command="{Binding Shell.ToggleDemoCommand}" Style="{StaticResource SecondaryButton}"
                         Height="34" Padding="16,0" HorizontalAlignment="Left"
                         ToolTip="Simulate a fleet for testing / screenshots">
@@ -354,6 +355,17 @@
                         </TextBlock.Style>
                     </TextBlock>
                 </Button>
+
+                    <TextBlock Text="Fleet" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}"
+                               FontSize="11" VerticalAlignment="Center" Margin="14,0,6,0"/>
+                    <ComboBox Width="128" Height="34" VerticalAlignment="Center"
+                              ToolTip="Swaps the fake fleet: subcap doctrine, covert whaling gang or a mining op"
+                              ItemsSource="{Binding Shell.DemoPresets}" SelectedItem="{Binding Shell.DemoPreset}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
 
                 <!-- Saved data -->
                 <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,24,0,18"/>
