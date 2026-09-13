@@ -61,7 +61,7 @@
                                 <Border Width="24" Height="24" CornerRadius="6" Background="#a98ce0" Margin="0,0,10,0"/>
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock Text="Nebula" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Violet · default" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,1,0,0"/>
+                                    <TextBlock Text="Violet · default" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,1,0,0"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -87,7 +87,7 @@
                                 <Border Width="24" Height="24" CornerRadius="6" Background="#d99a3f" Margin="0,0,10,0"/>
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock Text="Carbon" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Amber · gold" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,1,0,0"/>
+                                    <TextBlock Text="Amber · gold" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,1,0,0"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -113,7 +113,7 @@
                                 <Border Width="24" Height="24" CornerRadius="6" Background="#4d9be0" Margin="0,0,10,0"/>
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock Text="Photon" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Blue · EVE UI" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,1,0,0"/>
+                                    <TextBlock Text="Blue · EVE UI" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,1,0,0"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -139,7 +139,7 @@
                                 <Border Width="24" Height="24" CornerRadius="6" Background="#c06544" Margin="0,0,10,0"/>
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock Text="Rust" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Rust red" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,1,0,0"/>
+                                    <TextBlock Text="Rust red" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,1,0,0"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -204,7 +204,7 @@
                         <TextBlock Grid.Row="0" Grid.Column="1" Text="Gamelogs" Foreground="{StaticResource EveTextSecondary}"
                                    FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center" Margin="0,0,10,8" Width="64"/>
                         <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding GamelogsPath}" Foreground="{StaticResource EveTextDim}"
-                                   FontFamily="{StaticResource FontMono}" FontSize="10" VerticalAlignment="Center" Margin="0,0,0,8"
+                                   FontFamily="{StaticResource FontMono}" FontSize="11" VerticalAlignment="Center" Margin="0,0,0,8"
                                    TextTrimming="CharacterEllipsis"/>
 
                         <!-- Chatlogs -->
@@ -223,7 +223,7 @@
                         <TextBlock Grid.Row="1" Grid.Column="1" Text="Chatlogs" Foreground="{StaticResource EveTextSecondary}"
                                    FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center" Margin="0,0,10,0" Width="64"/>
                         <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding ChatlogsPath}" Foreground="{StaticResource EveTextDim}"
-                                   FontFamily="{StaticResource FontMono}" FontSize="10" VerticalAlignment="Center"
+                                   FontFamily="{StaticResource FontMono}" FontSize="11" VerticalAlignment="Center"
                                    TextTrimming="CharacterEllipsis"/>
                     </Grid>
                 </Border>
@@ -284,7 +284,7 @@
                     </Button>
                 </Grid>
                 <TextBlock Text="Building system list…" Foreground="{StaticResource EveTextDim}"
-                           FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,5,0,0"
+                           FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,5,0,0"
                            Visibility="{Binding SystemsLoading, Converter={StaticResource BoolToVisibility}}"/>
 
             </StackPanel>

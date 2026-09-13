@@ -303,11 +303,52 @@
             <Setter Property="Padding"    Value="10,8"/>
         </Style>
 
-        <!-- SMALL UPPERCASE SECTION LABEL -->
+        <!-- TYPE SCALE
+             Sizes stay on whole pixels. The window renders with TextFormattingMode="Display", which
+             snaps glyph metrics to the pixel grid, so a fractional size hints cleanly at neither
+             neighbour and comes out blurred - which is what 9.5 in the nav rail was doing.
+
+             Tracking is used sparingly - only where a label stands alone with nothing beside it to
+             give it scale, which in practice means the nav rail and the wordmark. Panel headings sit
+             directly above the thing they name and read better tight, so they get none. -->
+
+        <!-- SMALL UPPERCASE SECTION LABEL - the app's standard "what is this panel" label. -->
         <Style x:Key="SectionLabel" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
             <Setter Property="FontFamily" Value="{StaticResource FontUI}"/>
             <Setter Property="FontSize"   Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <!-- NAV RAIL LABEL - under each rail icon. Tracked harder than a section label: it sits in a
+             narrow column with no neighbouring text to give it scale. -->
+        <Style x:Key="NavRailLabel" TargetType="TextBlock">
+            <Setter Property="Foreground"          Value="{StaticResource EveTextSecondary}"/>
+            <Setter Property="FontFamily"          Value="{StaticResource FontUI}"/>
+            <Setter Property="FontSize"            Value="10"/>
+            <Setter Property="FontWeight"          Value="SemiBold"/>
+            <Setter Property="local:TextStyle.Tracking" Value="0.14"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin"              Value="0,5,0,0"/>
+        </Style>
+
+        <!-- NAV RAIL ICON - one size for all of them, so the rail reads as a column rather than as
+             glyphs of assorted weights. -->
+        <Style x:Key="NavRailIcon" TargetType="TextBlock">
+            <Setter Property="FontSize"            Value="17"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment"   Value="Center"/>
+            <Setter Property="TextAlignment"       Value="Center"/>
+        </Style>
+
+        <!-- BUTTON GLYPH - the small symbol before a button's label. Kept as its own TextBlock
+             rather than baked into the label string: these glyphs fall back to a different font,
+             so inline they arrive at a different weight and sit off the label's baseline. -->
+        <Style x:Key="ButtonGlyph" TargetType="TextBlock">
+            <Setter Property="FontSize"          Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin"            Value="0,0,7,0"/>
+            <Setter Property="Opacity"           Value="0.85"/>
         </Style>
 
         <!-- PAGE TITLE - big light-weight heading, matches the dashboard greeting -->

@@ -65,7 +65,7 @@
         <TextBlock Text="v1.0 · EVE ESI"
                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
                    Foreground="{StaticResource EveTextDim}"
-                   FontFamily="{StaticResource FontMono}" FontSize="10"
+                   FontFamily="{StaticResource FontMono}" FontSize="11"
                    Margin="0,0,16,12"/>
     </Grid>
 </UserControl>

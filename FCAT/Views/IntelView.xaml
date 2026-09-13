@@ -106,7 +106,7 @@
                                 Visibility="{Binding System.IsPinned, Converter={StaticResource BoolToVisibility}}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="VIEWING" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}"
-                                           FontSize="9" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                                           FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,7,0"/>
                                 <TextBlock Text="{Binding System.SystemName}" Foreground="{StaticResource EveTextPrimary}"
                                            FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 <Button Command="{Binding System.ReturnToCurrentCommand}" Style="{StaticResource GhostButton}"
@@ -314,7 +314,7 @@
                                                         <Border CornerRadius="7" Background="{DynamicResource EveCritical}" MinWidth="14" Height="14" Padding="3,0"
                                                                 HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-3,-6,0"
                                                                 Visibility="{Binding Hot, Converter={StaticResource BoolToVisibility}}">
-                                                            <TextBlock Text="{Binding KillBadge}" Foreground="#1a0f0f" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="Bold"
+                                                            <TextBlock Text="{Binding KillBadge}" Foreground="#1a0f0f" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="Bold"
                                                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                         </Border>
                                                     </Grid>
@@ -381,7 +381,7 @@
 
                     <!-- Credit for the layout - it's Wollari's work, fetched per-install, not shipped -->
                     <TextBlock Text="map layout © Wollari · dotlan.net" Foreground="{StaticResource EveTextDim}"
-                               FontFamily="{StaticResource FontUI}" FontSize="9" Opacity="0.6"
+                               FontFamily="{StaticResource FontUI}" FontSize="10" Opacity="0.6"
                                HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10,0,0,4"
                                Visibility="{Binding System.UsingDotlanLayout, Converter={StaticResource BoolToVisibility}}"/>
                     </Grid>
@@ -395,19 +395,19 @@
                             <WrapPanel Margin="0,2,0,8">
                                 <StackPanel Width="54" Margin="0,0,0,8">
                                     <TextBlock Text="{Binding System.ShipKills}" Foreground="{DynamicResource EveCritical}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold"/>
-                                    <TextBlock Text="KILLS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="9"/>
+                                    <TextBlock Text="KILLS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10"/>
                                 </StackPanel>
                                 <StackPanel Width="54" Margin="0,0,0,8">
                                     <TextBlock Text="{Binding System.NpcKills}" Foreground="{DynamicResource EveAmber}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold"/>
-                                    <TextBlock Text="NPC" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="9"/>
+                                    <TextBlock Text="NPC" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10"/>
                                 </StackPanel>
                                 <StackPanel Width="54" Margin="0,0,0,8">
                                     <TextBlock Text="{Binding System.SysJumps}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold"/>
-                                    <TextBlock Text="JUMPS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="9"/>
+                                    <TextBlock Text="JUMPS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10"/>
                                 </StackPanel>
                                 <StackPanel Width="54" Margin="0,0,0,8" ToolTip="NPC stations only - player citadels aren't listed by ESI">
                                     <TextBlock Text="{Binding System.StationCount}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold"/>
-                                    <TextBlock Text="STATIONS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="9"/>
+                                    <TextBlock Text="STATIONS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10"/>
                                 </StackPanel>
                             </WrapPanel>
 
@@ -450,7 +450,7 @@
                                             <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}"
                                                        FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                             <Border Grid.Column="2" CornerRadius="7" Background="{DynamicResource EveCritical}" MinWidth="15" Height="15" Padding="4,0">
-                                                <TextBlock Text="{Binding KillsText}" Foreground="#1a0f0f" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="Bold"
+                                                <TextBlock Text="{Binding KillsText}" Foreground="#1a0f0f" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="Bold"
                                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Border>
                                         </Grid>
@@ -484,7 +484,7 @@
                                                 <TextBlock Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}"
                                                            FontFamily="{StaticResource FontUI}" FontSize="11" TextTrimming="CharacterEllipsis"/>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding What}" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold">
+                                                    <TextBlock Text="{Binding What}" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold">
                                                         <TextBlock.Style>
                                                             <Style TargetType="TextBlock">
                                                                 <Setter Property="Foreground" Value="{DynamicResource EveAmber}"/>
@@ -496,7 +496,7 @@
                                                         </TextBlock.Style>
                                                     </TextBlock>
                                                     <TextBlock Text="{Binding Detail}" Foreground="{StaticResource EveTextDim}"
-                                                               FontFamily="{StaticResource FontUI}" FontSize="9" Margin="5,0,0,0"/>
+                                                               FontFamily="{StaticResource FontUI}" FontSize="10" Margin="5,0,0,0"/>
                                                 </StackPanel>
                                             </StackPanel>
                                         </Grid>
@@ -538,7 +538,7 @@
                                                     </Style>
                                                 </TextBlock.Style>
                                             </TextBlock>
-                                            <TextBlock Grid.Column="2" Text="{Binding Status}" FontFamily="{StaticResource FontUI}" FontSize="9" VerticalAlignment="Center">
+                                            <TextBlock Grid.Column="2" Text="{Binding Status}" FontFamily="{StaticResource FontUI}" FontSize="10" VerticalAlignment="Center">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Foreground" Value="{DynamicResource EveGreen}"/>
@@ -640,7 +640,7 @@
                                                     <TextBlock Grid.Column="0" Text="{Binding CountText}" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontMono}" FontSize="12" FontWeight="SemiBold"/>
                                                     <TextBlock Grid.Column="1" Text="{Binding TypeName}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                                     <Border Grid.Column="2" CornerRadius="4" Padding="6,1" Background="{Binding Color}">
-                                                        <TextBlock Text="{Binding RoleTag}" Foreground="#0b0e14" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding RoleTag}" Foreground="#0b0e14" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold"/>
                                                     </Border>
                                                 </Grid>
                                             </DataTemplate>
@@ -1062,6 +1062,37 @@
                           </DataTemplate>
                         </ItemsControl.ItemTemplate>
                       </ItemsControl>
+                      <!-- Labels sit in their own layer BENEATH the dots. Inside the node template
+                           they were clipped to the dot's 24px box mid-name; above the dots their
+                           backing plates covered neighbouring systems. Underneath, a name is never
+                           truncated and can never hide a system - at worst a dot clips its edge. -->
+                      <ItemsControl ItemsSource="{Binding MapNodes}" IsHitTestVisible="False">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <Canvas />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemContainerStyle>
+                          <Style TargetType="ContentPresenter">
+                            <Setter Property="Canvas.Left" Value="{Binding LabelLeft}" />
+                            <Setter Property="Canvas.Top" Value="{Binding Top}" />
+                          </Style>
+                        </ItemsControl.ItemContainerStyle>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate DataType="{x:Type vm:HuntMapNode}">
+                            <Grid Width="160" Height="24"
+                                  Visibility="{Binding ShowLabel, Converter={StaticResource BoolToVisibility}}">
+                              <!-- A backing tint, so a name stays readable over the gate links. -->
+                              <Border CornerRadius="3" Background="#A612121D" Padding="3,0"
+                                      HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,-11">
+                                <TextBlock FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{StaticResource EveTextPrimary}"
+                                           HorizontalAlignment="Center" Text="{Binding Name}" />
+                              </Border>
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
                       <ItemsControl ItemsSource="{Binding MapNodes}">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate>
@@ -1133,39 +1164,6 @@
                                   </Style>
                                 </Ellipse.Style>
                               </Ellipse>
-                            </Grid>
-                          </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                      </ItemsControl>
-
-                      <!-- Labels ride in their own layer above every dot. Drawn inside the node
-                           template they were painted over by whatever node happened to come next,
-                           which on a board this dense clipped most of them mid-name. Not hit-testable,
-                           so the dot underneath still takes the click. -->
-                      <ItemsControl ItemsSource="{Binding MapNodes}" IsHitTestVisible="False">
-                        <ItemsControl.ItemsPanel>
-                          <ItemsPanelTemplate>
-                            <Canvas />
-                          </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemContainerStyle>
-                          <Style TargetType="ContentPresenter">
-                            <Setter Property="Canvas.Left" Value="{Binding LabelLeft}" />
-                            <Setter Property="Canvas.Top" Value="{Binding Top}" />
-                          </Style>
-                        </ItemsControl.ItemContainerStyle>
-                        <ItemsControl.ItemTemplate>
-                          <DataTemplate DataType="{x:Type vm:HuntMapNode}">
-                            <Grid Width="160" Height="24"
-                                  Visibility="{Binding ShowLabel, Converter={StaticResource BoolToVisibility}}">
-                              <!-- A backing plate, because a name sitting straight on the dot field
-                                   is unreadable however it's placed. -->
-                              <Border CornerRadius="3" Background="#CC12121D" Padding="4,1"
-                                      HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,-11">
-                                <TextBlock FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold"
-                                           Foreground="{StaticResource EveTextPrimary}"
-                                           HorizontalAlignment="Center" Text="{Binding Name}" />
-                              </Border>
                             </Grid>
                           </DataTemplate>
                         </ItemsControl.ItemTemplate>

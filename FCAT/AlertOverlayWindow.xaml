@@ -14,7 +14,7 @@
             <Border x:Name="DragHandle" Background="#3312203a" CornerRadius="9,9,0,0"
                     Padding="10,6" Cursor="SizeAll" MouseLeftButtonDown="DragHandle_MouseDown">
                 <TextBlock Text="⠿  FCAT alerts · drag to position, then Lock"
-                           Foreground="#9aa3b3" FontFamily="Segoe UI" FontSize="10"/>
+                           Foreground="#9aa3b3" FontFamily="Segoe UI" FontSize="11"/>
             </Border>
 
             <!-- Most-recent alerts (newest on top; older ones clip off) -->
@@ -73,7 +73,7 @@
                                                    FontFamily="Segoe UI" FontSize="11" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <TextBlock Grid.Column="2" Text="{Binding Timestamp, StringFormat=HH:mm:ss}"
-                                               Foreground="#5c6473" FontFamily="Consolas" FontSize="10" VerticalAlignment="Top"/>
+                                               Foreground="#5c6473" FontFamily="Consolas" FontSize="11" VerticalAlignment="Top"/>
                                 </Grid>
                             </Border>
                         </DataTemplate>

@@ -70,7 +70,7 @@
                                     <TextBlock Grid.Column="0" Text="{Binding CountText}" Foreground="{StaticResource EveTextPrimary}" FontFamily="{StaticResource FontMono}" FontSize="12" FontWeight="SemiBold"/>
                                     <TextBlock Grid.Column="1" Text="{Binding TypeName}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                     <Border Grid.Column="2" CornerRadius="4" Padding="6,1" Background="{Binding Color}">
-                                        <TextBlock Text="{Binding RoleTag}" Foreground="#0b0e14" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding RoleTag}" Foreground="#0b0e14" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold"/>
                                     </Border>
                                 </Grid>
                             </DataTemplate>

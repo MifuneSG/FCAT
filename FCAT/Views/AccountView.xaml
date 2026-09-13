@@ -87,7 +87,7 @@
                                             <Border CornerRadius="4" Background="#2a2410" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center"
                                                     Visibility="{Binding IsActive, Converter={StaticResource BoolToVisibility}}">
                                                 <TextBlock Text="ACTIVE" Foreground="{StaticResource EveGoldSoft}"
-                                                           FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold"/>
+                                                           FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold"/>
                                             </Border>
                                         </StackPanel>
                                         <ComboBox Margin="0,6,0,0" Width="150" HorizontalAlignment="Left"

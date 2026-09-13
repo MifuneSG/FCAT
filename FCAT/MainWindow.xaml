@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:FCAT"
         mc:Ignorable="d"
         Title="FCAT · Fleet Commander Assistance Tool"
         Icon="fcat.ico"
@@ -98,14 +99,23 @@
                 <!-- Logo / wordmark -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
                     <TextBlock Text="◆" Foreground="{DynamicResource EveAccent}" FontSize="15"
-                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                               VerticalAlignment="Center" Margin="0,0,9,0"/>
                     <TextBlock Text="FCAT" Foreground="{StaticResource EveTextPrimary}"
-                               FontFamily="{StaticResource FontUI}" FontSize="14" FontWeight="SemiBold"
+                               FontFamily="{StaticResource FontUI}" FontSize="15" FontWeight="SemiBold"
+                               local:TextStyle.Tracking="0.06"
                                VerticalAlignment="Center"/>
+                    <!-- The expansion is a caption on the wordmark, not a second heading - a rule
+                         separates the two so it reads as one lockup instead of two competing words. -->
+                    <Rectangle Width="1" Height="13" Fill="{DynamicResource EveHairlineStrong}"
+                               VerticalAlignment="Center" Margin="11,1,11,0"/>
+                    <!-- Accent at low opacity rather than EveTextDim: dim is a cold blue-grey that
+                         reads as a different palette next to the violet mark. Tinting it with the
+                         accent keeps the lockup one colour family, and it retints with the theme. -->
                     <TextBlock Text="FLEET COMMANDER ASSISTANCE TOOL"
-                               Foreground="{StaticResource EveTextDim}"
-                               FontFamily="{StaticResource FontUI}" FontSize="9"
-                               VerticalAlignment="Center" Margin="10,2,0,0"/>
+                               Foreground="{DynamicResource EveAccent}" Opacity="0.55"
+                               FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold"
+                               local:TextStyle.Tracking="0.13"
+                               VerticalAlignment="Center" Margin="0,1,0,0"/>
                 </StackPanel>
 
                 <!-- Right cluster: update · ESI status · EVE clock · window controls -->
@@ -190,33 +200,33 @@
                         <StackPanel Grid.Row="0" Margin="0,8,0,0">
                             <Button Style="{StaticResource NavRailButton}" Tag="main" Command="{Binding NavMainCommand}">
                                 <StackPanel>
-                                    <TextBlock Text="⌂" FontSize="18" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="MAIN" FontSize="9.5" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{StaticResource EveTextSecondary}"/>
+                                    <TextBlock Text="⌂" Style="{StaticResource NavRailIcon}"/>
+                                    <TextBlock Text="MAIN" Style="{StaticResource NavRailLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource NavRailButton}" Tag="fleet" Command="{Binding NavFleetCommand}">
                                 <StackPanel>
-                                    <TextBlock Text="⧉" FontSize="18" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="FLEET" FontSize="9.5" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{StaticResource EveTextSecondary}"/>
+                                    <TextBlock Text="⧉" Style="{StaticResource NavRailIcon}"/>
+                                    <TextBlock Text="FLEET" Style="{StaticResource NavRailLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource NavRailButton}" Tag="intel" Command="{Binding NavIntelCommand}">
                                 <StackPanel>
-                                    <TextBlock Text="◎" FontSize="18" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="INTEL" FontSize="9.5" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{StaticResource EveTextSecondary}"/>
+                                    <TextBlock Text="◎" Style="{StaticResource NavRailIcon}"/>
+                                    <TextBlock Text="INTEL" Style="{StaticResource NavRailLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource NavRailButton}" Tag="ping" Command="{Binding NavPingCommand}">
                                 <StackPanel>
-                                    <TextBlock Text="◇" FontSize="18" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="PING" FontSize="9.5" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{StaticResource EveTextSecondary}"/>
+                                    <TextBlock Text="◇" Style="{StaticResource NavRailIcon}"/>
+                                    <TextBlock Text="PING" Style="{StaticResource NavRailLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource NavRailButton}" Tag="alerts" Command="{Binding NavAlertsCommand}">
                                 <Grid>
                                     <StackPanel>
-                                        <TextBlock Text="⚠" FontSize="17" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="ALERTS" FontSize="9.5" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{StaticResource EveTextSecondary}"/>
+                                        <TextBlock Text="⚠" Style="{StaticResource NavRailIcon}"/>
+                                        <TextBlock Text="ALERTS" Style="{StaticResource NavRailLabel}"/>
                                     </StackPanel>
                                     <!-- live alert-count badge -->
                                     <Border Background="{StaticResource EveCritical}" CornerRadius="8"
@@ -224,15 +234,15 @@
                                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,12,0"
                                             Visibility="{Binding Hub.UnreadCount, Converter={StaticResource CountToVisibility}}">
                                         <TextBlock Text="{Binding Hub.UnreadCount}" Foreground="White"
-                                                   FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="Bold"
+                                                   FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="Bold"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                 </Grid>
                             </Button>
                             <Button Style="{StaticResource NavRailButton}" Tag="setup" Command="{Binding NavSetupCommand}">
                                 <StackPanel>
-                                    <TextBlock Text="⚙" FontSize="17" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="SETUP" FontSize="9.5" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{StaticResource EveTextSecondary}"/>
+                                    <TextBlock Text="⚙" Style="{StaticResource NavRailIcon}"/>
+                                    <TextBlock Text="SETUP" Style="{StaticResource NavRailLabel}"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
