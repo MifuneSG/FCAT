@@ -315,7 +315,7 @@ public partial class ShellViewModel : ObservableObject
     // The live current-system/constellation tracker: the Intel page's map renders it, the intel feed
     // listens to it for the region you're in, and the map overlay window binds to it too.
     private SystemIntelViewModel? _systemIntel;
-    public SystemIntelViewModel SystemIntel => _systemIntel ??= new SystemIntelViewModel(_esi, _auth, _systemSearch);
+    public SystemIntelViewModel SystemIntel => _systemIntel ??= new SystemIntelViewModel(_esi, _auth, _systemSearch, _altTracker);
 
     // Map overlay - the constellation map over the game, same idea as the alert overlay.
     // MainWindow owns the window itself and watches these.

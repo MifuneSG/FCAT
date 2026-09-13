@@ -20,7 +20,12 @@ namespace FCAT.ViewModels;
 /// </summary>
 public record MapNode(double NodeLeft, double NodeTop,
                       int SystemId, string Name, string SovLabel, string Stats, bool IsCurrent,
-                      string KillBadge, bool Hot, bool Pulse, bool IsExit, bool IsHome);
+                      string KillBadge, bool Hot, bool Pulse, bool IsExit, bool IsHome,
+                      string AltBadge, string AltTip)
+{
+    /// <summary>One of the FC's labelled alts is sitting here - see AltTracker.</summary>
+    public bool HasAlt => AltBadge.Length > 0;
+}
 
 /// <summary>A gate link between two systems on the map. IsExit = the link leaves the constellation
 /// (drawn dashed, so the way out reads differently from internal gates).</summary>
@@ -95,12 +100,64 @@ public partial class SystemIntelViewModel : ObservableObject
     /// which call-outs are worth alerting on.</summary>
     public event Action<string, List<string>>? LocationContextChanged;
 
-    public SystemIntelViewModel(EsiService esi, EsiAuthService auth, SystemSearchService systemSearch)
+    private readonly AltTracker _alts;
+
+    /// <summary>The FC's labelled alts, grouped by the system they're sitting in.</summary>
+    private Dictionary<int, List<AltStatus>> _altsBySystem = [];
+
+    public SystemIntelViewModel(EsiService esi, EsiAuthService auth, SystemSearchService systemSearch,
+                                AltTracker alts)
     {
         _esi = esi;
         _auth = auth;
         _systemSearch = systemSearch;
+        _alts = alts;
+        _alts.Updated += OnAltsUpdated;
         _ = _systemSearch.EnsureLoadedAsync();   // local name index, for systems past the constellation
+    }
+
+    /// <summary>
+    /// Redraws the nodes when an alt moves. The signature is a cheap way to tell a real move from the
+    /// tracker simply polling again - most ticks change nothing on the map, and rebuilding the node
+    /// list on every one of them would restart the kill-pulse animations.
+    /// </summary>
+    private string _altSignature = string.Empty;
+
+    private void OnAltsUpdated()
+    {
+        var signature = BuildAltMarkers();
+        if (signature == _altSignature) return;
+        _altSignature = signature;
+        Application.Current?.Dispatcher.Invoke(RedrawNodes);
+    }
+
+    /// <summary>Regroups the alts by system and returns a signature of that grouping.</summary>
+    private string BuildAltMarkers()
+    {
+        _altsBySystem = _alts.Alts
+            .Where(a => !a.IsActiveCharacter && a.Online && a.SystemId > 0)
+            .GroupBy(a => a.SystemId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        return string.Join("|", _altsBySystem.OrderBy(kv => kv.Key)
+            .Select(kv => $"{kv.Key}:{string.Join(",", kv.Value.Select(a => a.CharacterId).Order())}"));
+    }
+
+    /// <summary>
+    /// The badge and hover text for any alts in a system. One alt shows its role, several show a
+    /// count - the role is the useful part, and two roles won't fit on a map dot.
+    /// </summary>
+    private (string Badge, string Tip) AltMarker(int systemId)
+    {
+        if (!_altsBySystem.TryGetValue(systemId, out var here) || here.Count == 0)
+            return (string.Empty, string.Empty);
+
+        var badge = here.Count == 1 ? here[0].Role.ToUpperInvariant() : $"{here.Count} ALTS";
+        var tip = string.Join("\n", here.Select(a =>
+            $"{a.Name} · {a.Role}"
+            + (a.ShipName.Length > 0 ? $" · {a.ShipName}" : string.Empty)
+            + (a.Docked ? " · docked" : string.Empty)));
+        return (badge, tip);
     }
 
     // Half the node slot. The slot is the DOT only (the label hangs below it out of the layout box),
@@ -154,6 +211,7 @@ public partial class SystemIntelViewModel : ObservableObject
     public void StartAuto()
     {
         _autoUsers++;
+        _alts.StartAuto();            // the map draws them, so it counts as a viewer
         if (_cts != null) return;
         _cts = new CancellationTokenSource();
         _ = LoopAsync(_cts.Token);
@@ -161,6 +219,7 @@ public partial class SystemIntelViewModel : ObservableObject
 
     public void StopAuto()
     {
+        _alts.StopAuto();
         if (_autoUsers > 0) _autoUsers--;
         if (_autoUsers > 0) return;   // another page still needs it
         _cts?.Cancel();
@@ -858,9 +917,27 @@ public partial class SystemIntelViewModel : ObservableObject
         // Only worth marking home separately when you're looking somewhere else.
         var isHome = sys.SystemId == _homeSystemId && _homeSystemId != _currentSystemId;
 
+        var (altBadge, altTip) = AltMarker(sys.SystemId);
+
         return new MapNode(cx - NodeHalfW, cy - NodeHalfH,
             sys.SystemId, sys.Name, sovLabel, stats, isCurrent,
-            hot ? pvp.ToString() : string.Empty, hot, pulse, isExit, isHome);
+            hot ? pvp.ToString() : string.Empty, hot, pulse, isExit, isHome,
+            altBadge, altTip);
+    }
+
+    /// <summary>
+    /// Refreshes just the alt markers on nodes already on screen. Rebuilding the whole node list
+    /// would restart every kill-pulse animation, and an alt moving is not a reason for the map to
+    /// flash. Untouched nodes keep their instance, so only the ones that changed re-render.
+    /// </summary>
+    private void RedrawNodes()
+    {
+        for (var i = 0; i < MapNodes.Count; i++)
+        {
+            var (badge, tip) = AltMarker(MapNodes[i].SystemId);
+            if (MapNodes[i].AltBadge == badge && MapNodes[i].AltTip == tip) continue;
+            MapNodes[i] = MapNodes[i] with { AltBadge = badge, AltTip = tip };
+        }
     }
 
     /// <summary>Resolves alliance names for every sov-held system in the constellation (one batch),

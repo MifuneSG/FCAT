@@ -87,6 +87,19 @@ public record HuntMapNode(
 {
     /// <summary>The highlight ring sits just outside the dot.</summary>
     public double RingSize => Size + 7.0;
+
+    /// <summary>Width of the dot's layout box. Left/Top place its top-left corner.</summary>
+    public const double NodeBox = 24;
+
+    /// <summary>
+    /// The label needs its own, wider box. WPF will not arrange a centred child wider than the space
+    /// it is given, so a name laid out inside the dot's 24px box is simply cut off at 24px - which is
+    /// what turned "F-88PJ" into "F-88P". This box is wide enough for any system name.
+    /// </summary>
+    public const double LabelBox = 160;
+
+    /// <summary>Label box, shifted so its centre still lands on the dot.</summary>
+    public double LabelLeft => Left - (LabelBox - NodeBox) / 2;
 }
 
 /// <summary>A line between two hops on the hunt map - the route, not a gate.</summary>

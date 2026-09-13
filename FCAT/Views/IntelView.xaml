@@ -221,6 +221,8 @@
                                                         <TextBlock Text="{Binding SovLabel}" Foreground="{StaticResource EveGoldSoft}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,2,0,0"
                                                                    Visibility="{Binding SovLabel, Converter={StaticResource StringToVisibility}}"/>
                                                         <TextBlock Text="{Binding Stats}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,3,0,0"/>
+                                                        <TextBlock Text="{Binding AltTip}" Foreground="{StaticResource EveGoldSoft}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,3,0,0"
+                                                                   Visibility="{Binding HasAlt, Converter={StaticResource BoolToVisibility}}"/>
                                                         <TextBlock Text="Click to focus · right-click for Dotlan / zKillboard" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="10" Margin="0,4,0,0"/>
                                                     </StackPanel>
                                                 </Grid.ToolTip>
@@ -306,13 +308,29 @@
                                                             </Ellipse.Style>
                                                         </Ellipse>
 
+                                                        <!-- Kill count, tucked onto the node's shoulder. The old margin cleared the
+                                                             19px ring entirely, so the badge read as a loose dot floating beside the
+                                                             system rather than as that system's count. -->
                                                         <Border CornerRadius="7" Background="{DynamicResource EveCritical}" MinWidth="14" Height="14" Padding="3,0"
-                                                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-6,-10,0"
+                                                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-3,-6,0"
                                                                 Visibility="{Binding Hot, Converter={StaticResource BoolToVisibility}}">
-                                                            <TextBlock Text="{Binding KillBadge}" Foreground="#1a0f0f" FontFamily="{StaticResource FontUI}" FontSize="8" FontWeight="Bold"
+                                                            <TextBlock Text="{Binding KillBadge}" Foreground="#1a0f0f" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="Bold"
                                                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                         </Border>
                                                     </Grid>
+
+                                                    <!-- Where one of your own alts is sitting. Gold, above the dot, so it reads as
+                                                         yours rather than as another piece of intel about the system. Negative
+                                                         margin keeps it out of the layout box, so the dot stays centred on the
+                                                         gate links. -->
+                                                    <Border CornerRadius="3" Background="#33120E02" BorderBrush="{StaticResource EveGoldSoft}"
+                                                            BorderThickness="1" Height="13" Padding="4,0"
+                                                            HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,-16,0,0"
+                                                            Visibility="{Binding HasAlt, Converter={StaticResource BoolToVisibility}}">
+                                                        <TextBlock Text="{Binding AltBadge}" Foreground="{StaticResource EveGoldSoft}"
+                                                                   FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
 
                                                     <TextBlock Text="{Binding Name}" FontFamily="{StaticResource FontUI}" FontSize="10"
                                                                HorizontalAlignment="Center" TextAlignment="Center"
@@ -1117,7 +1135,39 @@
                                   </Style>
                                 </Ellipse.Style>
                               </Ellipse>
-                              <TextBlock FontFamily="{StaticResource FontUI}" FontSize="10" Foreground="{StaticResource EveTextSecondary}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,-9" Text="{Binding Name}" Visibility="{Binding ShowLabel, Converter={StaticResource BoolToVisibility}}" />
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+
+                      <!-- Labels ride in their own layer above every dot. Drawn inside the node
+                           template they were painted over by whatever node happened to come next,
+                           which on a board this dense clipped most of them mid-name. Not hit-testable,
+                           so the dot underneath still takes the click. -->
+                      <ItemsControl ItemsSource="{Binding MapNodes}" IsHitTestVisible="False">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <Canvas />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemContainerStyle>
+                          <Style TargetType="ContentPresenter">
+                            <Setter Property="Canvas.Left" Value="{Binding LabelLeft}" />
+                            <Setter Property="Canvas.Top" Value="{Binding Top}" />
+                          </Style>
+                        </ItemsControl.ItemContainerStyle>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate DataType="{x:Type vm:HuntMapNode}">
+                            <Grid Width="160" Height="24"
+                                  Visibility="{Binding ShowLabel, Converter={StaticResource BoolToVisibility}}">
+                              <!-- A backing plate, because a name sitting straight on the dot field
+                                   is unreadable however it's placed. -->
+                              <Border CornerRadius="3" Background="#CC12121D" Padding="4,1"
+                                      HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,-11">
+                                <TextBlock FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{StaticResource EveTextPrimary}"
+                                           HorizontalAlignment="Center" Text="{Binding Name}" />
+                              </Border>
                             </Grid>
                           </DataTemplate>
                         </ItemsControl.ItemTemplate>
