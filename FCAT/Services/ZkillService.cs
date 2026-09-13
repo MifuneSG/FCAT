@@ -14,17 +14,37 @@ public class ZkillService(HttpClient httpClient)
 {
     private const string UserAgent = "FCAT/1.1 (Fleet Commander Assistance Tool; +https://github.com/MifuneSG/FCAT)";
 
-    /// <summary>Recent killmails for a system (newest first), or empty on failure - the intel feed's
-    /// source (/api/systemID/ -> bare array of {killmail_id, zkb}; detail fetched from ESI by hash).
-    /// NOTE: this list is cached and lags a few hours, so it's NOT used for the battle report (which
-    /// needs the fresh fight); see <see cref="GetBattleAsync"/>.</summary>
-    public async Task<List<ZkillEntry>> GetRecentSystemKillsAsync(int systemId)
+    /// <summary>How wide a net the kill feed casts - one system, the constellation, or the region.</summary>
+    public enum KillScope { System, Constellation, Region }
+
+    /// <summary>Recent killmails for a system (newest first), or empty on failure.</summary>
+    public Task<List<ZkillEntry>> GetRecentSystemKillsAsync(int systemId) =>
+        GetRecentKillsAsync(KillScope.System, systemId);
+
+    /// <summary>
+    /// Recent killmails for a system, constellation or region, newest first, empty on failure.
+    /// (/api/systemID|constellationID|regionID/ -> bare array of {killmail_id, zkb}; the detail -
+    /// ship, victim, time - is fetched from ESI with the hash.)
+    ///
+    /// These list endpoints are cached hard on zKill's side: measured 2026-09-13, the newest entry
+    /// for Jita was over four hours old. So they are NOT a live feed and NOT usable for the battle
+    /// report, which needs the fight as it happens - see <see cref="GetBattleAsync"/>. Anything
+    /// reading this must expect kills to be hours old (zKill's "pastSeconds" modifier narrows the
+    /// window but does not make the data any fresher).
+    /// </summary>
+    public async Task<List<ZkillEntry>> GetRecentKillsAsync(KillScope scope, int id)
     {
+        var path = scope switch
+        {
+            KillScope.Constellation => "constellationID",
+            KillScope.Region        => "regionID",
+            _                       => "systemID",
+        };
+
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"https://zkillboard.com/api/systemID/{systemId}/");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"https://zkillboard.com/api/{path}/{id}/");
             request.Headers.Add("User-Agent", UserAgent);
-            request.Headers.Add("Accept-Encoding", "gzip");
 
             var response = await httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode) return [];
@@ -49,7 +69,6 @@ public class ZkillService(HttpClient httpClient)
             var stamp = atUtc.ToString("yyyyMMddHHmm");
             var request = new HttpRequestMessage(HttpMethod.Get, $"https://zkillboard.com/api/related/{systemId}/{stamp}/");
             request.Headers.Add("User-Agent", UserAgent);
-            request.Headers.Add("Accept-Encoding", "gzip");
 
             var response = await httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode) return null;

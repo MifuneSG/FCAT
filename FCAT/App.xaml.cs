@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http;
 using System.Windows;
 using FCAT.Models;
@@ -10,7 +11,16 @@ public partial class App : Application
 {
     private void OnStartup(object sender, StartupEventArgs e)
     {
-        var httpClient = new HttpClient
+        // Negotiate compression through the handler. Asking for gzip in a request header without
+        // this leaves the response body compressed and the JSON unparseable, which is silent when
+        // the caller treats a parse failure as "no data" - that is exactly how the kill feed and
+        // the battle report came to show nothing at all.
+        var httpHandler = new HttpClientHandler
+        {
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+        };
+
+        var httpClient = new HttpClient(httpHandler)
         {
             // Fail a stalled request fast instead of wedging a poll for the default 100s.
             Timeout = TimeSpan.FromSeconds(15)

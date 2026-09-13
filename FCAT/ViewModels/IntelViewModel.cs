@@ -54,6 +54,11 @@ public partial class IntelViewModel : ObservableObject
         OnPropertyChanged(nameof(IsHuntPane));
         OnPropertyChanged(nameof(ShowMapHeader));
 
+        // The kill feed follows the pane: a constellation alongside the minimap, the whole region
+        // behind the hunt board, since that is the scale the FC is thinking at there.
+        Feed.SetKillScope(IsHuntPane ? ZkillService.KillScope.Region
+                                     : ZkillService.KillScope.Constellation);
+
         // Hunt loads the system index and reads jump ranges off ESI, so it waits until it's opened
         // rather than doing that work for an FC who never uses it.
         if (IsHuntPane) _ = Hunt.StartAsync();

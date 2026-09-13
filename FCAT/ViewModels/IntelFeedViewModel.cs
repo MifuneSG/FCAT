@@ -26,6 +26,15 @@ public partial class IntelFeedViewModel : ObservableObject
 
     private CancellationTokenSource? _cts;
     private int _currentSystemId;
+    private int _constellationId;
+    private int _regionId;
+
+    /// <summary>
+    /// Which scale the kill feed searches. It follows the open Intel pane: the minimap is a
+    /// constellation, so kills come from the constellation; the hunt board works across regions,
+    /// so it widens to the region.
+    /// </summary>
+    private ZkillService.KillScope _killScope = ZkillService.KillScope.Constellation;
     private readonly HashSet<long> _seenKills = [];
     private readonly Dictionary<int, string> _names = [];   // type/system id -> name cache
 
@@ -92,14 +101,22 @@ public partial class IntelFeedViewModel : ObservableObject
     }
 
     /// <summary>Point the feed at the FC's current system + region (called when they jump).</summary>
-    public void SetSystem(int systemId, string region)
+    public void SetSystem(SystemScope scope)
     {
+        var region = scope.RegionName;
         _region = region ?? string.Empty;
         _intel.RegionFilter = string.IsNullOrWhiteSpace(region) ? null : region;
-        if (systemId != _currentSystemId)
+        _constellationId = scope.ConstellationId;
+        _regionId        = scope.RegionId;
+        if (scope.SystemId != _currentSystemId)
         {
-            _currentSystemId = systemId;
-            _seenKills.Clear();   // show recent kills for the new system on the next poll
+            _currentSystemId = scope.SystemId;
+            _seenKills.Clear();
+
+            // Poll now rather than waiting out the 90s tick. The ids only arrive once the
+            // constellation has loaded, which is after the feed started, so the first tick
+            // always found nothing to search by and the feed sat empty for a minute and a half.
+            _ = SafePollKillsAsync();
         }
         _intel.Refresh();   // re-select the intel channel for the (possibly new) region
         UpdateChannelStatus();
@@ -145,10 +162,25 @@ public partial class IntelFeedViewModel : ObservableObject
         try { await PollKillsAsync(); } catch { /* feed just skips this tick */ }
     }
 
+    /// <summary>
+    /// How far back a killmail can be and still be worth showing. zKill's list endpoints lag by
+    /// hours (see ZkillService), so a tight window here silently empties the feed - the old
+    /// two-hour cutoff discarded literally every kill the API returned, in every system.
+    /// Each row carries the kill's own timestamp, so an old one reads as old.
+    /// </summary>
+    private static readonly TimeSpan KillHorizon = TimeSpan.FromHours(24);
+
     private async Task PollKillsAsync()
     {
-        if (_currentSystemId == 0) return;
-        var kills = await _zkill.GetRecentSystemKillsAsync(_currentSystemId);
+        var id = _killScope switch
+        {
+            ZkillService.KillScope.Constellation => _constellationId,
+            ZkillService.KillScope.Region        => _regionId,
+            _                                    => _currentSystemId,
+        };
+        if (id == 0) return;
+
+        var kills = await _zkill.GetRecentKillsAsync(_killScope, id);
 
         // Newest-first from zKill; take the newest few unseen so we don't flood on the first poll.
         var fresh = new List<ZkillEntry>();
@@ -161,7 +193,7 @@ public partial class IntelFeedViewModel : ObservableObject
         {
             var km = await _esi.GetKillmailAsync(fresh[i].KillmailId, fresh[i].Zkb!.Hash);
             if (km?.Victim == null) continue;
-            if (DateTime.UtcNow - km.KillmailTime > TimeSpan.FromHours(2)) continue;   // skip stale
+            if (DateTime.UtcNow - km.KillmailTime > KillHorizon) continue;   // skip stale
 
             var ship = await NameAsync(km.Victim.ShipTypeId);
             var sys  = await NameAsync(km.SolarSystemId);
@@ -175,6 +207,18 @@ public partial class IntelFeedViewModel : ObservableObject
                 Url = $"https://zkillboard.com/kill/{km.KillmailId}/",
             });
         }
+    }
+
+    /// <summary>
+    /// Widen or narrow the kill search to match the pane the FC is looking at. Re-polls from
+    /// scratch, because the wider scope has kills the narrower one never returned.
+    /// </summary>
+    public void SetKillScope(ZkillService.KillScope scope)
+    {
+        if (scope == _killScope) return;
+        _killScope = scope;
+        _seenKills.Clear();
+        _ = SafePollKillsAsync();
     }
 
     /// <summary>The systems an intel call-out should raise an alert for - where you are, and (if the
@@ -258,6 +302,10 @@ public partial class IntelFeedViewModel : ObservableObject
     {
         App.Current.Dispatcher.Invoke(() =>
         {
+            // Newest at the top, by arrival. Do NOT sort this by Time: reports are stamped when
+            // they are read, kills carry the time of the kill hours earlier, and the list is capped
+            // - sorting pushes every kill below every report and the cap then evicts them, which
+            // empties the Kills tab completely.
             Entries.Insert(0, entry);
             while (Entries.Count > 100) Entries.RemoveAt(Entries.Count - 1);
         });

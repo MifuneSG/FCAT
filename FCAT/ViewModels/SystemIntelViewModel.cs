@@ -18,6 +18,9 @@ namespace FCAT.ViewModels;
 /// IsCurrent = the system on screen; IsHome = where the FC actually is, which differs once they
 /// click off to explore - the map keeps marking home so they don't lose their own position.
 /// </summary>
+/// <summary>Where the FC is, at every scale the kill feed can search by.</summary>
+public record SystemScope(int SystemId, int ConstellationId, int RegionId, string RegionName);
+
 public record MapNode(double NodeLeft, double NodeTop,
                       int SystemId, string Name, string SovLabel, string Stats, bool IsCurrent,
                       string KillBadge, bool Hot, bool Pulse, bool IsExit, bool IsHome,
@@ -94,7 +97,7 @@ public partial class SystemIntelViewModel : ObservableObject
     private CancellationTokenSource? _cts;
 
     /// <summary>Raised (with the new system id + region name) whenever the FC jumps to a new system.</summary>
-    public event Action<int, string>? SystemChanged;
+    public event Action<SystemScope>? SystemChanged;
 
     /// <summary>Raised with the current system name + its gate neighbours, so the intel feed knows
     /// which call-outs are worth alerting on.</summary>
@@ -353,7 +356,9 @@ public partial class SystemIntelViewModel : ObservableObject
             Status = $"{sys.Name} · {systems.Count} systems in {con?.Name}";
             HasResult = true;
 
-            if (jumped) SystemChanged?.Invoke(systemId, region ?? string.Empty);
+            if (jumped)
+                SystemChanged?.Invoke(new SystemScope(systemId, sys.ConstellationId,
+                                                      con?.RegionId ?? 0, region ?? string.Empty));
         }
         catch (Exception ex) { Status = $"Couldn't load that system: {ex.Message}"; }
     }
