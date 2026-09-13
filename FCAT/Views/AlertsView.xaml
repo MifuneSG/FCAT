@@ -205,28 +205,54 @@
                         <!-- On-screen overlay: an always-on-top window showing alerts over the game -->
                         <Button Command="{Binding Hub.ToggleOverlayCommand}" Style="{StaticResource SecondaryButton}" Height="32" Padding="14,0" Margin="0,0,8,0"
                                 ToolTip="Show / hide the on-screen alert overlay over your game">
-                            <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12">
-                                <TextBlock.Style><Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="⧉ Overlay: OFF"/>
-                                    <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
-                                    <Style.Triggers><DataTrigger Binding="{Binding Hub.OverlayEnabled}" Value="True">
-                                        <Setter Property="Text" Value="⧉ Overlay: ON"/><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/>
-                                    </DataTrigger></Style.Triggers>
-                                </Style></TextBlock.Style>
-                            </TextBlock>
+                            <StackPanel Orientation="Horizontal">
+                                <Path Margin="0,0,7,0">
+                                    <Path.Style><Style TargetType="Path" BasedOn="{StaticResource ButtonIcon}">
+                                        <Setter Property="Data"   Value="{StaticResource IconOverlay}"/>
+                                        <Setter Property="Stroke" Value="{StaticResource EveTextDim}"/>
+                                        <Style.Triggers><DataTrigger Binding="{Binding Hub.OverlayEnabled}" Value="True">
+                                            <Setter Property="Data"   Value="{StaticResource IconOverlay}"/>
+                                            <Setter Property="Stroke" Value="{DynamicResource EveAccent}"/>
+                                        </DataTrigger></Style.Triggers>
+                                    </Style></Path.Style>
+                                </Path>
+                                <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center">
+                                    <TextBlock.Style><Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="Overlay: OFF"/>
+                                        <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                        <Style.Triggers><DataTrigger Binding="{Binding Hub.OverlayEnabled}" Value="True">
+                                            <Setter Property="Text" Value="Overlay: ON"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource EveAccent}"/>
+                                        </DataTrigger></Style.Triggers>
+                                    </Style></TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
                         </Button>
                         <Button Command="{Binding Hub.ToggleOverlayLockCommand}" Style="{StaticResource GhostButton}" Height="32" Padding="14,0"
                                 ToolTip="Lock makes the overlay click-through so it won't steal clicks from the game"
                                 Visibility="{Binding Hub.OverlayEnabled, Converter={StaticResource BoolToVisibility}}">
-                            <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12">
-                                <TextBlock.Style><Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="🔓 Unlocked"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource EveAmber}"/>
-                                    <Style.Triggers><DataTrigger Binding="{Binding Hub.OverlayLocked}" Value="True">
-                                        <Setter Property="Text" Value="🔒 Locked"/><Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
-                                    </DataTrigger></Style.Triggers>
-                                </Style></TextBlock.Style>
-                            </TextBlock>
+                            <StackPanel Orientation="Horizontal">
+                                <Path Margin="0,0,7,0">
+                                    <Path.Style><Style TargetType="Path" BasedOn="{StaticResource ButtonIcon}">
+                                        <Setter Property="Data"   Value="{StaticResource IconLockOpen}"/>
+                                        <Setter Property="Stroke" Value="{DynamicResource EveAmber}"/>
+                                        <Style.Triggers><DataTrigger Binding="{Binding Hub.OverlayLocked}" Value="True">
+                                            <Setter Property="Data"   Value="{StaticResource IconLockShut}"/>
+                                            <Setter Property="Stroke" Value="{StaticResource EveTextDim}"/>
+                                        </DataTrigger></Style.Triggers>
+                                    </Style></Path.Style>
+                                </Path>
+                                <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center">
+                                    <TextBlock.Style><Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="Unlocked"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource EveAmber}"/>
+                                        <Style.Triggers><DataTrigger Binding="{Binding Hub.OverlayLocked}" Value="True">
+                                            <Setter Property="Text" Value="Locked"/>
+                                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                        </DataTrigger></Style.Triggers>
+                                    </Style></TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
                         </Button>
                     </StackPanel>
                     <Button Command="{Binding StartCreateCommand}" Style="{StaticResource PrimaryButton}" Height="32" Padding="18,0"
@@ -333,7 +359,7 @@
                                             </ComboBox>
                                             <Button Command="{Binding DataContext.TestCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}" Style="{StaticResource GhostButton}" Height="28" Padding="9,0" Margin="0,0,4,0" ToolTip="Fire it now">
-                                                <TextBlock Text="▶" FontSize="11" Foreground="{DynamicResource EveAccent}"/>
+                                                <Path Data="{StaticResource IconPlay}" Style="{StaticResource ButtonIcon}" Width="11" Height="11" Stroke="{DynamicResource EveAccent}"/>
                                             </Button>
                                             <Button Command="{Binding ToggleEnabledCommand}" Style="{StaticResource GhostButton}" Height="28" Padding="9,0" Margin="0,0,4,0"
                                                     ToolTip="Turn this alert on or off">
@@ -537,7 +563,7 @@
                                         <Button Grid.Column="1" Style="{StaticResource GhostButton}" Height="28" Padding="9,0" Margin="6,0,0,0" ToolTip="Play it"
                                                 Command="{Binding DataContext.PreviewSoundCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}">
-                                            <TextBlock Text="▶" FontSize="11" Foreground="{DynamicResource EveAccent}"/>
+                                            <Path Data="{StaticResource IconPlay}" Style="{StaticResource ButtonIcon}" Width="11" Height="11" Stroke="{DynamicResource EveAccent}"/>
                                         </Button>
                                         <Button Grid.Column="2" Style="{StaticResource GhostButton}" Height="28" Padding="9,0" Margin="4,0,0,0" ToolTip="Delete this sound"
                                                 Command="{Binding DataContext.DeleteSoundCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"

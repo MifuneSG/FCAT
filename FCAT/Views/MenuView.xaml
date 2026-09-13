@@ -175,7 +175,7 @@
                             <!-- In a fleet, but ESI only serves fleet data to the boss -->
                             <StackPanel Visibility="{Binding IsInFleetNotBoss, Converter={StaticResource BoolToVisibility}}">
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <TextBlock Text="⚠" Foreground="{DynamicResource EveAmber}" FontSize="14" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                                    <Path Data="{StaticResource IconAlerts}" Style="{StaticResource ButtonIcon}" Width="15" Height="15" Stroke="{DynamicResource EveAmber}" Margin="0,0,7,0"/>
                                     <TextBlock Text="You're not the fleet boss" Foreground="{DynamicResource EveAmber}"
                                                FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </StackPanel>
@@ -206,14 +206,14 @@
                                     Style="{StaticResource SecondaryButton}" Height="46" Padding="16,0"
                                     ToolTip="Open the after-action report">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="▤" Style="{StaticResource ButtonGlyph}"/>
+                                    <Path Style="{StaticResource ButtonIcon}" Data="{StaticResource IconReport}" Margin="0,0,7,0"/>
                                     <TextBlock Text="AAR" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                             <Button Grid.Column="4" Command="{Binding RefreshFleetStatusCommand}"
                                     Style="{StaticResource SecondaryButton}" Height="46" Padding="18,0">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="↻" Style="{StaticResource ButtonGlyph}"/>
+                                    <Path Data="{StaticResource IconRefresh}" Style="{StaticResource ButtonIcon}" Width="13" Height="13" Margin="0,0,7,0"/>
                                     <TextBlock Text="Refresh" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
@@ -237,7 +237,7 @@
                         IsEnabled="{Binding IsInFleet}">
                     <StackPanel>
                         <Grid Margin="0,0,0,12">
-                            <StackPanel Orientation="Horizontal"><TextBlock Text="⧉" Style="{StaticResource ButtonGlyph}" Foreground="{StaticResource EveTextDim}"/><TextBlock Text="READINESS" Style="{StaticResource SectionLabel}"
+                            <StackPanel Orientation="Horizontal"><Path Data="{StaticResource IconShield}" Style="{StaticResource ButtonIcon}" Width="13" Height="13" Stroke="{StaticResource EveTextDim}" Margin="0,0,7,0"/><TextBlock Text="READINESS" Style="{StaticResource SectionLabel}"
                                        Foreground="{StaticResource EveTextSecondary}" HorizontalAlignment="Left"/></StackPanel>
                             <TextBlock Text="→" Foreground="{StaticResource EveTextDim}" FontSize="14" HorizontalAlignment="Right"/>
                         </Grid>
@@ -305,7 +305,7 @@
                 <Button Grid.Column="2" Style="{StaticResource FeatureCardButton}" Command="{Binding OpenDScanCommand}">
                     <StackPanel>
                         <Grid Margin="0,0,0,12">
-                            <StackPanel Orientation="Horizontal"><TextBlock Text="◎" Style="{StaticResource ButtonGlyph}" Foreground="{StaticResource EveTextDim}"/><TextBlock Text="THREAT" Style="{StaticResource SectionLabel}"
+                            <StackPanel Orientation="Horizontal"><Path Data="{StaticResource IconTarget}" Style="{StaticResource ButtonIcon}" Width="13" Height="13" Stroke="{StaticResource EveTextDim}" Margin="0,0,7,0"/><TextBlock Text="THREAT" Style="{StaticResource SectionLabel}"
                                        Foreground="{StaticResource EveTextSecondary}" HorizontalAlignment="Left"/></StackPanel>
                             <TextBlock Text="→" Foreground="{StaticResource EveTextDim}" FontSize="14" HorizontalAlignment="Right"/>
                         </Grid>
@@ -328,7 +328,7 @@
                 <Button Grid.Column="4" Style="{StaticResource FeatureCardButton}" Command="{Binding OpenSessionLogCommand}">
                     <StackPanel>
                         <Grid Margin="0,0,0,12">
-                            <StackPanel Orientation="Horizontal"><TextBlock Text="⚠" Style="{StaticResource ButtonGlyph}" Foreground="{StaticResource EveTextDim}"/><TextBlock Text="LAST ALERT" Style="{StaticResource SectionLabel}"
+                            <StackPanel Orientation="Horizontal"><Path Data="{StaticResource IconAlerts}" Style="{StaticResource ButtonIcon}" Width="13" Height="13" Stroke="{StaticResource EveTextDim}" Margin="0,0,7,0"/><TextBlock Text="LAST ALERT" Style="{StaticResource SectionLabel}"
                                        Foreground="{StaticResource EveTextSecondary}" HorizontalAlignment="Left"/></StackPanel>
                             <TextBlock Text="→" Foreground="{StaticResource EveTextDim}" FontSize="14" HorizontalAlignment="Right"/>
                         </Grid>
@@ -352,7 +352,7 @@
                     Visibility="{Binding HasAlts, Converter={StaticResource BoolToVisibility}}">
                 <StackPanel>
                     <Grid Margin="0,0,0,10">
-                        <StackPanel Orientation="Horizontal"><TextBlock Text="◇" Style="{StaticResource ButtonGlyph}" Foreground="{StaticResource EveTextDim}"/><TextBlock Text="FLEET ALTS" Style="{StaticResource SectionLabel}"
+                        <StackPanel Orientation="Horizontal"><Path Data="{StaticResource IconPing}" Style="{StaticResource ButtonIcon}" Width="13" Height="13" Stroke="{StaticResource EveTextDim}" Margin="0,0,7,0"/><TextBlock Text="FLEET ALTS" Style="{StaticResource SectionLabel}"
                                    Foreground="{StaticResource EveTextSecondary}" HorizontalAlignment="Left"/></StackPanel>
                         <TextBlock Text="→" Foreground="{StaticResource EveTextDim}" FontSize="14" HorizontalAlignment="Right"/>
                     </Grid>

@@ -340,20 +340,35 @@
                 <Button Command="{Binding Shell.ToggleDemoCommand}" Style="{StaticResource SecondaryButton}"
                         Height="34" Padding="16,0" HorizontalAlignment="Left"
                         ToolTip="Simulate a fleet for testing / screenshots">
-                    <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Text" Value="🧪 Demo mode: OFF"/>
-                                <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Shell.DemoMode}" Value="True">
-                                        <Setter Property="Text" Value="🧪 Demo mode: ON"/>
-                                        <Setter Property="Foreground" Value="{DynamicResource EveAccent}"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
+                    <StackPanel Orientation="Horizontal">
+                        <Path Margin="0,0,7,0">
+                            <Path.Style>
+                                <Style TargetType="Path" BasedOn="{StaticResource ButtonIcon}">
+                                    <Setter Property="Stroke" Value="{StaticResource EveTextDim}"/>
+                                    <Setter Property="Data"   Value="{StaticResource IconDemo}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Shell.DemoMode}" Value="True">
+                                            <Setter Property="Stroke" Value="{DynamicResource EveAccent}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                        <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Demo mode: OFF"/>
+                                    <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Shell.DemoMode}" Value="True">
+                                            <Setter Property="Text" Value="Demo mode: ON"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource EveAccent}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
                 </Button>
 
                     <TextBlock Text="Fleet" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}"

@@ -126,31 +126,45 @@
 
                         <Button Command="{Binding Shell.ToggleMapOverlayCommand}" Style="{StaticResource GhostButton}" Padding="9,3" Margin="10,0,0,0"
                                 ToolTip="Show the map over your game as an always-on-top window">
-                            <TextBlock FontFamily="{StaticResource FontUI}" FontSize="11">
-                                <TextBlock.Style><Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="⧉ Overlay"/>
-                                    <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
-                                    <Style.Triggers><DataTrigger Binding="{Binding Shell.MapOverlayEnabled}" Value="True">
-                                        <Setter Property="Text" Value="⧉ Overlay ON"/><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/>
-                                    </DataTrigger></Style.Triggers>
-                                </Style></TextBlock.Style>
-                            </TextBlock>
+                            <StackPanel Orientation="Horizontal">
+                                <Path Width="12" Height="12" Margin="0,0,6,0">
+                                    <Path.Style><Style TargetType="Path" BasedOn="{StaticResource ButtonIcon}">
+                                        <Setter Property="Data"   Value="{StaticResource IconOverlay}"/>
+                                        <Setter Property="Stroke" Value="{StaticResource EveTextDim}"/>
+                                        <Style.Triggers><DataTrigger Binding="{Binding Shell.MapOverlayEnabled}" Value="True">
+                                            <Setter Property="Stroke" Value="{DynamicResource EveAccent}"/>
+                                        </DataTrigger></Style.Triggers>
+                                    </Style></Path.Style>
+                                </Path>
+                                <TextBlock FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center">
+                                    <TextBlock.Style><Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="Overlay"/>
+                                        <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                        <Style.Triggers><DataTrigger Binding="{Binding Shell.MapOverlayEnabled}" Value="True">
+                                            <Setter Property="Text" Value="Overlay ON"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource EveAccent}"/>
+                                        </DataTrigger></Style.Triggers>
+                                    </Style></TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
                         </Button>
                         <Button Command="{Binding Shell.ToggleMapOverlayLockCommand}" Style="{StaticResource GhostButton}" Padding="9,3" Margin="4,0,0,0"
                                 ToolTip="Lock makes the map overlay click-through so it won't steal clicks from the game"
                                 Visibility="{Binding Shell.MapOverlayEnabled, Converter={StaticResource BoolToVisibility}}">
-                            <TextBlock FontFamily="{StaticResource FontUI}" FontSize="11">
-                                <TextBlock.Style><Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="🔓"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource EveAmber}"/>
+                            <Path>
+                                <Path.Style><Style TargetType="Path" BasedOn="{StaticResource ButtonIcon}">
+                                    <Setter Property="Data"   Value="{StaticResource IconLockOpen}"/>
+                                    <Setter Property="Stroke" Value="{DynamicResource EveAmber}"/>
                                     <Style.Triggers><DataTrigger Binding="{Binding Shell.MapOverlayLocked}" Value="True">
-                                        <Setter Property="Text" Value="🔒"/><Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                        <Setter Property="Data"   Value="{StaticResource IconLockShut}"/>
+                                        <Setter Property="Stroke" Value="{StaticResource EveTextDim}"/>
                                     </DataTrigger></Style.Triggers>
-                                </Style></TextBlock.Style>
-                            </TextBlock>
+                                </Style></Path.Style>
+                            </Path>
                         </Button>
                         <Button Command="{Binding System.RefreshCommand}" Style="{StaticResource GhostButton}" Padding="8,3" Margin="4,0,0,0" ToolTip="Refresh">
-                            <TextBlock Text="↻" Foreground="{DynamicResource EveAccent}" FontSize="13"/>
+                            <Path Style="{StaticResource ButtonIcon}" Data="{StaticResource IconRefresh}"
+                                  Stroke="{DynamicResource EveAccent}"/>
                         </Button>
                     </StackPanel>
                 </Grid>
@@ -859,7 +873,7 @@
                     <TextBlock Text="JDC" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center" Margin="8,0,5,0" />
                     <ComboBox Width="54" Height="30" VerticalAlignment="Center" ItemsSource="{Binding CalibrationLevels}" SelectedItem="{Binding CalibrationLevel}" />
                     <Button Style="{StaticResource GhostButton}" Padding="8,4" Margin="6,0,0,0" Height="30" ToolTip="Refresh activity" Command="{Binding RefreshCommand}">
-                      <TextBlock Text="↻" Foreground="{DynamicResource EveAccent}" FontSize="13" />
+                      <Path Data="{StaticResource IconRefresh}" Style="{StaticResource ButtonIcon}" Stroke="{DynamicResource EveAccent}"/>
                     </Button>
                   </StackPanel>
                 </Grid>

@@ -19,8 +19,13 @@
                  a pixel the map doesn't get. -->
             <Border x:Name="DragHandle" Grid.Row="0" Background="#3312203a" CornerRadius="9,9,0,0"
                     Padding="9,3" Cursor="SizeAll" MouseLeftButtonDown="DragHandle_MouseDown">
-                <TextBlock Text="⠿  drag · resize from the corner · then Lock"
-                           Foreground="#9aa3b3" FontFamily="Segoe UI" FontSize="9" TextTrimming="CharacterEllipsis"/>
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource IconDragDots}" Stroke="#9aa3b3" StrokeThickness="2.6"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                    <TextBlock Text="drag · resize from the corner · then Lock" Foreground="#9aa3b3" FontFamily="Segoe UI" FontSize="9"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
             </Border>
 
             <!-- Where you are -->

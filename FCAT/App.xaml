@@ -334,11 +334,69 @@
 
         <!-- NAV RAIL ICON - one size for all of them, so the rail reads as a column rather than as
              glyphs of assorted weights. -->
-        <Style x:Key="NavRailIcon" TargetType="TextBlock">
-            <Setter Property="FontSize"            Value="17"/>
+        <!-- ICON SET - drawn, not typed. Every icon is a stroked outline on the same 24x24 grid
+             with the same 1.5 weight and round caps, so they read as one family at rail size.
+             Font glyphs can't do that: ⧉ ◎ ◇ came from different Unicode blocks, so they landed
+             at different weights and optical sizes, and the emoji ones fell back to a colour
+             font entirely. These also actually depict the thing - a fleet is ships in formation,
+             intel is a scan, a ping is a broadcast. -->
+        <PathGeometry x:Key="IconMain"   Figures="M3.5,3.5 H10 V10 H3.5 Z M14,3.5 H20.5 V10 H14 Z M3.5,14 H10 V20.5 H3.5 Z M14,14 H20.5 V20.5 H14 Z"/>
+        <PathGeometry x:Key="IconFleet"  Figures="M12,1.8 L17.4,11.6 H6.6 Z M5.4,13 L9.6,21.4 H1.2 Z M18.6,13 L22.8,21.4 H14.4 Z"/>
+        <PathGeometry x:Key="IconIntel"  Figures="M12,3 A9,9 0 1,1 11.9,3 Z M12,7.5 A4.5,4.5 0 1,1 11.95,7.5 Z M12,12 L18.4,7.5"/>
+        <PathGeometry x:Key="IconPing"   Figures="M12,10.6 A1.4,1.4 0 1,1 11.99,10.6 Z M8,7.4 A6,6 0 0,0 8,15.8 M16,7.4 A6,6 0 0,1 16,15.8 M4.9,4.3 A10.4,10.4 0 0,0 4.9,18.9 M19.1,4.3 A10.4,10.4 0 0,1 19.1,18.9"/>
+        <PathGeometry x:Key="IconAlerts" Figures="M12,3.2 L21.6,19.8 H2.4 Z M12,9.6 V14.4 M12,17.4 V17.5"/>
+        <PathGeometry x:Key="IconSetup"  Figures="M19.06,9.77 L22.05,10.23 L22.05,13.77 L19.06,14.23 L18.56,15.42 L20.36,17.85 L17.85,20.36 L15.42,18.56 L14.23,19.06 L13.77,22.05 L10.23,22.05 L9.77,19.06 L8.58,18.56 L6.15,20.36 L3.64,17.85 L5.44,15.42 L4.94,14.23 L1.95,13.77 L1.95,10.23 L4.94,9.77 L5.44,8.58 L3.64,6.15 L6.15,3.64 L8.58,5.44 L9.77,4.94 L10.23,1.95 L13.77,1.95 L14.23,4.94 L15.42,5.44 L17.85,3.64 L20.36,6.15 L18.56,8.58 Z M12,8.6 A3.4,3.4 0 1,1 11.99,8.6 Z"/>
+
+        <!-- Icons used on buttons. Same grid and weight as the rail set. Typographic marks
+             (x, +, arrows) deliberately stay as text - they are punctuation, not iconography,
+             and they set on the label's own baseline. -->
+        <PathGeometry x:Key="IconOverlay"    Figures="M3.4,4.6 H14.6 V13.4 H3.4 Z M9.4,10.6 H20.6 V19.4 H9.4 Z"/>
+        <PathGeometry x:Key="IconLockOpen"   Figures="M5.4,11 H18.6 V21 H5.4 Z M8.6,11 V7.7 A3.4,3.4 0 0,1 15.4,7.7"/>
+        <PathGeometry x:Key="IconLockShut"   Figures="M5.4,11 H18.6 V21 H5.4 Z M8.6,11 V7.7 A3.4,3.4 0 0,1 15.4,7.7 V11"/>
+        <PathGeometry x:Key="IconDemo"       Figures="M9.5,2.8 V9.4 L4.3,18.9 A1.5,1.5 0 0,0 5.6,21.2 H18.4 A1.5,1.5 0 0,0 19.7,18.9 L14.5,9.4 V2.8 M8.2,2.8 H15.8 M7.2,14.6 H16.8"/>
+        <PathGeometry x:Key="IconReport"     Figures="M5.6,2.8 H14.4 L18.4,6.8 V21.2 H5.6 Z M14.4,2.8 V6.8 H18.4 M8.6,11.6 H15.4 M8.6,15.2 H15.4 M8.6,18.8 H12.6"/>
+        <PathGeometry x:Key="IconRefresh"    Figures="M19.6,7.8 A8.6,8.6 0 1,0 20.6,13.8 M19.6,7.8 V3.4 M19.6,7.8 H15.2"/>
+        <PathGeometry x:Key="IconShield"     Figures="M12,2.2 L20.4,5.6 V11.8 Q20.4,18.2 12,21.8 Q3.6,18.2 3.6,11.8 V5.6 Z M8.4,11.8 L11.2,14.6 L16,9.4"/>
+        <PathGeometry x:Key="IconTarget"     Figures="M12,3.4 A8.6,8.6 0 1,1 11.99,3.4 Z M12,1.5 V6.3 M12,17.7 V22.5 M1.5,12 H6.3 M17.7,12 H22.5 M12,12 V12.01"/>
+        <PathGeometry x:Key="IconBoost"      Figures="M13.4,2.4 L5.2,13.4 H11.2 L10.6,21.6 L18.8,10.6 H12.8 Z"/>
+        <PathGeometry x:Key="IconMove"       Figures="M3.4,8.6 H20.6 M16.8,4.8 L20.6,8.6 L16.8,12.4 M20.6,15.4 H3.4 M7.2,11.6 L3.4,15.4 L7.2,19.2"/>
+        <PathGeometry x:Key="IconEdit"       Figures="M16.4,3.2 L20.8,7.6 L8.4,20 L3.2,21.4 L4.6,16.2 Z M14.2,5.4 L18.6,9.8"/>
+        <PathGeometry x:Key="IconPlay"       Figures="M7.4,3.6 L20.4,12 L7.4,20.4 Z"/>
+
+        <PathGeometry x:Key="IconDragDots"   Figures="M9,6.6 V6.61 M15,6.6 V6.61 M9,12 V12.01 M15,12 V12.01 M9,17.4 V17.41 M15,17.4 V17.41"/>
+
+        <!-- Outline icons, so Stroke carries the colour and Fill stays empty. The rail button's
+             triggers recolour its Foreground, which a Path does not inherit the way a TextBlock
+             does, so bind to the owning button rather than relying on inheritance. -->
+        <Style x:Key="NavRailIcon" TargetType="Path">
+            <Setter Property="Width"               Value="22"/>
+            <Setter Property="Height"              Value="22"/>
+            <Setter Property="Stretch"             Value="Uniform"/>
+            <Setter Property="StrokeThickness"     Value="1.5"/>
+            <Setter Property="StrokeLineJoin"      Value="Round"/>
+            <Setter Property="StrokeStartLineCap"  Value="Round"/>
+            <Setter Property="StrokeEndLineCap"    Value="Round"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment"   Value="Center"/>
-            <Setter Property="TextAlignment"       Value="Center"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Stroke"
+                    Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+        </Style>
+
+        <!-- Button-sized icon. Same contract as NavRailIcon: outline only, colour off the
+             owning button so the button's own triggers drive it. -->
+        <Style x:Key="ButtonIcon" TargetType="Path">
+            <Setter Property="Width"               Value="14"/>
+            <Setter Property="Height"              Value="14"/>
+            <Setter Property="Stretch"             Value="Uniform"/>
+            <Setter Property="StrokeThickness"     Value="1.7"/>
+            <Setter Property="StrokeLineJoin"      Value="Round"/>
+            <Setter Property="StrokeStartLineCap"  Value="Round"/>
+            <Setter Property="StrokeEndLineCap"    Value="Round"/>
+            <Setter Property="VerticalAlignment"   Value="Center"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Stroke"
+                    Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
         </Style>
 
         <!-- BUTTON GLYPH - the small symbol before a button's label. Kept as its own TextBlock

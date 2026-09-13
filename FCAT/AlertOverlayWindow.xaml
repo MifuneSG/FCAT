@@ -13,8 +13,13 @@
             <!-- Drag handle (hidden when locked / click-through) -->
             <Border x:Name="DragHandle" Background="#3312203a" CornerRadius="9,9,0,0"
                     Padding="10,6" Cursor="SizeAll" MouseLeftButtonDown="DragHandle_MouseDown">
-                <TextBlock Text="⠿  FCAT alerts · drag to position, then Lock"
-                           Foreground="#9aa3b3" FontFamily="Segoe UI" FontSize="11"/>
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource IconDragDots}" Stroke="#9aa3b3" StrokeThickness="2.6"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                    <TextBlock Text="FCAT alerts · drag to position, then Lock" Foreground="#9aa3b3" FontFamily="Segoe UI" FontSize="11"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
             </Border>
 
             <!-- Most-recent alerts (newest on top; older ones clip off) -->

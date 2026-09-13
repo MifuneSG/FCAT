@@ -131,7 +131,7 @@
                                 <Border x:Name="ub" CornerRadius="5" Padding="9,3"
                                         Background="#1d2c3a" BorderBrush="{DynamicResource EveAccent}" BorderThickness="1">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="↻" Foreground="{DynamicResource EveAccent}" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <Path Style="{StaticResource ButtonIcon}" Data="{StaticResource IconRefresh}" Stroke="{DynamicResource EveAccent}" Width="12" Height="12" Margin="0,0,6,0"/>
                                         <TextBlock Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center">
                                             <Run Text="UPDATE"/><Run Text=" "/><Run Text="{Binding UpdateVersion, Mode=OneWay}"/>
                                         </TextBlock>
@@ -200,32 +200,32 @@
                         <StackPanel Grid.Row="0" Margin="0,8,0,0">
                             <Button Style="{StaticResource NavRailButton}" Tag="main" Command="{Binding NavMainCommand}">
                                 <StackPanel>
-                                    <TextBlock Text="⌂" Style="{StaticResource NavRailIcon}"/>
+                                    <Path Data="{StaticResource IconMain}" Style="{StaticResource NavRailIcon}"/>
                                     <TextBlock Text="MAIN" Style="{StaticResource NavRailLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource NavRailButton}" Tag="fleet" Command="{Binding NavFleetCommand}">
                                 <StackPanel>
-                                    <TextBlock Text="⧉" Style="{StaticResource NavRailIcon}"/>
+                                    <Path Data="{StaticResource IconFleet}" Style="{StaticResource NavRailIcon}"/>
                                     <TextBlock Text="FLEET" Style="{StaticResource NavRailLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource NavRailButton}" Tag="intel" Command="{Binding NavIntelCommand}">
                                 <StackPanel>
-                                    <TextBlock Text="◎" Style="{StaticResource NavRailIcon}"/>
+                                    <Path Data="{StaticResource IconIntel}" Style="{StaticResource NavRailIcon}"/>
                                     <TextBlock Text="INTEL" Style="{StaticResource NavRailLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource NavRailButton}" Tag="ping" Command="{Binding NavPingCommand}">
                                 <StackPanel>
-                                    <TextBlock Text="◇" Style="{StaticResource NavRailIcon}"/>
+                                    <Path Data="{StaticResource IconPing}" Style="{StaticResource NavRailIcon}"/>
                                     <TextBlock Text="PING" Style="{StaticResource NavRailLabel}"/>
                                 </StackPanel>
                             </Button>
                             <Button Style="{StaticResource NavRailButton}" Tag="alerts" Command="{Binding NavAlertsCommand}">
                                 <Grid>
                                     <StackPanel>
-                                        <TextBlock Text="⚠" Style="{StaticResource NavRailIcon}"/>
+                                        <Path Data="{StaticResource IconAlerts}" Style="{StaticResource NavRailIcon}"/>
                                         <TextBlock Text="ALERTS" Style="{StaticResource NavRailLabel}"/>
                                     </StackPanel>
                                     <!-- live alert-count badge -->
@@ -241,7 +241,7 @@
                             </Button>
                             <Button Style="{StaticResource NavRailButton}" Tag="setup" Command="{Binding NavSetupCommand}">
                                 <StackPanel>
-                                    <TextBlock Text="⚙" Style="{StaticResource NavRailIcon}"/>
+                                    <Path Data="{StaticResource IconSetup}" Style="{StaticResource NavRailIcon}"/>
                                     <TextBlock Text="SETUP" Style="{StaticResource NavRailLabel}"/>
                                 </StackPanel>
                             </Button>

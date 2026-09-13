@@ -101,7 +101,12 @@
                                 <Button Command="{Binding LoadReportCommand}" Style="{StaticResource GhostButton}" Padding="8,3"
                                         HorizontalAlignment="Right" IsEnabled="{Binding Log.HasBattleReport}"
                                         ToolTip="Re-pull kills from zKillboard (they lag a few minutes)">
-                                    <TextBlock Text="↻ Refresh" FontFamily="{StaticResource FontUI}" FontSize="11" Foreground="{DynamicResource EveAccent}"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Data="{StaticResource IconRefresh}" Style="{StaticResource ButtonIcon}"
+                                              Width="12" Height="12" Stroke="{DynamicResource EveAccent}" Margin="0,0,6,0"/>
+                                        <TextBlock Text="Refresh" FontFamily="{StaticResource FontUI}" FontSize="11"
+                                                   Foreground="{DynamicResource EveAccent}" VerticalAlignment="Center"/>
+                                    </StackPanel>
                                 </Button>
                             </Grid>
                         </Border>
