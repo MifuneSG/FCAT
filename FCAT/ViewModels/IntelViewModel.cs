@@ -27,7 +27,7 @@ public partial class IntelViewModel : ObservableObject
                           JumpDrives drives)
     {
         _shell = shell;
-        Scan   = new DScanViewModel(esi, auth);
+        Scan   = new DScanViewModel(esi);
         System = system;
         Feed   = new IntelFeedViewModel(esi, zkill, systems, settings, alertHub, customAlerts);
         Hunt   = new HuntViewModel(esi, auth, systems, drives, settings);

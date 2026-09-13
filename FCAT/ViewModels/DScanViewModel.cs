@@ -18,12 +18,18 @@ public record DScanShip(string TypeName, int Count, string RoleTag, Brush Color,
 /// <summary>A ship class tally ("Interdictor 7"), the group names behind the hulls.</summary>
 public record ScanClass(string Name, int Count);
 
-/// <summary>An alliance or corporation row on a local-scan result.</summary>
-public record ScanOrg(string Name, string Ticker, int Count, bool Blue)
+/// <summary>
+/// An alliance or corporation row on a local-scan result, with its share of the room.
+///
+/// Nothing here is marked friendly or hostile. All ESI gives for a pasted name is a corp and
+/// alliance id - not standings - so any blue/red marking would be FCAT guessing, and it guessed
+/// wrong often enough to be worse than saying nothing. The share is the honest version of the same
+/// question: how much of this room is one group.
+/// </summary>
+public record ScanOrg(string Name, string Ticker, int Count, double Share)
 {
-    public string Tag       => Blue ? "BLUE" : "NEUT";
     public bool   HasTicker => Ticker.Length > 0;
-    public bool   IsNeutral => !Blue;
+    public string ShareText => Share >= 0.005 ? $"{Share:P0}" : "<1%";
 }
 
 /// <summary>
@@ -32,14 +38,12 @@ public record ScanOrg(string Name, string Ticker, int Count, bool Blue)
 /// Local names don't.
 ///
 /// A d-scan gives ships by hull, ships by class, and the fleet's base-hull mass. Local gives the
-/// alliance and corporation breakdowns side by side, each marked blue or neutral against your own
-/// affiliation. Every pilot counts toward both boards, which is why the corp count runs higher
-/// than the alliance count.
+/// alliance and corporation breakdowns side by side, each with its share of the room. Every pilot
+/// counts toward both boards, which is why the corp count runs higher than the alliance count.
 /// </summary>
 public partial class DScanViewModel : ObservableObject
 {
     private readonly EsiService _esi;
-    private readonly EsiAuthService _auth;
 
     // Session caches
     private readonly Dictionary<int, int>    _group     = [];
@@ -50,22 +54,17 @@ public partial class DScanViewModel : ObservableObject
     private readonly Dictionary<int, string> _ticker    = [];
 
     private const int ShipCategory = 6;
-    private int  _ownAllianceId, _ownCorpId;
-    private bool _ownLoaded, _lastWasLocal;
+    private bool _lastWasLocal;
 
     // The ships the paste actually contained, kept so manually added recons can be folded in
     // without re-parsing or re-hitting ESI.
     private Dictionary<int, int> _scanned = [];
 
-    // Local, reduced to the comms callout: who isn't blue, one entry per neutral pilot.
-    private List<(int Count, string Label)> _neutralComms = [];
-    private int _localTotal, _localBlue;
+    // Local, reduced to the comms callout: who is in the room, biggest group first.
+    private List<(int Count, string Label)> _commsRows = [];
+    private int _localTotal, _localAlliances, _localCorps;
 
-    public DScanViewModel(EsiService esi, EsiAuthService auth)
-    {
-        _esi = esi;
-        _auth = auth;
-    }
+    public DScanViewModel(EsiService esi) => _esi = esi;
 
     [ObservableProperty] private string _input   = string.Empty;
     [ObservableProperty] private string _summary = Hint;
@@ -154,8 +153,8 @@ public partial class DScanViewModel : ObservableObject
         Corporations.Clear();
         ClearRecons();
         _scanned = [];
-        _neutralComms = [];
-        _localTotal = _localBlue = 0;
+        _commsRows = [];
+        _localTotal = _localAlliances = _localCorps = 0;
         HasResult = IsShipResult = IsLocalResult = HasMass = false;
         Summary = Hint;
     }
@@ -349,7 +348,6 @@ public partial class DScanViewModel : ObservableObject
     private async Task AnalyzeLocalAsync(List<string> names)
     {
         _lastWasLocal = true;
-        await EnsureOwnAffiliationAsync();
 
         var nameToId = await _esi.ResolveCharacterIdsAsync(names);
         var ids = nameToId.Values.Distinct().ToList();
@@ -364,20 +362,11 @@ public partial class DScanViewModel : ObservableObject
         // so these are two views of the same people, not a split of them.
         var byAlliance = affs.Where(a => a.AllianceId is > 0)
                              .GroupBy(a => a.AllianceId!.Value)
-                             .Select(g => new { Id = g.Key, Count = g.Count(), Blue = g.Key == _ownAllianceId })
+                             .Select(g => new { Id = g.Key, Count = g.Count() })
                              .OrderByDescending(x => x.Count).ToList();
 
-        // A corp is friendly if it's yours OR it flies under your alliance. Matching on corp id
-        // alone marks every one of your own alliance's member corps hostile, which is most of a
-        // home-system Local.
         var byCorp = affs.GroupBy(a => a.CorporationId)
-                         .Select(g => new
-                         {
-                             Id = g.Key,
-                             Count = g.Count(),
-                             Blue = g.Key == _ownCorpId
-                                 || (_ownAllianceId > 0 && g.Any(a => a.AllianceId == _ownAllianceId)),
-                         })
+                         .Select(g => new { Id = g.Key, Count = g.Count() })
                          .OrderByDescending(x => x.Count).ToList();
 
         // Tickers are one call per org. Alliances are few, so they get the recognisable short code;
@@ -386,46 +375,49 @@ public partial class DScanViewModel : ObservableObject
 
         var unaffiliated = affs.Count(a => a.AllianceId is not > 0);
         int total = affs.Count;
-        int friendly = _ownAllianceId > 0
-            ? affs.Count(a => a.AllianceId == _ownAllianceId)
-            : affs.Count(a => a.CorporationId == _ownCorpId);
 
-        // Comms only cares who ISN'T blue. Built as a partition so each neutral pilot is counted
-        // once: non-blue alliances by alliance, then the alliance-less by corp. Listing both boards
-        // in full would double-count everyone and run to eighty-odd lines.
-        _neutralComms = byAlliance.Where(a => !a.Blue)
+        double Share(int n) => total <= 0 ? 0 : (double)n / total;
+
+        // The comms paste is one line per group, biggest first: alliances by alliance, then the
+        // alliance-less by corp. Built as a partition so each pilot is counted once - listing both
+        // boards in full would count everyone twice and run to eighty-odd lines.
+        _commsRows = byAlliance
             .Select(a => (a.Count, Label: _name.GetValueOrDefault(a.Id, $"ID {a.Id}")
                                         + (_ticker.TryGetValue(a.Id, out var t) ? $" [{t}]" : "")))
-            .Concat(affs.Where(a => a.AllianceId is not > 0 && a.CorporationId != _ownCorpId)
+            .Concat(affs.Where(a => a.AllianceId is not > 0)
                         .GroupBy(a => a.CorporationId)
                         .Select(g => (Count: g.Count(), Label: _name.GetValueOrDefault(g.Key, $"ID {g.Key}"))))
             .OrderByDescending(x => x.Count)
             .ToList();
-        _localTotal = total;
-        _localBlue  = friendly;
+        _localTotal     = total;
+        _localAlliances = byAlliance.Count;
+        _localCorps     = byCorp.Count;
 
         Alliances.Clear();
         foreach (var a in byAlliance)
             Alliances.Add(new ScanOrg(_name.GetValueOrDefault(a.Id, $"ID {a.Id}"),
-                                      _ticker.GetValueOrDefault(a.Id, string.Empty), a.Count, a.Blue));
+                                      _ticker.GetValueOrDefault(a.Id, string.Empty), a.Count, Share(a.Count)));
         if (unaffiliated > 0)
-            Alliances.Add(new ScanOrg("Pilots without alliance", string.Empty, unaffiliated, false));
+            Alliances.Add(new ScanOrg("Pilots without alliance", string.Empty, unaffiliated, Share(unaffiliated)));
 
         Corporations.Clear();
         foreach (var c in byCorp)
             Corporations.Add(new ScanOrg(_name.GetValueOrDefault(c.Id, $"ID {c.Id}"),
-                                         string.Empty, c.Count, c.Blue));
+                                         string.Empty, c.Count, Share(c.Count)));
 
+        // How many distinct groups the room splits into - one alliance of forty is a very different
+        // room from forty pilots across twelve alliances, and that is the shape worth leading with.
         RoleBreakdown.Clear();
-        if (friendly > 0)         RoleBreakdown.Add(new FleetStat("BLUE", friendly, BrBoost));
-        if (total - friendly > 0) RoleBreakdown.Add(new FleetStat("OTHER", total - friendly, BrDps));
+        RoleBreakdown.Add(new FleetStat("ALLIANCES", byAlliance.Count, BrBoost));
+        RoleBreakdown.Add(new FleetStat("CORPS", byCorp.Count, BrDps));
+        if (unaffiliated > 0) RoleBreakdown.Add(new FleetStat("NO ALLIANCE", unaffiliated, BrDps));
 
         Ships.Clear();
         ShipClasses.Clear();
         HasMass = false;
 
         var unresolved = names.Count - nameToId.Count;
-        Summary = $"Local · {total} pilots · {friendly} blue · {total - friendly} neutral"
+        Summary = $"Local · {total} pilots · {byAlliance.Count} alliances · {byCorp.Count} corps"
                 + (unresolved > 0 ? $" · {unresolved} not found" : "");
         ScanTitle = "LOCAL SCAN";
         HasResult = IsLocalResult = true;
@@ -443,13 +435,6 @@ public partial class DScanViewModel : ObservableObject
             if (info != null && info.Ticker.Length > 0) _ticker[id] = info.Ticker;
     }
 
-    private async Task EnsureOwnAffiliationAsync()
-    {
-        if (_ownLoaded) return;
-        _ownLoaded = true;
-        var me = (await _esi.GetAffiliationsAsync([_auth.AuthenticatedCharacterId])).FirstOrDefault();
-        if (me != null) { _ownAllianceId = me.AllianceId ?? 0; _ownCorpId = me.CorporationId; }
-    }
 
     // Copy for comms
     [RelayCommand(CanExecute = nameof(HasResult))]
@@ -485,29 +470,24 @@ public partial class DScanViewModel : ObservableObject
     /// <summary>Render width of the shared image, before oversampling.</summary>
     private const double ImageWidth = 660;
 
-    /// <summary>How many neutral orgs a comms paste lists before collapsing the tail.</summary>
+    /// <summary>How many groups a comms paste lists before collapsing the tail.</summary>
     private const int CommsListCap = 12;
 
     /// <summary>
-    /// A local paste is a threat callout, not a census. It leads with the count, then names only
-    /// who isn't blue - your own alliance is the part nobody needs read back to them.
+    /// A local paste is a callout, not a census. It leads with the shape of the room - how many
+    /// pilots, split across how many groups - then names the groups biggest first, so whoever is
+    /// listening hears the one that matters before the tail.
     /// </summary>
     private void BuildLocalComms(StringBuilder sb)
     {
-        var neutral = _localTotal - _localBlue;
-        sb.AppendLine($"LOCAL  {_localTotal} pilots  ·  {_localBlue} blue  ·  {neutral} neutral");
-
-        if (_neutralComms.Count == 0)
-        {
-            sb.AppendLine("All blue.");
-            return;
-        }
+        sb.AppendLine($"LOCAL  {_localTotal} pilots  ·  {_localAlliances} alliances  ·  {_localCorps} corps");
+        if (_commsRows.Count == 0) return;
 
         sb.AppendLine();
-        foreach (var (count, label) in _neutralComms.Take(CommsListCap))
+        foreach (var (count, label) in _commsRows.Take(CommsListCap))
             sb.AppendLine($"{count,4}  {label}");
 
-        var rest = _neutralComms.Skip(CommsListCap).ToList();
+        var rest = _commsRows.Skip(CommsListCap).ToList();
         if (rest.Count > 0)
             sb.AppendLine($"{rest.Sum(r => r.Count),4}  in {rest.Count} more corps/alliances");
     }
