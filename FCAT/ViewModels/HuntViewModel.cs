@@ -34,6 +34,126 @@ public partial class HuntViewModel : ObservableObject
     private readonly SystemSearchService _search;
     private readonly JumpDrives _drives;
     private readonly SettingsService _settings;
+    private readonly AltTracker _alts;
+    private readonly ShellViewModel _shell;
+
+    /// <summary>The FC's labelled alts, grouped by the system they are sitting in.</summary>
+    private Dictionary<int, List<AltStatus>> _altsBySystem = [];
+
+    /// <summary>
+    /// The system the fleet is being pointed at. This is FCAT's own marker, not an in-game
+    /// waypoint - an FC running a blops or cap drop works off this board rather than the client,
+    /// so the board has to hold "where we are going" and drop it once somebody is actually there.
+    /// </summary>
+    [ObservableProperty] private string _destinationName = string.Empty;
+
+    [ObservableProperty] private string _destinationNote = string.Empty;
+
+    private int _destinationId;
+
+    public bool HasDestination => _destinationId != 0;
+
+    /// <summary>Point the fleet at a system off the board.</summary>
+    [RelayCommand]
+    private void SetDestination(HuntRow? row)
+    {
+        if (row == null) return;
+        SetDestination(row.SystemId, row.Name);
+    }
+
+    /// <summary>Point the fleet at a system off the map.</summary>
+    [RelayCommand]
+    private void SetDestinationFromMap(HuntMapNode? node)
+    {
+        if (node == null) return;
+        SetDestination(node.SystemId, node.Name);
+    }
+
+    private void SetDestination(int systemId, string name)
+    {
+        _destinationId  = systemId;
+        DestinationName = name;
+        DestinationNote = "Clears when someone is in system";
+        OnPropertyChanged(nameof(HasDestination));
+        MarkDestinationOnBoard();
+        CheckDestinationReached();
+    }
+
+    [RelayCommand]
+    private void ClearDestination()
+    {
+        _destinationId  = 0;
+        DestinationName = string.Empty;
+        DestinationNote = string.Empty;
+        OnPropertyChanged(nameof(HasDestination));
+        MarkDestinationOnBoard();
+    }
+
+    private void OnAltsUpdated()
+    {
+        App.Current?.Dispatcher.Invoke(() =>
+        {
+            BuildAltMarkers();
+            CheckDestinationReached();
+        });
+    }
+
+    /// <summary>
+    /// Drop the destination once anyone who counts is standing in it - a fleet member, or one of the
+    /// FC's own alts. The point of the marker is "we are still going there", so it should stop
+    /// claiming that the moment it stops being true.
+    /// </summary>
+    private void CheckDestinationReached()
+    {
+        if (_destinationId == 0) return;
+
+        var alt = _altsBySystem.TryGetValue(_destinationId, out var here) && here.Count > 0
+            ? here[0] : null;
+
+        var inFleet = _shell.ActiveSession?.AllMembers
+            .FirstOrDefault(m => string.Equals(m.SolarSystemName, DestinationName,
+                                               StringComparison.OrdinalIgnoreCase));
+
+        if (alt == null && inFleet == null) return;
+
+        var who = alt?.Name ?? inFleet!.CharacterName;
+        var reached = DestinationName;
+        ClearDestination();
+        DestinationNote = $"{who} is in {reached}";
+    }
+
+    private void BuildAltMarkers()
+    {
+        _altsBySystem = _alts.Alts
+            .Where(a => !a.IsActiveCharacter && a.Online && a.SystemId > 0)
+            .GroupBy(a => a.SystemId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        foreach (var node in MapNodes) ApplyAltMarker(node);
+    }
+
+    private void ApplyAltMarker(HuntMapNode node)
+    {
+        if (!_altsBySystem.TryGetValue(node.SystemId, out var here) || here.Count == 0)
+        {
+            node.AltBadge = string.Empty;
+            node.AltTip   = string.Empty;
+            return;
+        }
+
+        node.AltBadge = here.Count == 1 ? here[0].Role.ToUpperInvariant() : $"{here.Count} ALTS";
+        node.AltTip   = string.Join("\n", here.Select(a =>
+            $"{a.Name} · {a.Role}"
+            + (a.ShipName.Length > 0 ? $" · {a.ShipName}" : string.Empty)
+            + (a.Docked ? " · docked" : string.Empty)));
+    }
+
+    /// <summary>Flag whichever row is the destination so the board shows it without a second lookup.</summary>
+    private void MarkDestinationOnBoard()
+    {
+        foreach (var row in Rows) row.IsDestination = row.SystemId == _destinationId;
+        foreach (var node in MapNodes) node.IsDestination = node.SystemId == _destinationId;
+    }
 
     /// <summary>Rows on the board. Past this the list stops being a shortlist.</summary>
     private const int MaxRows = 40;
@@ -51,8 +171,12 @@ public partial class HuntViewModel : ObservableObject
     private const double NodeHalf = 12.0;
 
     public HuntViewModel(EsiService esi, EsiAuthService auth, SystemSearchService search,
-                         JumpDrives drives, SettingsService settings)
+                         JumpDrives drives, SettingsService settings, AltTracker alts,
+                         ShellViewModel shell)
     {
+        _alts = alts;
+        _shell = shell;
+        _alts.Updated += OnAltsUpdated;
         _esi = esi;
         _auth = auth;
         _search = search;
@@ -89,8 +213,8 @@ public partial class HuntViewModel : ObservableObject
     public ObservableCollection<HuntHop> Chain { get; } = [];
 
     public bool   HasMidpoint     => Chain.Count > 1;
-    public string OriginRole      => HasMidpoint ? "Mid-point" : "Origin";
-    public string OriginRoleLower => HasMidpoint ? "mid-point" : "origin";
+    public string OriginRole      => HasMidpoint ? "Destination" : "Origin";
+    public string OriginRoleLower => HasMidpoint ? "destination" : "origin";
 
     private int _originId;
 
@@ -416,6 +540,7 @@ public partial class HuntViewModel : ObservableObject
         }
 
         foreach (var row in shortlist) Rows.Add(row);
+        MarkDestinationOnBoard();
 
         BuildRegionList();
 
@@ -536,6 +661,12 @@ public partial class HuntViewModel : ObservableObject
         }
 
         SpreadCollidingLabels(built);
+        BuildAltMarkers();
+        foreach (var node in built)
+        {
+            ApplyAltMarker(node);
+            node.IsDestination = node.SystemId == _destinationId;
+        }
         foreach (var node in built) MapNodes.Add(node);
 
         // Gates, drawn once per pair. They aren't how you travel here, but they're how the region reads.

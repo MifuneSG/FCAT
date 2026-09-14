@@ -148,6 +148,9 @@ public partial class FleetViewModel : ObservableObject
         _confirmTcs = null;
     }
 
+    /// <summary>Everyone in the fleet, flat. Hunt reads it to see who has reached the destination.</summary>
+    public IReadOnlyList<FleetMemberViewModel> AllMembers => _currentMembers;
+
     public ObservableCollection<WingViewModel>        Wings            { get; } = [];
     public ObservableCollection<FleetMemberViewModel> FleetCommandLevel { get; } = [];
     // The alert feed lives on the app-lifetime AlertHub so it (and the overlay) survive navigation.

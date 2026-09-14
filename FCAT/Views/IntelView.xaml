@@ -860,7 +860,7 @@
                     <Button Style="{StaticResource GhostButton}" Padding="9,4" Margin="6,0,0,0" Height="30" ToolTip="Start a new route from this system" Command="{Binding UseTypedOriginCommand}">
                       <TextBlock Text="Set origin" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="11" />
                     </Button>
-                    <Button Style="{StaticResource GhostButton}" Padding="9,4" Margin="6,0,0,0" Height="30" ToolTip="Drop every mid-point and measure from where you actually are" Command="{Binding ClearRouteCommand}">
+                    <Button Style="{StaticResource GhostButton}" Padding="9,4" Margin="6,0,0,0" Height="30" ToolTip="Drop every hop and measure from where you actually are" Command="{Binding ClearRouteCommand}">
                       <TextBlock Text="Clear route" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11" />
                     </Button>
                     <ComboBox Width="134" Height="30" Margin="14,0,0,0" VerticalAlignment="Center" ToolTip="Range is per hull class, so every dread reaches the same distance" ItemsSource="{Binding Hulls}" SelectedItem="{Binding SelectedHull}">
@@ -886,6 +886,49 @@
                     <TextBlock Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Bottom" Margin="10,0,0,4" TextTrimming="CharacterEllipsis" Text="{Binding Status}" />
                     <TextBlock Foreground="{DynamicResource EveAmber}" FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Bottom" Margin="10,0,0,4" TextTrimming="CharacterEllipsis" Text="{Binding ChainNote}" Visibility="{Binding ChainNote, Converter={StaticResource StringToVisibility}}" />
                   </StackPanel>
+                  <!-- Where the fleet is being sent. This is FCAT's own marker, not an in-game
+                       waypoint - the board is the command centre for a blops or cap drop, so it
+                       holds the call and drops it once somebody is actually in system. -->
+                  <Border CornerRadius="4" Background="#141B2B" BorderBrush="{DynamicResource EveAccent}"
+                          BorderThickness="1" Padding="10,5" Margin="0,10,0,0" HorizontalAlignment="Left"
+                          Visibility="{Binding HasDestination, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock Text="DESTINATION" Foreground="{StaticResource EveTextDim}"
+                                 FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="Bold"
+                                 VerticalAlignment="Center" Margin="0,0,9,0" />
+                      <TextBlock Text="{Binding DestinationName}" Foreground="{DynamicResource EveAccent}"
+                                 FontFamily="{StaticResource FontMono}" FontSize="13" FontWeight="SemiBold"
+                                 VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding DestinationNote}" Foreground="{StaticResource EveTextDim}"
+                                 FontFamily="{StaticResource FontUI}" FontSize="11"
+                                 VerticalAlignment="Center" Margin="10,0,0,0" />
+                      <Button Command="{Binding ClearDestinationCommand}" Style="{StaticResource GhostButton}"
+                              Padding="8,1" Margin="12,0,0,0" ToolTip="Drop the destination">
+                        <TextBlock Text="Clear" Foreground="{StaticResource EveTextSecondary}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="11" />
+                      </Button>
+                    </StackPanel>
+                  </Border>
+
+                  <!-- Said once the destination clears itself, so the FC sees who got there. -->
+                  <TextBlock Text="{Binding DestinationNote}" Foreground="{StaticResource EveGreen}"
+                             FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,10,0,0">
+                    <TextBlock.Style>
+                      <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                          <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                              <Condition Binding="{Binding HasDestination}" Value="False" />
+                              <Condition Binding="{Binding DestinationNote, Converter={StaticResource StringToVisibility}}" Value="Visible" />
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Visibility" Value="Visible" />
+                          </MultiDataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </TextBlock.Style>
+                  </TextBlock>
+
                   <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                     <TextBlock Text="RANK BY" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0" />
                     <Button CommandParameter="Activity" Style="{StaticResource GhostButton}" Padding="11,4" Margin="12,0,0,0" ToolTip="Rank by where the ratting is" Command="{Binding SetRankModeCommand}">
@@ -1021,7 +1064,18 @@
                                   </StackPanel>
                                 </Grid>
                                 <TextBlock Grid.Column="3" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" MinWidth="46" TextAlignment="Right" Margin="8,0,0,0" Text="{Binding RangeText}" />
-                                <Button Grid.Column="4" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource GhostButton}" Padding="8,2" ToolTip="Stage here, then measure the next jump from this system" Command="{Binding DataContext.AddMidpointCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}">
+                                <!-- Hunting: point the fleet at a target. Staging: chain the next jump.
+                                     Coverage exists to move the fleet forward, so it keeps the mid-point. -->
+                                <Button Grid.Column="4" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource GhostButton}" Padding="8,2"
+                                        ToolTip="Point the fleet here. Clears itself once a fleet member or one of your alts is in system"
+                                        Visibility="{Binding DataContext.IsRankActivity, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource BoolToVisibility}}"
+                                        Command="{Binding DataContext.SetDestinationCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}">
+                                  <TextBlock Text="Set destination" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="11" />
+                                </Button>
+                                <Button Grid.Column="4" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource GhostButton}" Padding="8,2"
+                                        ToolTip="Stage here, then measure the next jump from this system"
+                                        Visibility="{Binding DataContext.IsRankCoverage, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource BoolToVisibility}}"
+                                        Command="{Binding DataContext.AddMidpointCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}">
                                   <TextBlock Text="Mid-point" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="11" />
                                 </Button>
                               </Grid>
@@ -1130,11 +1184,28 @@
                                   <TextBlock Text="LAST HOUR" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="Bold" Margin="10,4,10,2" />
                                   <TextBlock Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="10,0,10,5" Text="{Binding StatsLine}" />
                                   <Separator />
-                                  <MenuItem Header="Add mid-point" Command="{Binding PlacementTarget.Tag.AddMidpointFromMapCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                  <MenuItem Header="Set as destination" Command="{Binding PlacementTarget.Tag.SetDestinationFromMapCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                  <MenuItem Header="Use as mid-point" Command="{Binding PlacementTarget.Tag.AddMidpointFromMapCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
                                   <MenuItem Header="Open in Dotlan" Command="{Binding PlacementTarget.Tag.OpenDotlanSystemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
                                   <MenuItem Header="Open on zKillboard" Command="{Binding PlacementTarget.Tag.OpenZkillSystemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
                                 </ContextMenu>
                               </FrameworkElement.ContextMenu>
+                              <!-- Where the fleet is being sent. Sits outside the activity ring so the two read apart. -->
+                              <Ellipse HorizontalAlignment="Center" VerticalAlignment="Center" Width="26" Height="26"
+                                       Stroke="{DynamicResource EveAccent}" StrokeThickness="2" StrokeDashArray="2 1.5"
+                                       Fill="Transparent" IsHitTestVisible="False"
+                                       Visibility="{Binding IsDestination, Converter={StaticResource BoolToVisibility}}" />
+
+                              <!-- One of the FC's own alts, same gold marker the constellation map uses. -->
+                              <Border CornerRadius="3" Background="#33120E02" BorderBrush="{StaticResource EveGoldSoft}"
+                                      BorderThickness="1" Height="13" Padding="4,0" ToolTip="{Binding AltTip}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,-15,0,0"
+                                      Visibility="{Binding HasAlt, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="{Binding AltBadge}" Foreground="{StaticResource EveGoldSoft}"
+                                           FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                              </Border>
+
                               <Ellipse HorizontalAlignment="Center" VerticalAlignment="Center" StrokeThickness="1.5" Fill="Transparent" IsHitTestVisible="False" Width="{Binding RingSize}" Height="{Binding RingSize}">
                                 <Ellipse.Style>
                                   <Style TargetType="Ellipse">

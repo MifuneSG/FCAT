@@ -318,6 +318,9 @@ public partial class ShellViewModel : ObservableObject
     // combat-log/boost/cap-chain watching keep running while the FC browses Intel, Settings, etc.
     private FleetViewModel? _session;
 
+    /// <summary>The monitoring session, when one is running. Hunt reads it to see who has arrived.</summary>
+    public FleetViewModel? ActiveSession => _session;
+
     public void ShowMenu()
     {
         PopulateShellIdentity();
@@ -348,7 +351,7 @@ public partial class ShellViewModel : ObservableObject
     {
         ActiveNav = "intel";
         _intel ??= new IntelViewModel(_esi, _auth, _zkill, _killStream, _systemSearch, _settings, this,
-                                      SystemIntel, _alertHub, CustomAlerts, JumpDrives);
+                                      SystemIntel, _alertHub, CustomAlerts, JumpDrives, _altTracker);
         CurrentPage = _intel;
     }
 

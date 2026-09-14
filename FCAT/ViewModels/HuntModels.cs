@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace FCAT.ViewModels;
@@ -31,6 +32,9 @@ public record HuntRow(
 
     /// <summary>Activity bar width, scaled against the busiest system on the board.</summary>
     public double BarWidth { get; set; }
+
+    /// <summary>The system the fleet is currently being pointed at.</summary>
+    public bool IsDestination { get; set; }
 
     public string RangeText        => $"{LightYears:0.0} ly";
     public string NpcText          => NpcKills     <= 0 ? "-" : NpcKills.ToString("N0");
@@ -83,8 +87,10 @@ public partial class HuntRegion : ObservableObject
 public record HuntMapNode(
     double Left, double Top, int SystemId, string Name,
     bool InRange, bool IsOrigin, string Tone, string Ring, double Size,
-    bool ShowLabel, string Tip, string RangeLine, string StatsLine)
+    bool ShowLabel, string Tip, string RangeLine, string StatsLine) : INotifyPropertyChanged
 {
+    public event PropertyChangedEventHandler? PropertyChanged;
+
     /// <summary>The highlight ring sits just outside the dot.</summary>
     public double RingSize => Size + 7.0;
 
@@ -109,6 +115,37 @@ public record HuntMapNode(
 
     /// <summary>Where the label actually sits, once any nudge is taken into account.</summary>
     public double LabelTop => Top + LabelDrop;
+
+    // These three are set after the node is built and bound - an alt moves, a destination is
+    // picked - so they have to raise change notifications. A record cannot derive from
+    // ObservableObject, hence the hand-rolled event.
+    private string _altBadge = string.Empty;
+    private string _altTip   = string.Empty;
+    private bool   _isDestination;
+
+    /// <summary>One of the FC's own alts is sitting here. Same gold marker the constellation map uses.</summary>
+    public string AltBadge
+    {
+        get => _altBadge;
+        set { if (_altBadge == value) return; _altBadge = value; Raise(nameof(AltBadge)); Raise(nameof(HasAlt)); }
+    }
+
+    public string AltTip
+    {
+        get => _altTip;
+        set { if (_altTip == value) return; _altTip = value; Raise(nameof(AltTip)); }
+    }
+
+    public bool HasAlt => _altBadge.Length > 0;
+
+    /// <summary>The system the fleet is currently being pointed at.</summary>
+    public bool IsDestination
+    {
+        get => _isDestination;
+        set { if (_isDestination == value) return; _isDestination = value; Raise(nameof(IsDestination)); }
+    }
+
+    private void Raise(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }
 
 /// <summary>A line between two hops on the hunt map - the route, not a gate.</summary>

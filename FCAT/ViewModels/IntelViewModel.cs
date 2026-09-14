@@ -25,13 +25,13 @@ public partial class IntelViewModel : ObservableObject
                           KillStreamService killStream,
                           SystemSearchService systems, SettingsService settings, ShellViewModel shell,
                           SystemIntelViewModel system, AlertHub alertHub, CustomAlertService customAlerts,
-                          JumpDrives drives)
+                          JumpDrives drives, AltTracker alts)
     {
         _shell = shell;
         Scan   = new DScanViewModel(esi);
         System = system;
         Feed   = new IntelFeedViewModel(esi, auth, zkill, killStream, systems, settings, alertHub, customAlerts);
-        Hunt   = new HuntViewModel(esi, auth, systems, drives, settings);
+        Hunt   = new HuntViewModel(esi, auth, systems, drives, settings, alts, shell);
 
         // Point the kill feed at whatever system the FC is in, and tell it which systems to shout about.
         System.SystemChanged += Feed.SetSystem;
