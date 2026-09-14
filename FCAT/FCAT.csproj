@@ -17,9 +17,9 @@
     <Product>FCAT</Product>
     <!-- Keep these together. FileVersion is what Windows shows in the file properties, and it
          drifted a release behind once already, which made a bug report impossible to place. -->
-    <Version>0.16.0-beta</Version>
-    <FileVersion>0.16.0.0</FileVersion>
-    <AssemblyVersion>0.16.0.0</AssemblyVersion>
+    <Version>0.17.0-beta</Version>
+    <FileVersion>0.17.0.0</FileVersion>
+    <AssemblyVersion>0.17.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
