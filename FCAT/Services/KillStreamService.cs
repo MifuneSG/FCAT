@@ -80,6 +80,10 @@ public class KillStreamService(HttpClient httpClient) : IDisposable
     private CancellationTokenSource? _cts;
     private readonly ConcurrentDictionary<long, StreamKill> _recent = new();
 
+    private long _head;                // where we joined the stream
+    private int  _backfillAsked;       // something actually wants history
+    private int  _backfillStarted;     // ...and it has been kicked off once
+
     /// <summary>Raised for each newly streamed killmail, on a background thread.</summary>
     public event Action<StreamKill>? KillSeen;
 
@@ -109,6 +113,8 @@ public class KillStreamService(HttpClient httpClient) : IDisposable
         _cts?.Dispose();
         _cts = null;
         IsRunning = false;
+        Volatile.Write(ref _head, 0);
+        Interlocked.Exchange(ref _backfillStarted, 0);
     }
 
     private async Task WalkAsync(CancellationToken ct)
@@ -124,10 +130,8 @@ public class KillStreamService(HttpClient httpClient) : IDisposable
                     sequence = await HeadAsync(ct);
                     if (sequence == 0) { await Task.Delay(ErrorWait, ct); continue; }
                     IsRunning = true;
-
-                    // Fill in the recent past alongside following the stream, so opening FCAT in
-                    // the middle of a fight shows what has already died rather than an empty feed.
-                    _ = BackfillAsync(sequence - 1, ct);
+                    _head = sequence;
+                    TryStartBackfill();
                 }
 
                 var kill = await FetchAsync(sequence, ct);
@@ -156,6 +160,28 @@ public class KillStreamService(HttpClient httpClient) : IDisposable
                 try { await Task.Delay(ErrorWait, ct); } catch { return; }
             }
         }
+    }
+
+    /// <summary>
+    /// Ask for the recent past to be filled in. Called when something first wants kills rather than
+    /// at startup: the backward walk is hundreds of requests, and an FC who never opens Intel should
+    /// not spend them - or zKill's bandwidth - on history nothing will display. Safe to call often;
+    /// it runs at most once.
+    /// </summary>
+    public void EnsureBackfill()
+    {
+        Interlocked.Exchange(ref _backfillAsked, 1);
+        TryStartBackfill();
+    }
+
+    private void TryStartBackfill()
+    {
+        if (Volatile.Read(ref _backfillAsked) == 0) return;   // nobody has asked yet
+        if (Volatile.Read(ref _head) == 0) return;            // not following the stream yet
+        if (Interlocked.Exchange(ref _backfillStarted, 1) == 1) return;
+
+        var token = _cts?.Token ?? CancellationToken.None;
+        _ = BackfillAsync(Volatile.Read(ref _head) - 1, token);
     }
 
     /// <summary>Walk backwards from the head until the kills fall outside the retention window.</summary>

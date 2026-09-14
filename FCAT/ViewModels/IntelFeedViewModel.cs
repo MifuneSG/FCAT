@@ -213,6 +213,9 @@ public partial class IntelFeedViewModel : ObservableObject
 
         if (scope != _killScope) return;   // the pane changed while we were resolving
         _watchedKillSystems = wanted;
+
+        // Now something is actually going to show kills, so it is worth reading the recent past.
+        if (wanted.Count > 0) _killStream.EnsureBackfill();
         await EnsureOwnAffiliationAsync();
         if (wanted.Count == 0) return;
 
