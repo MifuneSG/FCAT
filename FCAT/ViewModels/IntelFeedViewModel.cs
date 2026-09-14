@@ -249,17 +249,27 @@ public partial class IntelFeedViewModel : ObservableObject
         _ = ShowAsync(kill);
     }
 
+    /// <summary>
+    /// Rows are built one at a time. A backfill hands over a burst of kills at once, and letting
+    /// those race meant a stampede of simultaneous ESI lookups rather than a handful of batched ones.
+    /// </summary>
+    private readonly SemaphoreSlim _rowGate = new(1, 1);
+
     private async Task ShowAsync(StreamKill kill)
     {
+        await _rowGate.WaitAsync();
         try
         {
             var victim = kill.Esi!.Victim;
-            var ship = victim != null ? await NameAsync(victim.ShipTypeId) : "Ship";
-            var sys  = await NameAsync(kill.Esi.SystemId);
 
             // Alliance if they have one, corp otherwise - the same way a killboard reads.
-            var orgId = victim?.AllianceId is > 0 ? victim.AllianceId!.Value : victim?.CorporationId ?? 0;
-            var org   = orgId > 0 ? await NameAsync(orgId) : string.Empty;
+            var orgId  = victim?.AllianceId is > 0 ? victim.AllianceId!.Value : victim?.CorporationId ?? 0;
+            var shipId = victim?.ShipTypeId ?? 0;
+
+            var names = await NamesAsync(shipId, kill.Esi.SystemId, orgId);
+            var ship  = shipId > 0 ? names.GetValueOrDefault(shipId, "Ship") : "Ship";
+            var sys   = names.GetValueOrDefault(kill.Esi.SystemId, kill.Esi.SystemId.ToString());
+            var org   = orgId > 0 ? names.GetValueOrDefault(orgId, string.Empty) : string.Empty;
 
             var side = SideOf(victim);
             var isk  = FormatIsk(kill.Zkb?.TotalValue ?? 0);
@@ -276,6 +286,7 @@ public partial class IntelFeedViewModel : ObservableObject
             });
         }
         catch { /* a name lookup failed - drop the row rather than take the feed down */ }
+        finally { _rowGate.Release(); }
     }
 
     /// <summary>
@@ -383,10 +394,26 @@ public partial class IntelFeedViewModel : ObservableObject
     private async Task<string> NameAsync(int id)
     {
         if (id <= 0) return "?";
-        if (_names.TryGetValue(id, out var n)) return n;
-        var name = (await _esi.ResolveNamesAsync([id])).GetValueOrDefault(id, id.ToString());
-        _names[id] = name;
-        return name;
+        return (await NamesAsync(id)).GetValueOrDefault(id, id.ToString());
+    }
+
+    /// <summary>
+    /// Names for several ids in one request. ESI takes a thousand per call, so asking for each one
+    /// separately - as this used to - turned a single kill into three round trips and a backfill
+    /// into hundreds of concurrent ones, which is how ships and systems ended up rendering as bare
+    /// numbers. A failed lookup is never cached: caching the fallback meant one hiccup left that id
+    /// showing as a number for the rest of the session.
+    /// </summary>
+    private async Task<Dictionary<int, string>> NamesAsync(params int[] ids)
+    {
+        var wanted = ids.Where(i => i > 0).Distinct().ToList();
+        var missing = wanted.Where(i => !_names.ContainsKey(i)).ToList();
+
+        if (missing.Count > 0)
+            foreach (var (id, name) in await _esi.ResolveNamesAsync(missing))
+                if (!string.IsNullOrWhiteSpace(name)) _names[id] = name;
+
+        return wanted.ToDictionary(i => i, i => _names.GetValueOrDefault(i, i.ToString()));
     }
 
     /// <summary>Ours or theirs. Unknown until the FC's own affiliation has resolved.</summary>
