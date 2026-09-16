@@ -47,14 +47,20 @@ public class ZkillService(HttpClient httpClient)
             request.Headers.Add("User-Agent", UserAgent);
 
             var response = await httpClient.SendAsync(request);
-            if (!response.IsSuccessStatusCode) return [];
+            if (!response.IsSuccessStatusCode)
+            {
+                Log.Warn("zkill", $"{path}/{id} -> {(int)response.StatusCode}");
+                return [];
+            }
 
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<List<ZkillEntry>>(json) ?? [];
         }
-        catch
+        catch (Exception ex)
         {
-            return [];   // network/parse hiccup - caller just gets nothing this tick
+            // "No kills" and "could not read the kills" look identical from outside, so say which.
+            Log.Warn("zkill", $"{path}/{id} failed", ex);
+            return [];
         }
     }
 
@@ -71,7 +77,11 @@ public class ZkillService(HttpClient httpClient)
             request.Headers.Add("User-Agent", UserAgent);
 
             var response = await httpClient.SendAsync(request);
-            if (!response.IsSuccessStatusCode) return null;
+            if (!response.IsSuccessStatusCode)
+            {
+                Log.Warn("zkill", $"related/{systemId} -> {(int)response.StatusCode}");
+                return null;
+            }
 
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<ZkillRelated>(json);

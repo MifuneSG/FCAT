@@ -102,7 +102,7 @@ public class AltTracker(EsiService esi, EsiAuthService auth, AlertHub hub)
         while (!ct.IsCancellationRequested)
         {
             try { await PollOnceAsync(); }
-            catch { /* one bad tick shouldn't end the session's tracking */ }
+            catch (Exception ex) { Log.Warn("alts", "poll tick failed", ex); }
 
             var seconds = _viewers > 0 ? ForegroundSeconds : BackgroundSeconds;
 

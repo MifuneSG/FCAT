@@ -202,6 +202,37 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void ResetToDefault() => EveLogsPath = AppSettings.DefaultLogsPath;
 
+    /// <summary>
+    /// Everything a bug report needs, on the clipboard. FCAT swallows failures on purpose so a
+    /// dropped poll cannot take the app down, which means the user sees an empty panel and has
+    /// nothing to send. This is that missing half.
+    /// </summary>
+    [RelayCommand]
+    private void CopyDiagnostics()
+    {
+        try
+        {
+            var report = Log.Diagnostics(
+                VersionLine.Replace("Version ", string.Empty),
+                ("EVE logs", EveLogsPath),
+                ("Gamelogs", GamelogsFound ? "found" : "MISSING"),
+                ("Chatlogs", ChatlogsFound ? "found" : "MISSING"),
+                ("Demo mode", _shell.DemoMode ? "on" : "off"));
+
+            System.Windows.Clipboard.SetText(report);
+            StatusMessage = "Diagnostics copied - paste it into the Discord.";
+        }
+        catch (Exception ex)
+        {
+            Log.Warn("settings", "could not copy diagnostics", ex);
+            StatusMessage = "Couldn't access the clipboard.";
+        }
+    }
+
+    /// <summary>Show the log folder, for when the clipboard is not enough.</summary>
+    [RelayCommand]
+    private void OpenLogFolder() => Open(Log.Directory);
+
     [RelayCommand]
     private void OpenRepo() => Open("https://github.com/MifuneSG/FCAT");
 

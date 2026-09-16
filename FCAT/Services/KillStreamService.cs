@@ -131,6 +131,7 @@ public class KillStreamService(HttpClient httpClient) : IDisposable
                     if (sequence == 0) { await Task.Delay(ErrorWait, ct); continue; }
                     IsRunning = true;
                     _head = sequence;
+                    Log.Info("killstream", $"following zKill from sequence {sequence}");
                     TryStartBackfill();
                 }
 
@@ -153,10 +154,11 @@ public class KillStreamService(HttpClient httpClient) : IDisposable
                 await Task.Delay(BusyWait, ct);
             }
             catch (OperationCanceledException) { return; }
-            catch
+            catch (Exception ex)
             {
                 // Network hiccup, or we have been told to back off. Either way, wait it out rather
                 // than hammering - zKill bans for an hour.
+                Log.Warn("killstream", $"sequence {sequence} failed, backing off", ex);
                 try { await Task.Delay(ErrorWait, ct); } catch { return; }
             }
         }
@@ -202,7 +204,10 @@ public class KillStreamService(HttpClient httpClient) : IDisposable
             }
         }
         catch (OperationCanceledException) { }
-        catch { /* backfill is a nicety - never let it take the live stream down */ }
+        catch (Exception ex)
+        {
+            Log.Warn("killstream", "backfill stopped early", ex);   // a nicety, never fatal
+        }
     }
 
     private async Task<long> HeadAsync(CancellationToken ct)

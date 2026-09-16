@@ -22,7 +22,11 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
         request.Headers.Add("User-Agent", "FCAT/1.0 (Fleet Commander Assistance Tool)");
 
         var response = await httpClient.SendAsync(request);
-        if (!response.IsSuccessStatusCode) return default;
+        if (!response.IsSuccessStatusCode)
+        {
+            Log.Warn("esi", $"GET {path} -> {(int)response.StatusCode}");
+            return default;
+        }
 
         var json = await response.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<T>(json);
@@ -429,11 +433,17 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
                 "application/json");
 
             var response = await httpClient.SendAsync(request);
-            if (!response.IsSuccessStatusCode) continue;
+            if (!response.IsSuccessStatusCode)
+            {
+                // The caller falls back to showing the raw id, which is how ships and systems
+                // once rendered as bare numbers with nothing to explain it.
+                Log.Warn("esi", $"names: {chunk.Length} id(s) -> {(int)response.StatusCode}");
+                continue;
+            }
 
             var json = await response.Content.ReadAsStringAsync();
             var names = JsonSerializer.Deserialize<List<EsiNameResult>>(json);
-            if (names == null) continue;
+            if (names == null) { Log.Warn("esi", "names: response did not parse"); continue; }
 
             foreach (var n in names)
                 result[n.Id] = n.Name;

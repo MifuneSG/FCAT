@@ -424,6 +424,16 @@
                     <TextBlock Text="{Binding VersionLine}" Foreground="{StaticResource EveTextSecondary}"
                                FontFamily="{StaticResource FontMono}" FontSize="12" VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Command="{Binding CopyDiagnosticsCommand}" Style="{StaticResource GhostButton}"
+                                Height="30" Padding="12,0" Margin="0,0,6,0"
+                                ToolTip="Copy version, paths and this session's log - paste it with a bug report">
+                            <TextBlock Text="Copy diagnostics" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                        </Button>
+                        <Button Command="{Binding OpenLogFolderCommand}" Style="{StaticResource GhostButton}"
+                                Height="30" Padding="12,0" Margin="0,0,6,0"
+                                ToolTip="Open the folder FCAT writes its logs to">
+                            <TextBlock Text="Logs" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                        </Button>
                         <Button Command="{Binding OpenRepoCommand}" Style="{StaticResource GhostButton}"
                                 Height="30" Padding="12,0" Margin="0,0,6,0"
                                 ToolTip="Source, releases and bug reports">

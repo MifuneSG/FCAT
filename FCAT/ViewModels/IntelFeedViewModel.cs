@@ -185,7 +185,8 @@ public partial class IntelFeedViewModel : ObservableObject
 
     private async Task SafePollKillsAsync()
     {
-        try { await PollKillsAsync(); } catch { /* feed just skips this tick */ }
+        try { await PollKillsAsync(); }
+        catch (Exception ex) { Log.Warn("killfeed", "poll failed", ex); }
     }
 
     /// <summary>
@@ -285,7 +286,7 @@ public partial class IntelFeedViewModel : ObservableObject
                 Url    = $"https://zkillboard.com/kill/{kill.KillmailId}/",
             });
         }
-        catch { /* a name lookup failed - drop the row rather than take the feed down */ }
+        catch (Exception ex) { Log.Warn("killfeed", $"could not build a row for kill {kill.KillmailId}", ex); }
         finally { _rowGate.Release(); }
     }
 

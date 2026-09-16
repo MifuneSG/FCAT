@@ -1,4 +1,5 @@
 using System.Net;
+using System.Reflection;
 using System.Net.Http;
 using System.Windows;
 using FCAT.Models;
@@ -11,6 +12,26 @@ public partial class App : Application
 {
     private void OnStartup(object sender, StartupEventArgs e)
     {
+        var version = System.Reflection.Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion
+            ?? "unknown";
+        var plus = version.IndexOf('+');
+        if (plus > 0) version = version[..plus];
+
+        Log.Start(version);
+
+        // A crash otherwise leaves nothing behind: the window disappears and the user has a story
+        // rather than a stack. These two cover both threads an FCAT crash can come off.
+        DispatcherUnhandledException += (_, args) =>
+            Log.Error("crash", "Unhandled exception on the UI thread", args.Exception);
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+            Log.Error("crash", "Unhandled exception", args.ExceptionObject as Exception);
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            Log.Error("crash", "Unobserved task exception", args.Exception);
+            args.SetObserved();   // already logged; do not take the process down for it
+        };
+
         // Negotiate compression through the handler. Asking for gzip in a request header without
         // this leaves the response body compressed and the JSON unparseable, which is silent when
         // the caller treats a parse failure as "no data" - that is exactly how the kill feed and
@@ -68,6 +89,7 @@ public partial class App : Application
 
         var window = new MainWindow(alertHub) { DataContext = shell };
         window.Show();
+        Log.Info("app", "Window shown");
     }
 
     /// <summary>The watcher raises on FileSystemWatcher threads; everything downstream is UI state.</summary>
