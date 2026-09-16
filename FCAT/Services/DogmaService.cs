@@ -18,11 +18,7 @@ public record FitStats(
     double DroneDps,
     double Alpha,
     double Ehp,
-    double ArmorEhp,
-    double ShieldEhp,
-    double HullEhp,
     double Mass,
-    double AlignTime,
     double Optimal = 0,
     double Falloff = 0,
     double MissileRange = 0)
@@ -94,10 +90,6 @@ public sealed class DogmaService
     private const string AttrDroneDps  = "-14";
     private const string AttrAlpha     = "-11";   // damageAlpha
     private const string AttrEhp       = "-43";
-    private const string AttrArmorEhp  = "-28";
-    private const string AttrShieldEhp = "-30";
-    private const string AttrHullEhp   = "-29";
-    private const string AttrAlign     = "-1";
     private const string AttrMass      = "4";     // CCP's own
 
     // Range lives on the ITEM, not the ship - a fit can mount two weapon families with different
@@ -277,11 +269,7 @@ public sealed class DogmaService
                 DroneDps:     Value(AttrDroneDps),
                 Alpha:        Value(AttrAlpha),
                 Ehp:          Value(AttrEhp),
-                ArmorEhp:     Value(AttrArmorEhp),
-                ShieldEhp:    Value(AttrShieldEhp),
-                HullEhp:      Value(AttrHullEhp),
                 Mass:         Value(AttrMass),
-                AlignTime:    Value(AttrAlign),
                 Optimal:      optimal,
                 Falloff:      falloff,
                 MissileRange: missile);

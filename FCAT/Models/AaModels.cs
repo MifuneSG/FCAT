@@ -84,10 +84,6 @@ public class AaFitItem
     /// <summary>Which slot of its kind, from the flag's trailing digits. The dogma engine wants the
     /// index, and a fit that skips a slot must not have its remaining modules shuffled up.</summary>
     [JsonIgnore] public int SlotIndex => FitSlots.IndexOf(Flag);
-
-    /// <summary>True for the modules actually bolted to the hull, as against drones and cargo.</summary>
-    [JsonIgnore] public bool IsFitted =>
-        Slot is FitSlot.High or FitSlot.Mid or FitSlot.Low or FitSlot.Rig or FitSlot.Subsystem or FitSlot.Service;
 }
 
 public enum FitSlot { High, Mid, Low, Rig, Subsystem, Service, DroneBay, FighterBay, Cargo, Unknown }

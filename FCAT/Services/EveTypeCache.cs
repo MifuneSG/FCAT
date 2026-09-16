@@ -16,31 +16,11 @@ public class EveType
     /// the four damage types, and so on - see DogmaAttr.</summary>
     public Dictionary<int, double> Attributes { get; set; } = [];
 
-    /// <summary>Dogma effect ids. A ship's role bonuses are in here, which is how FCAT reads a
-    /// hull's weapon bonuses without a hand-written table per ship.</summary>
-    public List<int> Effects { get; set; } = [];
-
     public double Attr(int id, double fallback = 0) => Attributes.GetValueOrDefault(id, fallback);
 }
 
-/// <summary>One dogma effect: what it modifies, and with which attribute.</summary>
-public class EveEffect
-{
-    public int    EffectId { get; set; }
-    public string Name     { get; set; } = string.Empty;
-    public List<EveModifier> Modifiers { get; set; } = [];
-}
-
-public class EveModifier
-{
-    public string Domain              { get; set; } = string.Empty;   // shipID, charID, itemID…
-    public string Func                { get; set; } = string.Empty;   // LocationRequiredSkillModifier…
-    public int    ModifiedAttributeId { get; set; }
-    public int    ModifyingAttributeId { get; set; }
-    public int    Operator            { get; set; }                   // 4 = postMul, 6 = postPercent
-}
-
 /// <summary>
+/// A local copy of the EVE item database/// <summary>
 /// A local copy of the EVE item database, filled in from ESI on demand and kept on disk.
 ///
 /// <para>ESI serves type data one id at a time - there is no bulk form - so resolving a doctrine of
@@ -50,6 +30,9 @@ public class EveModifier
 ///
 /// <para>It is only ever used for things the FC opted into - a doctrine pulled from their Alliance
 /// Auth. Nothing here runs for an FC who has no auth configured.</para>
+///
+/// <para>Attributes only, deliberately. It once fetched dogma EFFECTS too, to work out ship bonuses
+/// by hand; the dogma engine does that properly now, so those calls were bought and never read.</para>
 /// </summary>
 public class EveTypeCache
 {
@@ -66,8 +49,7 @@ public class EveTypeCache
     /// server and a doctrine sweep is a few hundred calls. Six at a time is brisk and polite.</summary>
     private const int Concurrency = 6;
 
-    private readonly Dictionary<int, EveType>   _types   = [];
-    private readonly Dictionary<int, EveEffect> _effects = [];
+    private readonly Dictionary<int, EveType> _types = [];
 
     /// <summary>Per charge group, whether the things in it do damage. This is how a missile launcher
     /// is told from a probe launcher without a hand-kept list of launcher groups: a launcher holds no
@@ -86,8 +68,6 @@ public class EveTypeCache
     /// <summary>A type already in the cache, or null. Never touches the network - for the hot paths
     /// that cannot await, once <see cref="EnsureAsync"/> has been run over the ids they need.</summary>
     public EveType? Known(int typeId) => _types.GetValueOrDefault(typeId);
-
-    public EveEffect? KnownEffect(int effectId) => _effects.GetValueOrDefault(effectId);
 
     /// <summary>Whether a charge group is ammunition, i.e. whether firing it hurts anything.
     /// Unknown groups answer false, so an unresolved lookup understates rather than inventing a gun.</summary>
@@ -115,31 +95,7 @@ public class EveTypeCache
             finally { throttle.Release(); }
         }));
 
-        // A ship's bonuses live in its effects, so pull the ones the new types reference.
-        var wantedEffects = missing.Select(Known)
-                                   .Where(t => t != null)
-                                   .SelectMany(t => t!.Effects)
-                                   .Where(e => !_effects.ContainsKey(e))
-                                   .Distinct()
-                                   .ToList();
-
-        if (wantedEffects.Count > 0)
-        {
-            using var effectThrottle = new SemaphoreSlim(Concurrency);
-            await Task.WhenAll(wantedEffects.Select(async id =>
-            {
-                await effectThrottle.WaitAsync(ct);
-                try
-                {
-                    var effect = await FetchEffectAsync(id, ct);
-                    if (effect == null) return;
-                    lock (_effects) { _effects[id] = effect; _dirty = true; }
-                }
-                finally { effectThrottle.Release(); }
-            }));
-        }
-
-        // Work out which of the new modules' charge groups are ammunition. Two fetches per group,
+        // Work out which of the new modules' charge groups are ammunition.        // Work out which of the new modules' charge groups are ammunition. Two fetches per group,
         // once ever - the answer cannot change without a patch.
         var chargeGroups = missing.Select(Known)
                                   .Where(t => t != null)
@@ -223,7 +179,6 @@ public class EveTypeCache
                 GroupId    = raw.GroupId,
                 Attributes = raw.DogmaAttributes.GroupBy(a => a.AttributeId)
                                                 .ToDictionary(g => g.Key, g => g.First().Value),
-                Effects    = raw.DogmaEffects.Select(e => e.EffectId).ToList(),
             };
         }
         catch (OperationCanceledException) { return null; }
@@ -234,50 +189,13 @@ public class EveTypeCache
         }
     }
 
-    private async Task<EveEffect?> FetchEffectAsync(int effectId, CancellationToken ct)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get,
-                $"https://esi.evetech.net/latest/dogma/effects/{effectId}/");
-            request.Headers.Add("User-Agent", "FCAT (Fleet Commander Assistance Tool)");
-
-            using var response = await _http.SendAsync(request, ct);
-            if (!response.IsSuccessStatusCode) return null;
-
-            var raw = JsonSerializer.Deserialize<EsiEffect>(await response.Content.ReadAsStringAsync(ct));
-            if (raw == null) return null;
-
-            return new EveEffect
-            {
-                EffectId  = effectId,
-                Name      = raw.Name,
-                Modifiers = (raw.Modifiers ?? []).Select(m => new EveModifier
-                {
-                    Domain               = m.Domain ?? string.Empty,
-                    Func                 = m.Func ?? string.Empty,
-                    ModifiedAttributeId  = m.ModifiedAttributeId,
-                    ModifyingAttributeId = m.ModifyingAttributeId,
-                    Operator             = m.Operator,
-                }).ToList(),
-            };
-        }
-        catch (OperationCanceledException) { return null; }
-        catch (Exception ex)
-        {
-            Log.Warn("types", $"effect {effectId} failed", ex);
-            return null;
-        }
-    }
-
-    // Disk
+    // Disk    // Disk
 
     private class CacheFile
     {
         public int Version { get; set; }
-        public Dictionary<int, EveType>   Types   { get; set; } = [];
-        public Dictionary<int, EveEffect> Effects { get; set; } = [];
-        public Dictionary<int, bool>      ChargeGroups { get; set; } = [];
+        public Dictionary<int, EveType> Types        { get; set; } = [];
+        public Dictionary<int, bool>    ChargeGroups { get; set; } = [];
     }
 
     private void Load()
@@ -289,9 +207,8 @@ public class EveTypeCache
             var file = JsonSerializer.Deserialize<CacheFile>(File.ReadAllText(FilePath));
             if (file == null || file.Version != CacheVersion) return;   // stale shape - refetch lazily
 
-            foreach (var (id, type)   in file.Types)   _types[id]   = type;
-            foreach (var (id, effect) in file.Effects) _effects[id] = effect;
-            foreach (var (id, dmg)    in file.ChargeGroups) _chargeGroupDoesDamage[id] = dmg;
+            foreach (var (id, type) in file.Types)        _types[id] = type;
+            foreach (var (id, dmg)  in file.ChargeGroups) _chargeGroupDoesDamage[id] = dmg;
 
             Log.Info("types", $"loaded {_types.Count} cached item type(s)");
         }
@@ -315,7 +232,6 @@ public class EveTypeCache
                 {
                     Version = CacheVersion,
                     Types        = new Dictionary<int, EveType>(_types),
-                    Effects      = new Dictionary<int, EveEffect>(_effects),
                     ChargeGroups = new Dictionary<int, bool>(_chargeGroupDoesDamage),
                 };
                 _dirty = false;
@@ -340,9 +256,6 @@ public class EveTypeCache
 
         [JsonPropertyName("dogma_attributes")]
         public List<EsiTypeAttribute> DogmaAttributes { get; set; } = [];
-
-        [JsonPropertyName("dogma_effects")]
-        public List<EsiTypeEffect> DogmaEffects { get; set; } = [];
     }
 
     private class EsiTypeAttribute
@@ -351,28 +264,9 @@ public class EveTypeCache
         [JsonPropertyName("value")]        public double Value       { get; set; }
     }
 
-    private class EsiTypeEffect
-    {
-        [JsonPropertyName("effect_id")] public int EffectId { get; set; }
-    }
-
     private class EsiGroup
     {
         [JsonPropertyName("types")] public List<int> Types { get; set; } = [];
     }
 
-    private class EsiEffect
-    {
-        [JsonPropertyName("name")]      public string Name { get; set; } = string.Empty;
-        [JsonPropertyName("modifiers")] public List<EsiModifier>? Modifiers { get; set; }
-    }
-
-    private class EsiModifier
-    {
-        [JsonPropertyName("domain")]                 public string? Domain { get; set; }
-        [JsonPropertyName("func")]                   public string? Func   { get; set; }
-        [JsonPropertyName("modified_attribute_id")]  public int ModifiedAttributeId  { get; set; }
-        [JsonPropertyName("modifying_attribute_id")] public int ModifyingAttributeId { get; set; }
-        [JsonPropertyName("operator")]               public int Operator { get; set; }
-    }
 }

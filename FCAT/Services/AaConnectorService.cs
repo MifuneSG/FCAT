@@ -111,30 +111,11 @@ public class AaConnectorService
     public AaFatLink? CurrentFatLink =>
         Snapshot.FatLinks.FirstOrDefault(f => f.IsOpen) ?? Snapshot.FatLinks.FirstOrDefault();
 
-    public AaFitting? Fitting(int id) => Snapshot.Fittings.FirstOrDefault(f => f.Id == id);
-
-    /// <summary>The fits that make up a doctrine, in the order the doctrine lists them.</summary>
-    public List<AaFitting> FitsOf(AaDoctrine doctrine) =>
-        doctrine.FittingIds.Select(Fitting).Where(f => f != null).Select(f => f!).ToList();
-
-    /// <summary>Friendly structures in a system. Empty for every system when there is no auth.</summary>
+    /// <summary>Friendly structures in a system.    /// <summary>Friendly structures in a system. Empty for every system when there is no auth.</summary>
     public List<AaStructure> StructuresIn(int systemId) =>
         Snapshot.Structures.Where(s => s.SystemId == systemId).ToList();
 
-    /// <summary>Whether the fleet has anywhere to dock or tether in this system right now.</summary>
-    public bool HasShelterIn(int systemId) =>
-        Snapshot.Structures.Any(s => s.SystemId == systemId && s.CanShelter);
-
-    /// <summary>Hull type ids that appear in any doctrine - "is this pilot in something we fly".</summary>
-    public HashSet<int> DoctrineHullTypeIds()
-    {
-        var inDoctrines = Snapshot.Doctrines.SelectMany(d => d.FittingIds).ToHashSet();
-        return Snapshot.Fittings.Where(f => inDoctrines.Contains(f.Id))
-                                .Select(f => f.ShipTypeId)
-                                .ToHashSet();
-    }
-
-    // Lifecycle
+    // Lifecycle    // Lifecycle
 
     /// <summary>Loads the cached snapshot and, if configured, starts the refresh loop. Safe to call
     /// when nothing is configured - it just sits at Off.</summary>
