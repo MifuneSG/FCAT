@@ -53,7 +53,17 @@ if (-not $cargo) {
         throw "cargo not found. Install Rust from https://rustup.rs, then: rustup default stable-x86_64-pc-windows-gnu"
     }
 }
-& $cargo build --release --manifest-path (Join-Path $root "dogma-bridge\Cargo.toml")
+# cargo writes its progress to stderr, and with $ErrorActionPreference = Stop PowerShell turns any
+# native stderr into a terminating error - so a SUCCESSFUL build would abort the release. Drop the
+# preference across the call and judge it by its exit code, which is the only honest signal.
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+    & $cargo build --release --manifest-path (Join-Path $root "dogma-bridge\Cargo.toml") 2>&1 |
+        ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+} finally {
+    $ErrorActionPreference = $prevEap
+}
 if ($LASTEXITCODE -ne 0) { throw "cargo build failed - the dogma bridge did not build." }
 
 $bridge = Join-Path $root "dogma-bridge\target\release\fcat_dogma.dll"
