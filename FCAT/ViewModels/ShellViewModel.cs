@@ -47,6 +47,29 @@ public partial class ShellViewModel : ObservableObject
     private FitAnalyzer? _fits;
     public FitAnalyzer Fits => _fits ??= new FitAnalyzer(_types);
 
+    /// <summary>True once every type in the doctrines has been resolved, so pages know whether a
+    /// missing number means "no doctrine for that hull" or just "not looked up yet".</summary>
+    public bool DoctrineTypesReady { get; private set; }
+
+    private async Task WarmDoctrineTypesAsync()
+    {
+        try
+        {
+            var fittings = _aa.Fittings.ToList();
+            if (fittings.Count == 0) { DoctrineTypesReady = false; return; }
+
+            await _dogma.PrepareAsync();   // 9MB off disk - not on the UI thread
+            await Fits.WarmAsync(fittings);
+            _dogma.Invalidate();      // fits may have changed under us; drop anything computed from the old ones
+            DoctrineTypesReady = true;
+            Log.Info("aa", $"doctrine ready: {fittings.Count} fit(s) resolved");
+        }
+        catch (Exception ex)
+        {
+            Log.Warn("aa", "could not resolve the doctrine's item types", ex);
+        }
+    }
+
     public ShellViewModel(EsiAuthService auth, EsiService esi, CombatLogService combatLog,
                           SettingsService settings, AlertHub alertHub, SessionLog sessionLog,
                           SystemSearchService systemSearch, ZkillService zkill,
@@ -71,6 +94,13 @@ public partial class ShellViewModel : ObservableObject
         _updater = updater;
         _altTracker = altTracker;
         _auth.ActiveCharacterChanged += OnActiveCharacterChanged;
+
+        // Doctrine fits arrive as bare type ids. Resolving them is what lets the fleet panel match a
+        // pilot's hull to a fit and read the ammo out of its cargo, so warm the cache as soon as a
+        // pull lands rather than making the first page that wants a number wait for ESI. Subscribed
+        // here because the shell outlives every page; a page doing it would leak a handler per visit.
+        _aa.Updated += () => _ = WarmDoctrineTypesAsync();
+        if (_aa.HasData) _ = WarmDoctrineTypesAsync();
         CurrentPage = new LoginViewModel(_auth, this);
 
         // Restore the map overlay's on/off + lock state. Going through the property (not the field)

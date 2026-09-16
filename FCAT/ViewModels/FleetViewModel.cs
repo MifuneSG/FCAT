@@ -105,6 +105,44 @@ public partial class FleetViewModel : ObservableObject
     [ObservableProperty] private string _fleetMassText = string.Empty;
     public ObservableCollection<WormholeCheck> WormholeChecks { get; } = [];
 
+    /// <summary>True when the mass above is fitted mass rather than bare hulls - i.e. the doctrine
+    /// covered the fleet. Plates and rigs are most of the difference on an armour fleet.</summary>
+    [ObservableProperty] private bool _fleetMassIsFitted;
+
+    // What the fleet is worth, from the alliance's own doctrine fits run through the dogma engine.
+    // Hidden unless an Alliance Auth is connected AND the engine is present, because the section is
+    // meaningless without both and a zero would read as "this fleet does no damage".
+    [ObservableProperty] private bool   _hasDoctrineStats;
+    [ObservableProperty] private string _fleetDpsText   = string.Empty;
+    [ObservableProperty] private string _fleetEhpText   = string.Empty;
+    [ObservableProperty] private string _fleetAlphaText = string.Empty;
+
+    /// <summary>"18 of 24 on doctrine" - the honest caveat on every number beside it.</summary>
+    [ObservableProperty] private string _doctrineCoverage = string.Empty;
+
+    /// <summary>Set when part of the fleet is in hulls no doctrine covers, so the totals understate.</summary>
+    [ObservableProperty] private bool _hasOffDoctrine;
+
+    /// <summary>The hulls that contributed nothing, for the tooltip.</summary>
+    public ObservableCollection<HullCount> OffDoctrineHulls { get; } = [];
+
+    /// <summary>Ammunition the doctrine's fits carry. Alliance Auth records no loaded charge, so the
+    /// FC picks and the damage figure moves with it.</summary>
+    public ObservableCollection<AmmoChoice> AmmoChoices { get; } = [];
+
+    private AmmoChoice? _selectedAmmo;
+    public AmmoChoice? SelectedAmmo
+    {
+        get => _selectedAmmo;
+        set
+        {
+            if (value == null || ReferenceEquals(value, _selectedAmmo)) return;
+            _selectedAmmo = value;
+            OnPropertyChanged(nameof(SelectedAmmo));
+            ComputeDoctrineStats();   // the whole point of the picker
+        }
+    }
+
     // Move picker state
     [ObservableProperty] private bool _isMovePickerOpen;
     [ObservableProperty] private string _movePilotName = string.Empty;
@@ -752,6 +790,123 @@ public partial class FleetViewModel : ObservableObject
         return br;
     }
 
+    /// <summary>Fitted mass per hull type, from the matching doctrine fit. Empty without auth.</summary>
+    private readonly Dictionary<int, double> _doctrineMass = [];
+
+    /// <summary>
+    /// What this fleet is worth, assuming everyone is flying the alliance's fit for their hull.
+    ///
+    /// <para>That assumption is the whole caveat, and it is unavoidable: ESI hands out a fleet
+    /// member's ship TYPE and nothing else - no fit, no modules, no ammo. So the honest reading is
+    /// "a fleet of these hulls, flown to doctrine, does this", which is the question an FC asks
+    /// before committing. The coverage line beside it says how much of the fleet the doctrine
+    /// actually accounted for, so a gang half off-doctrine cannot quietly look like a full one.</para>
+    /// </summary>
+    private void ComputeDoctrineStats()
+    {
+        HasDoctrineStats = false;
+        HasOffDoctrine   = false;
+        OffDoctrineHulls.Clear();
+        _doctrineMass.Clear();
+
+        var aa    = _shell.Aa;
+        var dogma = _shell.Dogma;
+        if (!aa.HasData || !dogma.IsAvailable || !_shell.DoctrineTypesReady) return;
+        if (_currentMembers.Count == 0) return;
+
+        var analyzer = _shell.Fits;
+
+        // One fit per hull. A doctrine can hold two fits for the same hull (armour and shield, say);
+        // without knowing which a pilot took, the first is as good a guess as any, and the coverage
+        // line already says these are doctrine figures rather than what is really fitted.
+        var fitByHull = new Dictionary<int, AaFitting>();
+        foreach (var fit in aa.Fittings) fitByHull.TryAdd(fit.ShipTypeId, fit);
+
+        RebuildAmmoChoices(fitByHull, analyzer);
+
+        double dps = 0, ehp = 0, alpha = 0;
+        var covered = 0;
+        var offDoctrine = new Dictionary<string, int>();
+
+        foreach (var m in _currentMembers)
+        {
+            if (!fitByHull.TryGetValue(m.ShipTypeId, out var fit))
+            {
+                var hull = string.IsNullOrEmpty(m.ShipTypeName) ? "Unknown" : m.ShipTypeName;
+                offDoctrine[hull] = offDoctrine.GetValueOrDefault(hull) + 1;
+                continue;
+            }
+
+            var stats = dogma.Calculate(fit, analyzer.AmmoToUse(fit, _selectedAmmo?.TypeId));
+            if (stats == null) continue;
+
+            dps   += stats.TotalDps;
+            ehp   += stats.Ehp;
+            alpha += stats.Alpha;
+            covered++;
+            _doctrineMass[m.ShipTypeId] = stats.Mass;
+        }
+
+        if (covered == 0) return;
+
+        HasDoctrineStats = true;
+        FleetDpsText     = DogmaService.Short(dps);
+        FleetEhpText     = DogmaService.Short(ehp);
+        FleetAlphaText   = DogmaService.Short(alpha);
+        DoctrineCoverage = covered == _currentMembers.Count
+            ? $"all {covered} on doctrine"
+            : $"{covered} of {_currentMembers.Count} on doctrine";
+
+        HasOffDoctrine = offDoctrine.Count > 0;
+        foreach (var (hull, count) in offDoctrine.OrderByDescending(kv => kv.Value))
+            OffDoctrineHulls.Add(new HullCount(hull, count));
+    }
+
+    /// <summary>
+    /// The ammo the fleet's own fits carry, deduplicated and ordered by how much of the fleet can
+    /// actually load each one. That ordering is the point: sorted by name, a tackle frigate's light
+    /// missiles come out above the battleship ammo nine tenths of the fleet is shooting, and the
+    /// first entry is what the picker defaults to. Rebuilt as the roster changes, keeping the FC's
+    /// own pick whenever it still applies.
+    /// </summary>
+    private void RebuildAmmoChoices(Dictionary<int, AaFitting> fitByHull, FitAnalyzer analyzer)
+    {
+        // How many pilots could load each charge, so the majority's ammo leads.
+        var pilots = new Dictionary<int, int>();
+        var byType = new Dictionary<int, AmmoChoice>();
+
+        foreach (var m in _currentMembers)
+        {
+            if (!fitByHull.TryGetValue(m.ShipTypeId, out var fit)) continue;
+            foreach (var ammo in analyzer.AmmoFor(fit))
+            {
+                pilots[ammo.TypeId] = pilots.GetValueOrDefault(ammo.TypeId) + 1;
+                byType[ammo.TypeId] = ammo;
+            }
+        }
+
+        // Most of the fleet first, then the hardest-hitting of those. A tie between two rounds the
+        // same pilots can load - short range and long - should open on the one that answers "what
+        // can this fleet actually put out", not on whichever is alphabetically first.
+        var wanted = byType.Values
+            .OrderByDescending(a => pilots[a.TypeId])
+            .ThenByDescending(a => a.Damage)
+            .ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (wanted.Count == AmmoChoices.Count && wanted.All(w => AmmoChoices.Any(a => a.TypeId == w.TypeId)))
+            return;   // unchanged - do not disturb the FC's selection
+
+        AmmoChoices.Clear();
+        foreach (var a in wanted) AmmoChoices.Add(a);
+
+        if (_selectedAmmo == null || AmmoChoices.All(a => a.TypeId != _selectedAmmo.TypeId))
+        {
+            _selectedAmmo = AmmoChoices.FirstOrDefault();
+            OnPropertyChanged(nameof(SelectedAmmo));
+        }
+    }
+
     private enum FleetKind { Combat, Mining, Capital, Covert }
 
     private void ComputeStats()
@@ -765,11 +920,25 @@ public partial class FleetViewModel : ObservableObject
         HasFleetMass  = false;
         if (total == 0) return;
 
-        // Sums only members whose hull mass has resolved, so the tile is low until they all land.
-        double fleetMass = 0; var massResolved = 0;
+        // Doctrine fits first: they carry fitted mass, which is the better number for the tile
+        // below. Plates, rigs and a full hold are most of what a hull-only figure misses.
+        ComputeDoctrineStats();
+
+        // Sums only members whose mass has resolved, so the tile is low until they all land.
+        double fleetMass = 0; var massResolved = 0; var fittedCount = 0;
         foreach (var m in _currentMembers)
-            if (_shipMassCache.TryGetValue(m.ShipTypeId, out var kg)) { fleetMass += kg; massResolved++; }
+        {
+            if (_doctrineMass.TryGetValue(m.ShipTypeId, out var fitted) && fitted > 0)
+            {
+                fleetMass += fitted; massResolved++; fittedCount++;
+            }
+            else if (_shipMassCache.TryGetValue(m.ShipTypeId, out var kg))
+            {
+                fleetMass += kg; massResolved++;
+            }
+        }
         HasFleetMass = massResolved > 0;
+        FleetMassIsFitted = fittedCount > 0 && fittedCount == massResolved;
         WormholeChecks.Clear();
         if (HasFleetMass)
         {

@@ -24,8 +24,14 @@ public record FitStats(
     double Mass,
     double AlignTime)
 {
-    /// <summary>Guns plus drones - what the FC means by "what does this do".</summary>
-    public double TotalDps => Dps + DroneDps;
+    /// <summary>
+    /// Everything the ship puts out. This is just <see cref="Dps"/>: the engine's
+    /// damagePerSecondWithoutReload ALREADY includes drones, and <see cref="DroneDps"/> is the
+    /// breakdown of how much of it they are, not an extra on top. Adding the two together looks
+    /// reasonable and silently counts every drone twice - measured on a Megathron, guns alone read
+    /// 1343, three Ogres made it 1533, and drone dps read 190.
+    /// </summary>
+    public double TotalDps => Dps;
 }
 
 /// <summary>
@@ -77,9 +83,25 @@ public sealed class DogmaService
 
     private bool _tried;
 
-    /// <summary>True once the engine is loaded and can answer. False on a build with no DLL, or if
-    /// sde.dat is missing - both of which have to degrade to "no numbers", never to wrong ones.</summary>
-    public bool IsAvailable { get; private set; }
+    private bool _available;
+
+    /// <summary>
+    /// True once the engine is loaded and can answer. False on a build with no DLL, or if sde.dat is
+    /// missing - both of which degrade to "no numbers", never to wrong ones.
+    ///
+    /// <para>Reading this LOADS the engine if it has not been loaded yet, which is deliberate:
+    /// callers check availability before asking for a number, so a property that only became true
+    /// after the first calculation would report false forever and quietly switch every fit statistic
+    /// off. Call <see cref="PrepareAsync"/> first to get the one-off cost off the UI thread.</para>
+    /// </summary>
+    public bool IsAvailable
+    {
+        get { EnsureLoaded(); return _available; }
+    }
+
+    /// <summary>Load the engine off the UI thread. Reading sde.dat is ~9MB from disk, which is not
+    /// something to do while an FC is waiting for the fleet panel to paint.</summary>
+    public Task PrepareAsync() => Task.Run(EnsureLoaded);
 
     /// <summary>The EVE build sde.dat was made from, for the diagnostics report.</summary>
     public int EveBuild { get; private set; }
@@ -120,7 +142,7 @@ public sealed class DogmaService
 
                 EveBuild = build;
                 _allVSkills = LoadAllVSkills();
-                IsAvailable = true;
+                _available = true;
                 Log.Info("dogma", $"engine loaded, EVE build {build}, {_allVSkills.Count(c => c == ':')} skills at V");
             }
             catch (DllNotFoundException)
@@ -174,6 +196,13 @@ public sealed class DogmaService
         lock (_gate) _cache[key] = stats;
         return stats;
     }
+
+    /// <summary>Format a damage or hitpoint figure the way an FC reads one: 34.2k, not 34,187.</summary>
+    public static string Short(double value) =>
+        value >= 1_000_000 ? $"{value / 1_000_000:0.#}m"
+      : value >= 10_000    ? $"{value / 1_000:0}k"
+      : value >= 1_000     ? $"{value / 1_000:0.#}k"
+      :                      $"{value:0}";
 
     /// <summary>Drop cached results - after a refresh brings down changed fits, or an ammo change.</summary>
     public void Invalidate()
@@ -263,10 +292,17 @@ public sealed class DogmaService
                 items.Append(",\"slot\":{\"type\":\"").Append(slot)
                      .Append("\",\"index\":").Append(item.SlotIndex).Append('}');
 
-            // Guns have to be running to do damage; everything else merely online. Drones in the bay
-            // stay put - a drone only adds damage once it is out, and how many an FC launches is
-            // their call, not something a doctrine fit records.
-            items.Append(",\"state\":\"").Append(item.Slot == FitSlot.High ? "active" : "online").Append('"');
+            // Guns have to be running to do damage, and drones have to be OUT: a drone sitting in
+            // the bay contributes nothing, so a fit whose damage is all drones - an Ishtar, say -
+            // would read as zero. An FC asking what the fleet does means with drones launched.
+            var state = item.Slot switch
+            {
+                FitSlot.High     => "active",
+                FitSlot.DroneBay => "active",
+                FitSlot.Cargo    => "offline",   // cargo is carried, not running
+                _                => "online",
+            };
+            items.Append(",\"state\":\"").Append(state).Append('"');
 
             if (ammoTypeId is > 0 && item.Slot == FitSlot.High)
                 items.Append(",\"charge\":{\"type_id\":").Append(ammoTypeId.Value).Append('}');
