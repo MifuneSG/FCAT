@@ -114,21 +114,24 @@ Tag the repo **`connector-vX.Y.Z`**, not `vX.Y.Z` - the Discord release workflow
 
 ### Publishing a connector version
 
-One-time: a PyPI account with an API token, and `pip install build twine`.
+One-time: a PyPI account with 2FA on, and an API token from
+<https://pypi.org/manage/account/token/>. For the first upload the project does not exist yet, so
+the token has to be account-scoped; replace it afterwards with one scoped to `aa-fcat-connector`.
+
+Bump `__version__` in `fcatconnector/__init__.py` first. PyPI refuses to replace a version that
+already exists and yanking is the only undo, so check before you commit to a number:
 
 ```powershell
-cd aa-connector
-Remove-Item dist, build, *.egg-info -Recurse -Force -ErrorAction SilentlyContinue
-python -m build                 # -> dist/*.whl and dist/*.tar.gz
-python -m twine check dist/*    # must say PASSED before uploading
-python -m twine upload dist/*   # username __token__, password is the API token
+.\scripts\publish-connector.ps1 -DryRun      # builds and validates, uploads nothing
+.\scripts\publish-connector.ps1              # builds, validates, uploads
 ```
 
-Bump `__version__` first; PyPI refuses to overwrite a version that already exists, and there is no
-way to take one back - only to yank it.
+The script builds in a throwaway virtualenv, refuses to upload a version already on PyPI, runs
+`twine check`, and confirms the wheel carries `views.py` and the keys template - without the
+template the connector page 500s the first time an FC opens it. It never stores your token: twine
+prompts, username `__token__`, password the whole token including its `pypi-` prefix.
 
-Worth testing the upload against [TestPyPI](https://test.pypi.org) first the very first time:
-`python -m twine upload --repository testpypi dist/*`.
+`-TestPyPI` uploads to <https://test.pypi.org> instead, worth doing once the first time.
 
 ### Compatibility
 

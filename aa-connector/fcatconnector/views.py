@@ -304,8 +304,15 @@ def _fat_core(request, user):
 
 
 def _click_url(request, fat_hash):
-    """The clickable link, whichever app is routing it. Empty if neither name resolves."""
-    for name in ("afat:fatlinks_click_fatlink", "fatlink:click"):
+    """
+    The clickable link, whichever app is routing it. Empty if neither name resolves.
+
+    AFAT calls the route that registers a pilot "fatlinks_add_fat" (/<hash>/register/); core auth
+    calls its equivalent "click" under the "fleetactivitytracking" namespace. Both are checked
+    because an auth runs one or the other, and a wrong guess here degrades to an empty link rather
+    than a 500 - which is the only reason to reverse by name instead of building the path by hand.
+    """
+    for name in ("afat:fatlinks_add_fat", "fleetactivitytracking:click"):
         try:
             return request.build_absolute_uri(reverse(name, args=[fat_hash]))
         except NoReverseMatch:
