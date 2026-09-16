@@ -11,12 +11,63 @@ offers a one-click "Restart & update".
 dotnet tool install -g vpk      # the Velopack CLI
 ```
 
+Install **Rust** from [rustup.rs](https://rustup.rs), then pick the GNU toolchain:
+
+```powershell
+rustup default stable-x86_64-pc-windows-gnu
+```
+
+GNU rather than MSVC on purpose: it brings its own linker, so you don't need Visual Studio or the
+Windows SDK just to build one small DLL. `pack.ps1` builds it for you; you never run cargo by hand.
+
 Make sure `FCAT/AppSecrets.cs` exists locally (it's gitignored, so copy `AppSecrets.example.cs`
 and fill in the real ESI client id/secret). It gets baked into the published build.
 
+## The two pieces behind fit statistics
+
+Damage, effective hitpoints and mass come from
+[EVEShipFit's dogma engine](https://github.com/EVEShipFit/dogma-engine) (MIT). FCAT does not
+implement EVE's dogma itself and should not start. Two things make it work, and a release that
+loses either one **still builds, still installs, and silently shows no fit statistics** - so
+`pack.ps1` treats both as hard failures rather than warnings.
+
+**`dogma-bridge/`** is a small Rust crate wrapping that engine as `fcat_dogma.dll`, which FCAT
+calls in-process. Only the source is committed; `pack.ps1` runs `cargo build --release` before
+publishing. Nothing here touches the network - the engine is a pure function over local data.
+
+**`FCAT/Assets/sde.dat`** is CCP's static data: every item, its attributes, and the dogma rules
+that turn a fit into numbers. ~9MB, and it **is** committed, so a fresh clone builds a working
+app. It compresses to about 2MB inside the installer.
+
+It goes stale when CCP patches - new ships and modules simply will not resolve. Refresh it before
+a release if it has been a while (`pack.ps1` warns past 60 days):
+
+```powershell
+# EVEShipFit publishes it on npm; no Node needed, it is just a tarball.
+$meta = Invoke-RestMethod https://registry.npmjs.org/@eveshipfit/sde
+$ver  = $meta.'dist-tags'.latest                       # e.g. 3.3503375.1 - the digits are the EVE build
+Invoke-WebRequest $meta.versions.$ver.dist.tarball -OutFile sde.tgz
+tar -xzf sde.tgz
+Copy-Item package/dist/sde.dat FCAT/Assets/sde.dat -Force
+Remove-Item sde.tgz, package -Recurse -Force
+```
+
+The app logs the build it loaded at startup, so you can confirm the refresh took:
+`INFO [dogma] engine loaded, EVE build 3503375`.
+
+Take `sde.dat` only. The package also carries `names.dat` (15MB) for non-English item names,
+which FCAT does not use.
+
+Bumping the engine itself is separate and rarer: change the `esf-dogma-engine` / `esf-data`
+versions in `dogma-bridge/Cargo.toml`. If you do, re-check the derived attribute ids in
+`DogmaService` against
+[sde-patched's `patches/ids.yaml`](https://github.com/EVEShipFit/sde-patched) - they are negative
+numbers like `-12` for DPS, and they are assigned per name rather than fixed by the engine.
+
 ## Cut a release
 
-1. **Bump the version** in `FCAT/FCAT.csproj` (`<Version>` / `<FileVersion>`).
+1. **Bump the version** in `FCAT/FCAT.csproj` (`<Version>` / `<FileVersion>` /
+   `<AssemblyVersion>` - keep all three together).
 2. **Pack** (from the repo root):
 
    ```powershell
@@ -43,7 +94,25 @@ and fill in the real ESI client id/secret). It gets baked into the published bui
        --token <github-personal-access-token> --pre
    ```
 
+`pack.ps1` opens the packed `.nupkg` afterwards and fails if `fcat_dogma.dll` or `sde.dat` is
+missing, because a release without them looks identical from the outside.
+
 That's it. Installed clients pick up the new version on their next launch.
+
+## The Alliance Auth connector releases separately
+
+`aa-connector/` is a Django plugin alliances install on their own auth, and it has its own version
+in `fcatconnector/__init__.py`. Tag it **`connector-vX.Y.Z`**, not `vX.Y.Z` - the Discord release
+workflow only fires on `v`-prefixed tags, so connector releases don't ping the FC Discord.
+
+Admins install a pinned tag:
+
+```
+pip install "git+https://github.com/MifuneSG/FCAT.git@connector-v0.2.0#subdirectory=aa-connector"
+```
+
+FCAT degrades gracefully against an older connector: endpoints it doesn't know simply aren't
+advertised, and the panels that read them hide themselves.
 
 ## Verifying the update flow
 

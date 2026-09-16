@@ -7,6 +7,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
 
+    <!-- FCAT is English-only, and a self-contained publish otherwise ships translated resource
+         assemblies for thirteen languages nothing in the app ever asks for. Worth 8.7MB of the
+         publish on its own.
+
+         Note for anyone looking to shrink this further: WPF does NOT support trimming or AOT, so
+         the runtime bulk (PresentationFramework, CoreLib, coreclr) cannot be cut while the build
+         stays self-contained. The only larger lever is going framework-dependent, which trades
+         ~60MB of download for making every user install the .NET Desktop Runtime first. -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+
     <!-- Custom entry point (Program.Main) so Velopack runs before WPF; disambiguates from
          the auto-generated App.g.cs Main. -->
     <StartupObject>FCAT.Program</StartupObject>

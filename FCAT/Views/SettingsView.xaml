@@ -526,7 +526,7 @@
                 <TextBlock Text="Runs entirely on your machine. Nothing is uploaded, there is no account and nothing behind it. Hover the ? beside any page or section for what it does and where its numbers come from."
                            Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
                            TextWrapping="Wrap" Margin="0,0,0,7"/>
-                <TextBlock Text="Map layout by Wollari at dotlan.net. Kill data from zKillboard. Everything else comes from CCP's ESI. EVE Online and all related assets are property of CCP hf."
+                <TextBlock Text="Map layout by Wollari at dotlan.net. Kill data from zKillboard. Fit statistics by EVEShipFit's dogma engine (MIT), with CCP's static data. Everything else comes from CCP's ESI. EVE Online and all related assets are property of CCP hf."
                            Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
                            TextWrapping="Wrap"/>
 

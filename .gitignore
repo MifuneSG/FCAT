@@ -46,8 +46,3 @@ aa-connector/.gitattributes
 # ─── Rust (the dogma bridge in dogma-bridge/) ───
 dogma-bridge/target/
 dogma-bridge/Cargo.lock
-
-# ─── EVE static data for the dogma engine ───
-# ~9MB, and it goes stale every time CCP patches. Fetched at build/release time rather than
-# committed, so the repo stays lean and a release always carries current data. See RELEASING.md.
-FCAT/Assets/sde.dat
