@@ -143,6 +143,13 @@ public class AaStructure
     /// <summary>Null when there is no fuel timer, which for an Upwell structure means unfuelled.</summary>
     [JsonPropertyName("fuel_expires_at")] public DateTimeOffset? FuelExpiresAt { get; set; }
 
+    /// <summary>When the current state ends - the armour or hull timer coming out. A scheduled
+    /// fight, and the reason an FC cares about a reinforced structure at all.</summary>
+    [JsonPropertyName("state_timer_end")] public DateTimeOffset? StateTimerEnd { get; set; }
+
+    /// <summary>Set while a structure is on its way down.</summary>
+    [JsonPropertyName("unanchors_at")] public DateTimeOffset? UnanchorsAt { get; set; }
+
     /// <summary>Under attack now, or sitting in a reinforcement timer.</summary>
     [JsonIgnore] public bool IsReinforced =>
         State.Contains("reinforce", StringComparison.OrdinalIgnoreCase);
@@ -171,6 +178,32 @@ public class AaStructure
     /// </summary>
     [JsonIgnore] public bool CanShelter =>
         !IsReinforced && !IsAnchoring && !IsOffline && (!IsUpwell || HasFuel);
+
+    /// <summary>The timer that matters, if either is running.</summary>
+    [JsonIgnore] public DateTimeOffset? Timer => StateTimerEnd ?? UnanchorsAt;
+
+    [JsonIgnore] public bool HasTimer => Timer is { } t && t > DateTimeOffset.UtcNow;
+
+    /// <summary>What the timer is: the state it is coming out of, or an unanchor.</summary>
+    [JsonIgnore] public string TimerLabel =>
+        UnanchorsAt != null && StateTimerEnd == null ? "unanchors"
+      : State.Contains("armor", StringComparison.OrdinalIgnoreCase) ? "armour timer"
+      : State.Contains("hull",  StringComparison.OrdinalIgnoreCase) ? "hull timer"
+      : "timer";
+
+    /// <summary>How long until it comes out, said the way an FC reads a timer.</summary>
+    [JsonIgnore] public string TimerText
+    {
+        get
+        {
+            if (Timer is not { } t) return string.Empty;
+            var left = t - DateTimeOffset.UtcNow;
+            if (left <= TimeSpan.Zero)  return "out now";
+            if (left.TotalHours < 1)    return $"{(int)left.TotalMinutes}m";
+            if (left.TotalDays  < 1)    return $"{(int)left.TotalHours}h {left.Minutes}m";
+            return $"{(int)left.TotalDays}d {left.Hours}h";
+        }
+    }
 
     /// <summary>Fuel left, for an FC deciding whether to stage out of it.</summary>
     [JsonIgnore] public string FuelText

@@ -425,8 +425,11 @@ public partial class SystemIntelViewModel : ObservableObject
     [ObservableProperty] private int _friendlyDocking;
     [ObservableProperty] private string _friendlyTip = string.Empty;
 
-    /// <summary>Whether to show the friendly-structure tile at all.</summary>
+    /// <summary>Whether to show the citadel tile at all.</summary>
     public bool HasFriendly => FriendlyCount > 0;
+
+    /// <summary>Reads beside STATIONS as a plain count: "0 STATIONS · 1 CITADEL".</summary>
+    public string FriendlyLabel => FriendlyCount == 1 ? "CITADEL" : "CITADELS";
 
     private void BuildHeader(EsiSystem sys)
     {
@@ -447,6 +450,7 @@ public partial class SystemIntelViewModel : ObservableObject
         FriendlyDocking = friendly.Count(f => f.CanShelter);
         FriendlyTip     = StructureMarker(sys.SystemId).Tip;
         OnPropertyChanged(nameof(HasFriendly));
+        OnPropertyChanged(nameof(FriendlyLabel));
 
         var sovId = _sov.GetValueOrDefault(sys.SystemId);
         SovHolder = sovId is > 0 ? _nameCache.GetValueOrDefault(sovId.Value, string.Empty) : string.Empty;
@@ -562,6 +566,16 @@ public partial class SystemIntelViewModel : ObservableObject
             Content.Add(new ContentRow(NameOf(c.SolarSystemId), _reach[c.SolarSystemId],
                 SovEventLabel(c.EventType), when, ContentKind.Timer));
         }
+
+        // Structure timers from the FC's own auth. These belong here rather than in a panel of
+        // their own: a timer coming out IS content, the same as a sov fight, and an FC reading this
+        // list is asking the same question either way - what is happening near me and when.
+        foreach (var st in _aa.Structures
+                     .Where(st => st.HasTimer && _reach.ContainsKey(st.SystemId))
+                     .OrderBy(st => st.Timer)
+                     .Take(4))
+            Content.Add(new ContentRow(st.SystemName, _reach[st.SystemId],
+                st.TimerLabel, st.TimerText, ContentKind.Timer));
 
         // Incursion in the constellation you're standing in.
         var inc = _incursions.FirstOrDefault(i => _reach.Keys.Any(id =>
@@ -987,6 +1001,7 @@ public partial class SystemIntelViewModel : ObservableObject
                 else if (s.IsAnchoring)  notes.Add("anchoring");
                 else if (s.IsOffline)    notes.Add("offline");
                 else if (!s.CanShelter)  notes.Add("low power");
+                if (s.HasTimer)            notes.Add($"{s.TimerLabel} {s.TimerText}");
                 if (s.FuelText.Length > 0) notes.Add(s.FuelText);
                 return $"{s.Name} · {string.Join(" · ", notes)}";
             });

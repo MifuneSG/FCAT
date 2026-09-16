@@ -459,11 +459,14 @@
                                     <TextBlock Text="STATIONS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"/>
                                 </StackPanel>
 
-                                <!-- The alliance's own structures here, from Alliance Auth. Hidden entirely
-                                     without it. Green counts the ones a fleet could actually dock or tether
-                                     in right now; a reinforced or unfuelled one still shows in the total,
-                                     because knowing it is there matters even when it is no help. -->
-                                <StackPanel Width="70" Margin="0,0,0,8"
+                                <!-- The alliance's own structures here, from Alliance Auth. Hidden
+                                     entirely without it, so it reads as "0 STATIONS" alone for
+                                     everyone else. A plain count beside the NPC one, because they
+                                     are different things and folding them together would hide that
+                                     ESI cannot see citadels at all. The colour is the only extra:
+                                     green when at least one could actually be docked in, amber when
+                                     they are all reinforced, unfuelled or still going up. -->
+                                <StackPanel Width="78" Margin="0,0,0,8"
                                             Visibility="{Binding System.HasFriendly, Converter={StaticResource BoolToVisibility}}">
                                     <StackPanel.ToolTip>
                                         <StackPanel MaxWidth="280">
@@ -473,26 +476,22 @@
                                                        FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </StackPanel.ToolTip>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding System.FriendlyDocking}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding System.FriendlyDocking}" Value="0">
-                                                            <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                        <TextBlock Text="/" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}"
-                                                   FontSize="14" VerticalAlignment="Bottom" Margin="3,0,3,2"/>
-                                        <TextBlock Text="{Binding System.FriendlyCount}" Foreground="{StaticResource EveTextDim}"
-                                                   FontFamily="{StaticResource FontUI}" FontSize="14" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
-                                    </StackPanel>
-                                    <TextBlock Text="FRIENDLY" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"/>
+                                    <TextBlock Text="{Binding System.FriendlyCount}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding System.FriendlyDocking}" Value="0">
+                                                        <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding System.FriendlyLabel}" Foreground="{StaticResource EveTextDim}"
+                                               FontFamily="{StaticResource FontUI}" FontSize="11"/>
                                 </StackPanel>
+
                             </WrapPanel>
 
                             <!-- Sov holder for the system on screen -->

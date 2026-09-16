@@ -22,8 +22,30 @@ public record FitStats(
     double ShieldEhp,
     double HullEhp,
     double Mass,
-    double AlignTime)
+    double AlignTime,
+    double Optimal = 0,
+    double Falloff = 0,
+    double MissileRange = 0)
 {
+    /// <summary>
+    /// The fit's reach, the way an FC says it: "6.8 + 6.3" for a turret, a flat number for missiles.
+    ///
+    /// Turrets carry optimal and falloff and both matter - half damage at the end of falloff is
+    /// still damage, so an FC picking ammo is really choosing between those two numbers. Missiles
+    /// have neither; they simply stop, at flight time times velocity.
+    /// </summary>
+    public string RangeText
+    {
+        get
+        {
+            if (MissileRange > 0) return $"{MissileRange / 1000:0.#} km";
+            if (Optimal <= 0)     return string.Empty;
+            return Falloff > 0
+                ? $"{Optimal / 1000:0.#} + {Falloff / 1000:0.#} km"
+                : $"{Optimal / 1000:0.#} km";
+        }
+    }
+
     /// <summary>
     /// Everything the ship puts out. This is just <see cref="Dps"/>: the engine's
     /// damagePerSecondWithoutReload ALREADY includes drones, and <see cref="DroneDps"/> is the
@@ -77,6 +99,13 @@ public sealed class DogmaService
     private const string AttrHullEhp   = "-29";
     private const string AttrAlign     = "-1";
     private const string AttrMass      = "4";     // CCP's own
+
+    // Range lives on the ITEM, not the ship - a fit can mount two weapon families with different
+    // reach, so there is no single ship-level answer.
+    private const string AttrOptimal   = "54";
+    private const string AttrFalloff   = "158";
+    private const string AttrFlightMs  = "281";   // on the missile itself
+    private const string AttrVelocity  = "37";    //  "   "     "       " 
 
     private readonly object _gate = new();
     private readonly Dictionary<string, FitStats?> _cache = [];
@@ -241,22 +270,62 @@ public sealed class DogmaService
                 attrs.TryGetProperty(id, out var a) && a.TryGetProperty("value", out var v)
                     ? v.GetDouble() : 0;
 
+            var (optimal, falloff, missile) = WeaponRange(doc.RootElement);
+
             return new FitStats(
-                Dps:       Value(AttrDps),
-                DroneDps:  Value(AttrDroneDps),
-                Alpha:     Value(AttrAlpha),
-                Ehp:       Value(AttrEhp),
-                ArmorEhp:  Value(AttrArmorEhp),
-                ShieldEhp: Value(AttrShieldEhp),
-                HullEhp:   Value(AttrHullEhp),
-                Mass:      Value(AttrMass),
-                AlignTime: Value(AttrAlign));
+                Dps:          Value(AttrDps),
+                DroneDps:     Value(AttrDroneDps),
+                Alpha:        Value(AttrAlpha),
+                Ehp:          Value(AttrEhp),
+                ArmorEhp:     Value(AttrArmorEhp),
+                ShieldEhp:    Value(AttrShieldEhp),
+                HullEhp:      Value(AttrHullEhp),
+                Mass:         Value(AttrMass),
+                AlignTime:    Value(AttrAlign),
+                Optimal:      optimal,
+                Falloff:      falloff,
+                MissileRange: missile);
         }
         catch (Exception ex)
         {
             Log.Warn("dogma", $"fit {fit.Id} ({fit.Name}) failed", ex);
             return null;
         }
+    }
+
+    /// <summary>
+    /// The reach of the fit's first real weapon, read off the calculated items.
+    ///
+    /// The first is good enough: a doctrine fit mounts one weapon family, and a fit that does not is
+    /// not one an FC is reading a single range off anyway. Turrets answer with optimal and falloff;
+    /// a launcher has neither, so its loaded missile answers instead with flight time times velocity.
+    /// </summary>
+    private static (double Optimal, double Falloff, double Missile) WeaponRange(JsonElement root)
+    {
+        if (!root.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array)
+            return (0, 0, 0);
+
+        static double Attr(JsonElement owner, string id) =>
+            owner.TryGetProperty("attributes", out var attrs)
+            && attrs.TryGetProperty(id, out var a)
+            && a.TryGetProperty("value", out var v)
+                ? v.GetDouble() : 0;
+
+        foreach (var item in items.EnumerateArray())
+        {
+            var optimal = Attr(item, AttrOptimal);
+            var falloff = Attr(item, AttrFalloff);
+            if (optimal > 0) return (optimal, falloff, 0);
+
+            if (item.TryGetProperty("charge", out var charge) && charge.ValueKind == JsonValueKind.Object)
+            {
+                var flight   = Attr(charge, AttrFlightMs);
+                var velocity = Attr(charge, AttrVelocity);
+                if (flight > 0 && velocity > 0) return (0, 0, flight / 1000.0 * velocity);
+            }
+        }
+
+        return (0, 0, 0);
     }
 
     /// <summary>The engine's fit shape. Slots keep the index the fit gave them, so a gap in a fit's

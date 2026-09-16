@@ -27,9 +27,18 @@ public static class DogmaAttr
     public const int LastChargeGroup  = 609;
 }
 
-/// <summary>A charge a doctrine fit carries and its own guns can actually load. Damage is the sum
-/// of its four types, used only to order the picker - the engine does the real sums.</summary>
-public record AmmoChoice(int TypeId, string Name, double Damage);
+/// <summary>
+/// A charge a doctrine fit carries and its own guns can actually load.
+///
+/// Damage is the raw sum of its four types, used only to ORDER the picker - the engine does the
+/// real sums. Range is filled in later by whoever has a dogma engine to hand, because it depends
+/// on the gun firing it as much as on the round.
+/// </summary>
+public record AmmoChoice(int TypeId, string Name, double Damage, string RangeText = "")
+{
+    /// <summary>What the picker shows: "Void L - 6.8 + 6.3 km" once the range is known.</summary>
+    public string Display => RangeText.Length > 0 ? $"{Name}  ·  {RangeText}" : Name;
+}
 
 /// <summary>One line of a resolved fit, with the name filled in from the type cache.</summary>
 public record FitLine(int TypeId, string Name, FitSlot Slot, int Quantity);

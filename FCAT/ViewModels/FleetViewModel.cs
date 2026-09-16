@@ -229,12 +229,24 @@ public partial class FleetViewModel : ObservableObject
     // DPS into logi DURING form-up settle into their final role before the baseline is taken, so
     // they're never miscounted as a loss. Losses are counted strictly from pods (ship -> capsule)
     // of pilots who were in the baseline DPS set - a voluntary re-ship or leaving fleet never counts.
-    private static readonly int[] DpsLossThresholds = { 30, 50, 75 };
+    // What an FC calls out: "we've lost 30% of our DPS". Steps chosen to match how that gets
+    // said in fleet rather than to be evenly spaced - 15 is the first one worth hearing.
+    private static readonly int[] DpsLossThresholds = { 15, 20, 30, 50 };
     private const int MinDpsBaseline = 5;                    // a % is meaningless on a handful of ships
     private readonly HashSet<int> _currentDpsIds      = [];  // DPS-role char ids this tick (combat fleets only)
     private HashSet<int>          _baselineDpsIds     = [];  // frozen committed DPS line
     private bool                  _dpsBaselineArmed;
     private readonly HashSet<int> _dpsLostIds         = [];  // baseline DPS pilots confirmed podded (no double-count)
+
+    /// <summary>
+    /// Damage per baseline pilot, frozen with the baseline.
+    ///
+    /// Counting heads treats every hull as worth the same, and they are not: four battleships and
+    /// four interceptors are the same number and nothing like the same loss. With doctrine fits
+    /// available the percentage is of DAMAGE, which is what an FC means by "we've lost 30%". Empty
+    /// without an Alliance Auth connected, and the alert falls back to counting ships.
+    /// </summary>
+    private readonly Dictionary<int, double> _baselineDpsValue = [];
     private readonly HashSet<int> _dpsThresholdsFired = [];  // thresholds already alerted (reset when re-armed)
 
     // Polling
@@ -679,6 +691,26 @@ public partial class FleetViewModel : ObservableObject
     private static string RingText(List<string> names)
         => names.Count == 0 ? "" : string.Join(" → ", names) + $" → ({names[0]})";
 
+    /// <summary>The DPS chip's hover line: what the fleet committed and what is left of it, in
+    /// damage when the doctrine covers the fleet and in ships when it does not.</summary>
+    private string DpsAttritionDetail()
+    {
+        if (!_dpsBaselineArmed || _baselineDpsIds.Count == 0) return "Baseline sets once the fleet commits";
+
+        var haveDamage = _baselineDpsValue.Count == _baselineDpsIds.Count && _baselineDpsValue.Count > 0;
+        if (haveDamage)
+        {
+            var baseline = _baselineDpsValue.Values.Sum();
+            var lost     = _dpsLostIds.Sum(id => _baselineDpsValue.GetValueOrDefault(id));
+            if (baseline > 0)
+                return $"Committed {DogmaService.Short(baseline)} DPS · lost {DogmaService.Short(lost)} "
+                     + $"(~{(int)Math.Round(100.0 * lost / baseline)}%)";
+        }
+
+        return $"Baseline {_baselineDpsIds.Count} · lost {_dpsLostIds.Count} "
+             + $"(~{(int)Math.Round(100.0 * _dpsLostIds.Count / _baselineDpsIds.Count)}%)";
+    }
+
     // DPS-attrition logic (all on the UI thread)
     /// <summary>Freezes the committed DPS line as the baseline to measure losses against.
     /// No-op if already armed or the fleet is too small for a % to be meaningful.</summary>
@@ -689,6 +721,15 @@ public partial class FleetViewModel : ObservableObject
         _dpsBaselineArmed = true;
         _dpsLostIds.Clear();
         _dpsThresholdsFired.Clear();
+
+        // Freeze what each of them is worth, at the hull they committed in. A pilot who re-ships
+        // later is still measured against what the fleet set out with, which is the line the FC
+        // actually committed to the fight.
+        _baselineDpsValue.Clear();
+        foreach (var m in _currentMembers)
+            if (_baselineDpsIds.Contains(m.CharacterId)
+                && _doctrineDpsByHull.TryGetValue(m.ShipTypeId, out var dps) && dps > 0)
+                _baselineDpsValue[m.CharacterId] = dps;
     }
 
     /// <summary>Records baseline DPS pilots podded this tick and returns a DPS-loss alert when a
@@ -704,20 +745,34 @@ public partial class FleetViewModel : ObservableObject
         foreach (var id in newlyPoddedIds)
             if (_baselineDpsIds.Contains(id)) _dpsLostIds.Add(id);
 
-        var pct = 100.0 * _dpsLostIds.Count / _baselineDpsIds.Count;
+        // Damage where the doctrine gives it, ships where it does not. Every baseline pilot has to
+        // carry a value for the damage reading to mean anything - a half-covered fleet would
+        // understate the loss, which is the one direction this must never fail in.
+        var haveDamage   = _baselineDpsValue.Count == _baselineDpsIds.Count && _baselineDpsValue.Count > 0;
+        var baselineDps  = haveDamage ? _baselineDpsValue.Values.Sum() : 0;
+        var lostDps      = haveDamage ? _dpsLostIds.Sum(id => _baselineDpsValue.GetValueOrDefault(id)) : 0;
+
+        var pct = haveDamage && baselineDps > 0
+            ? 100.0 * lostDps / baselineDps
+            : 100.0 * _dpsLostIds.Count / _baselineDpsIds.Count;
 
         var crossed = 0;
         foreach (var t in DpsLossThresholds)
             if (pct >= t && _dpsThresholdsFired.Add(t)) crossed = t;   // Add() is true only the first time
         if (crossed == 0) return null;
 
+        var detail = haveDamage && baselineDps > 0
+            ? $"~{crossed}% of fleet DPS lost - {DogmaService.Short(lostDps)} of {DogmaService.Short(baselineDps)}, {_dpsLostIds.Count} ships down"
+            : $"~{crossed}% of DPS lost, {_dpsLostIds.Count} of {_baselineDpsIds.Count} ships down";
+
         return new FcAlert
         {
             Timestamp        = DateTime.Now,
             AlertType        = AlertType.DpsLoss,
-            Detail           = $"~{crossed}% of DPS lost, {_dpsLostIds.Count} of {_baselineDpsIds.Count} ships down",
-            // Red only at the worst step; 30/50 stay a warning.
-            SeverityOverride = crossed >= 75 ? AlertSeverity.Critical : AlertSeverity.Warning,
+            Detail           = detail,
+            // Red once half the fleet's damage is gone; the earlier steps stay a warning, because an
+            // alert that shouts at 15% is one an FC learns to ignore by 50.
+            SeverityOverride = crossed >= 50 ? AlertSeverity.Critical : AlertSeverity.Warning,
         };
     }
 
@@ -765,6 +820,14 @@ public partial class FleetViewModel : ObservableObject
             _baselineDpsIds = [.. _currentDpsIds];
             _dpsLostIds.Clear();
             _dpsThresholdsFired.Clear();
+
+            // The damage values are part of the baseline, so they have to move with it. Left stale
+            // they would describe the pilots who were here before the fleet rebuilt.
+            _baselineDpsValue.Clear();
+            foreach (var m in _currentMembers)
+                if (_baselineDpsIds.Contains(m.CharacterId)
+                    && _doctrineDpsByHull.TryGetValue(m.ShipTypeId, out var dps) && dps > 0)
+                    _baselineDpsValue[m.CharacterId] = dps;
         }
     }
 
@@ -793,6 +856,9 @@ public partial class FleetViewModel : ObservableObject
     /// <summary>Fitted mass per hull type, from the matching doctrine fit. Empty without auth.</summary>
     private readonly Dictionary<int, double> _doctrineMass = [];
 
+    /// <summary>Damage per hull type, same source. What makes the loss alert a damage figure.</summary>
+    private readonly Dictionary<int, double> _doctrineDpsByHull = [];
+
     /// <summary>
     /// What this fleet is worth, assuming everyone is flying the alliance's fit for their hull.
     ///
@@ -808,6 +874,7 @@ public partial class FleetViewModel : ObservableObject
         HasOffDoctrine   = false;
         OffDoctrineHulls.Clear();
         _doctrineMass.Clear();
+        _doctrineDpsByHull.Clear();
 
         var aa    = _shell.Aa;
         var dogma = _shell.Dogma;
@@ -844,7 +911,8 @@ public partial class FleetViewModel : ObservableObject
             ehp   += stats.Ehp;
             alpha += stats.Alpha;
             covered++;
-            _doctrineMass[m.ShipTypeId] = stats.Mass;
+            _doctrineMass[m.ShipTypeId]      = stats.Mass;
+            _doctrineDpsByHull[m.ShipTypeId] = stats.TotalDps;
         }
 
         if (covered == 0) return;
@@ -897,8 +965,25 @@ public partial class FleetViewModel : ObservableObject
         if (wanted.Count == AmmoChoices.Count && wanted.All(w => AmmoChoices.Any(a => a.TypeId == w.TypeId)))
             return;   // unchanged - do not disturb the FC's selection
 
+        // Fill in each round's reach against the fit most of the fleet flies with it, so the picker
+        // reads as a range profile rather than a list of names. Cached in the engine, so re-reading
+        // one the FC has already looked at costs nothing.
         AmmoChoices.Clear();
-        foreach (var a in wanted) AmmoChoices.Add(a);
+        foreach (var a in wanted)
+        {
+            var carrier = _currentMembers
+                .Select(m => fitByHull.GetValueOrDefault(m.ShipTypeId))
+                .Where(f => f != null && analyzer.AmmoFor(f!).Any(x => x.TypeId == a.TypeId))
+                .GroupBy(f => f!.Id)
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.First())
+                .FirstOrDefault();
+
+            var range = carrier == null ? string.Empty
+                      : _shell.Dogma.Calculate(carrier, a.TypeId)?.RangeText ?? string.Empty;
+
+            AmmoChoices.Add(a with { RangeText = range });
+        }
 
         if (_selectedAmmo == null || AmmoChoices.All(a => a.TypeId != _selectedAmmo.TypeId))
         {
@@ -977,9 +1062,7 @@ public partial class FleetViewModel : ObservableObject
 
         // DPS-attrition summary for the DPS chip tooltip. Numbers come from the frozen baseline
         // (see the DPS-attrition section); before the fleet commits there's nothing to measure yet.
-        var dpsDetail = _dpsBaselineArmed && _baselineDpsIds.Count > 0
-            ? $"Baseline {_baselineDpsIds.Count} · lost {_dpsLostIds.Count} (~{(int)Math.Round(100.0 * _dpsLostIds.Count / _baselineDpsIds.Count)}%)"
-            : "Baseline sets once the fleet commits";
+        var dpsDetail = DpsAttritionDetail();
 
         // Role tally (using effective roles). Hulls is the ship mix behind the count (hover tooltip).
         void AddRole(string label, Brush color, Func<ShipRole, bool> match, string detail = "")

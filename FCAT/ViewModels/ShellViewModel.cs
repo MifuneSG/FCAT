@@ -231,7 +231,7 @@ public partial class ShellViewModel : ObservableObject
             (AlertType.Tackled,    "Vng. Hostile", ""),
             (AlertType.BoostLost,  "",             "Damnation down, gang links dropped"),
             (AlertType.LogiChain,  "",             "Guardian ring lost a link, re-anchor"),
-            (AlertType.DpsLoss,    "",             "~50% of DPS lost, 8 of 16 ships down"),
+            (AlertType.DpsLoss,    "",             "~50% of fleet DPS lost - 8.5k of 17k, 8 ships down"),
             (AlertType.CapTrouble, "",             "Large Micro Jump Drive"),
         };
         _sessionLog.MarkCombat(DemoData.StagingSystemId, DemoData.StagingName);   // give the demo AAR a battle report

@@ -458,12 +458,12 @@
 
                 <!-- Which ammo those numbers assume. Alliance Auth keeps no loaded charge, so this
                      is read out of the fits' cargo and the damage figure follows the pick. -->
-                <ComboBox Width="176" Height="26" VerticalAlignment="Center" Margin="14,0,0,0"
+                <ComboBox Width="210" Height="26" VerticalAlignment="Center" Margin="14,0,0,0"
                           ItemsSource="{Binding AmmoChoices}" SelectedItem="{Binding SelectedAmmo}"
-                          ToolTip="Ammo these figures assume. Taken from the doctrine fits' cargo."
+                          ToolTip="Ammo these figures assume, with its reach on the hull most of the fleet is flying. Taken from the doctrine fits' cargo."
                           Visibility="{Binding HasDoctrineStats, Converter={StaticResource BoolToVisibility}}">
                     <ComboBox.ItemTemplate>
-                        <DataTemplate><TextBlock Text="{Binding Name}"/></DataTemplate>
+                        <DataTemplate><TextBlock Text="{Binding Display}"/></DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
             </StackPanel>

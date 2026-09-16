@@ -393,6 +393,16 @@ def structures(request, user):
                     "fuel_expires_at": (
                         s.fuel_expires_at.isoformat() if s.fuel_expires_at else None
                     ),
+                    # When the current state ends: the armour or hull timer coming out. This is a
+                    # scheduled fight, which is the single most useful thing on this endpoint for an
+                    # FC - it is the difference between knowing a structure is reinforced and knowing
+                    # when to be there.
+                    "state_timer_end": (
+                        s.state_timer_end.isoformat() if s.state_timer_end else None
+                    ),
+                    "unanchors_at": (
+                        s.unanchors_at.isoformat() if s.unanchors_at else None
+                    ),
                 }
                 for s in visible
             ]
