@@ -106,7 +106,10 @@ public partial class SettingsViewModel : ObservableObject
     {
         AaConnected = _aa.IsConfigured;
         AaFailed    = _aa.State is AaState.Failed or AaState.Stale;
-        AaStatus    = _aa.Status;
+
+        // The status line is for what just happened; the summary below carries the counts. Only
+        // speak up here when something is wrong, so a healthy connection does not say it twice.
+        if (AaFailed) AaStatus = _aa.Status;
 
         if (!_aa.IsConfigured) { AaSummary = string.Empty; return; }
 
@@ -134,9 +137,15 @@ public partial class SettingsViewModel : ObservableObject
         if (ok)
         {
             _aa.Connect(AaBaseUrlText, AaKeyText);
-            AaKeyText    = string.Empty;   // it is stored encrypted now; no reason to keep it on screen
+            AaKeyText     = string.Empty;   // it is stored encrypted now; no reason to keep it on screen
             AaBaseUrlText = _aa.BaseUrl;
-            AaConnected  = true;
+            AaConnected   = true;
+
+            // Connect starts the background loop, whose first pull lands a moment later. Wait for one
+            // here so the panel shows what came back instead of an empty line until the page is
+            // re-opened. Costs one extra pair of GETs, on a button press, against their own server.
+            await _aa.RefreshAsync();
+            ReadAaState();
         }
 
         AaBusy = false;

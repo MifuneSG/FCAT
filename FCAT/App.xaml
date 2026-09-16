@@ -285,11 +285,23 @@
                     <ControlTemplate TargetType="TextBox">
                         <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7">
-                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                            <Grid>
+                                <!-- Hint text, drawn behind the content host and hidden the moment the
+                                     box has anything in it. Set local:Placeholder.Text to use it. -->
+                                <TextBlock x:Name="Hint" Text="{Binding (local:Placeholder.Text), RelativeSource={RelativeSource TemplatedParent}}"
+                                           Foreground="{StaticResource EveTextDim}" FontFamily="{TemplateBinding FontFamily}"
+                                           FontSize="{TemplateBinding FontSize}" Margin="{TemplateBinding Padding}"
+                                           VerticalAlignment="Center" IsHitTestVisible="False"
+                                           TextTrimming="CharacterEllipsis" Visibility="Collapsed"/>
+                                <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                            </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsKeyboardFocused" Value="True">
                                 <Setter Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
+                            </Trigger>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="Hint" Property="Visibility" Value="Visible"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
