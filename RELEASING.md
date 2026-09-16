@@ -101,18 +101,41 @@ That's it. Installed clients pick up the new version on their next launch.
 
 ## The Alliance Auth connector releases separately
 
-`aa-connector/` is a Django plugin alliances install on their own auth, and it has its own version
-in `fcatconnector/__init__.py`. Tag it **`connector-vX.Y.Z`**, not `vX.Y.Z` - the Discord release
-workflow only fires on `v`-prefixed tags, so connector releases don't ping the FC Discord.
+`aa-connector/` is a Django plugin alliances install on their own auth. It has its own version in
+`fcatconnector/__init__.py` and ships to **PyPI as `aa-fcat-connector`**, so admins install it the
+same way they install every other auth plugin:
 
-Admins install a pinned tag:
-
-```
-pip install "git+https://github.com/MifuneSG/FCAT.git@connector-v0.2.0#subdirectory=aa-connector"
+```bash
+pip install aa-fcat-connector
 ```
 
-FCAT degrades gracefully against an older connector: endpoints it doesn't know simply aren't
-advertised, and the panels that read them hide themselves.
+Tag the repo **`connector-vX.Y.Z`**, not `vX.Y.Z` - the Discord release workflow only fires on
+`v`-prefixed tags, so connector releases don't ping the FC Discord.
+
+### Publishing a connector version
+
+One-time: a PyPI account with an API token, and `pip install build twine`.
+
+```powershell
+cd aa-connector
+Remove-Item dist, build, *.egg-info -Recurse -Force -ErrorAction SilentlyContinue
+python -m build                 # -> dist/*.whl and dist/*.tar.gz
+python -m twine check dist/*    # must say PASSED before uploading
+python -m twine upload dist/*   # username __token__, password is the API token
+```
+
+Bump `__version__` first; PyPI refuses to overwrite a version that already exists, and there is no
+way to take one back - only to yank it.
+
+Worth testing the upload against [TestPyPI](https://test.pypi.org) first the very first time:
+`python -m twine upload --repository testpypi dist/*`.
+
+### Compatibility
+
+FCAT degrades gracefully against an older connector. The index endpoint advertises which sources
+an auth can serve, so anything a connector doesn't know about simply isn't offered and the panels
+that read it hide themselves. An FC on connector 0.1.0 gets doctrines and structures; fleet
+attendance and SRP appear when their auth is upgraded, with nothing to change in FCAT.
 
 ## Verifying the update flow
 

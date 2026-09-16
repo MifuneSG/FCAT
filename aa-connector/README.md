@@ -60,13 +60,9 @@ recovered, so a database dump does not hand anyone a working key.
 
 ## Install
 
-Not on PyPI yet. Install from the tagged source:
-
 ```bash
-pip install "git+https://github.com/MifuneSG/FCAT.git@connector-v0.1.0#subdirectory=aa-connector"
+pip install aa-fcat-connector
 ```
-
-Pin the tag rather than tracking `main`, which carries desktop-app commits too.
 
 Add both of these to `local.py`. There is a copy in `local.py.example` next to this file:
 
