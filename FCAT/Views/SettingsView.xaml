@@ -329,6 +329,82 @@
                            FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,6,0,0"
                            Visibility="{Binding IsLoggedIn, Converter={StaticResource BoolToInvisibility}}"/>
 
+                <!-- Alliance Auth connector -->
+                <!-- Optional. FCAT is a whole tool without it, so this section explains itself to
+                     someone who has never heard of Alliance Auth and then gets out of the way. -->
+                <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,24,0,18"/>
+                <TextBlock Text="ALLIANCE AUTH" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
+                <TextBlock Text="Optional. If your alliance runs Alliance Auth with the FCAT Connector plugin, FCAT can read your doctrines, the fits behind them, and your friendly structures. Everything else works exactly the same without it."
+                           Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                           TextWrapping="Wrap" Margin="0,0,0,9"/>
+
+                <!-- Not connected: address + key -->
+                <StackPanel Visibility="{Binding AaConnected, Converter={StaticResource BoolToInvisibility}}">
+                    <TextBox Style="{StaticResource DarkTextBox}" Margin="0,0,0,7"
+                             Text="{Binding AaBaseUrlText, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="Your auth's address, e.g. https://auth.example.com"/>
+                    <TextBox Style="{StaticResource DarkTextBox}" Margin="0,0,0,9"
+                             Text="{Binding AaKeyText, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="Generate this on your auth's FCAT Connector page. It is stored encrypted on this machine."/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Command="{Binding ConnectAaCommand}" Style="{StaticResource SecondaryButton}"
+                                Height="34" Padding="16,0" Margin="0,0,8,0"
+                                IsEnabled="{Binding AaBusy, Converter={StaticResource InvertBool}}">
+                            <TextBlock Text="Connect" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                        </Button>
+                        <Button Command="{Binding OpenAaKeysCommand}" Style="{StaticResource GhostButton}"
+                                Height="34" Padding="14,0"
+                                ToolTip="Opens the FCAT Connector page on your auth, where you generate a key">
+                            <TextBlock Text="Get a key" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                        </Button>
+                    </StackPanel>
+                    <TextBlock Text="Address first, then the key. FCAT checks both before saving either."
+                               Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                               TextWrapping="Wrap" Margin="0,7,0,0"/>
+                </StackPanel>
+
+                <!-- Connected: what we have, and the two things to do with it -->
+                <StackPanel Visibility="{Binding AaConnected, Converter={StaticResource BoolToVisibility}}">
+                    <Grid Margin="0,0,0,9">
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding AaBaseUrlText}" Foreground="{StaticResource EveTextSecondary}"
+                                       FontFamily="{StaticResource FontMono}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding AaSummary}" Foreground="{StaticResource EveTextDim}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,3,0,0"
+                                       Visibility="{Binding AaSummary, Converter={StaticResource StringToVisibility}}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Button Command="{Binding RefreshAaCommand}" Style="{StaticResource GhostButton}"
+                                    Height="30" Padding="12,0" Margin="0,0,6,0"
+                                    IsEnabled="{Binding AaBusy, Converter={StaticResource InvertBool}}"
+                                    ToolTip="Pull doctrines and structures again now">
+                                <TextBlock Text="Refresh" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                            </Button>
+                            <Button Command="{Binding DisconnectAaCommand}" Style="{StaticResource GhostButton}"
+                                    Height="30" Padding="12,0"
+                                    ToolTip="Forget the key and everything read with it. Revoke the key on your auth to kill it for good.">
+                                <TextBlock Text="Disconnect" FontFamily="{StaticResource FontUI}" FontSize="12"
+                                           Foreground="{StaticResource EveCritical}"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <TextBlock Text="{Binding AaStatus}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                           TextWrapping="Wrap" Margin="0,7,0,0"
+                           Visibility="{Binding AaStatus, Converter={StaticResource StringToVisibility}}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding AaFailed}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
                 <!-- Actions -->
                 <!-- Demo / sandbox -->
                 <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,24,0,18"/>

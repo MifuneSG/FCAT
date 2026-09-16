@@ -31,6 +31,24 @@
     <!-- Real 3D system positions in light years, for jump-range work. Bundled because ESI serves
          one system per call and Hunt measures against every system in New Eden at once. -->
     <EmbeddedResource Include="Assets\system-space.json" />
+    <!-- Every EVE skill type id. The dogma engine gives no bonus for a skill it was not told about,
+         so "all V" has to be spelled out; embedded rather than fetched so fit numbers work offline. -->
+    <EmbeddedResource Include="Assets\skills.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The EVE static data the dogma engine calculates with, from the @eveshipfit/sde package. A
+         loose file rather than an embedded resource on purpose: at 9MB it would land in every delta
+         update, where as a file it only ships again when CCP's data actually changes. Refresh it on
+         EVE patches; see RELEASING.md. -->
+    <None Include="Assets\sde.dat" Link="sde.dat" CopyToOutputDirectory="PreserveNewest" />
+
+    <!-- The dogma bridge: EVEShipFit's engine compiled to a native DLL (dogma-bridge/ in this repo).
+         Build it there with cargo, release profile. Conditional, so the app still builds for anyone
+         who has not, in which case fit statistics simply switch themselves off. -->
+    <None Include="..\dogma-bridge\target\release\fcat_dogma.dll"
+          Link="fcat_dogma.dll" CopyToOutputDirectory="PreserveNewest"
+          Condition="Exists('..\dogma-bridge\target\release\fcat_dogma.dll')" />
   </ItemGroup>
 
   <ItemGroup>

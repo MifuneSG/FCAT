@@ -1,0 +1,25 @@
+[package]
+name = "fcat-dogma"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "A C ABI around EVEShipFit's dogma engine, so FCAT can calculate fit statistics in-process."
+publish = false
+
+[lib]
+# cdylib gives a plain Windows DLL that FCAT calls with P/Invoke. No WASM runtime, no
+# subprocess, no browser - the engine runs inside FCAT's own process, offline.
+name = "fcat_dogma"
+crate-type = ["cdylib"]
+
+[dependencies]
+esf-data = "10.4"
+esf-dogma-engine = "10.4"
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "unwind"   # the bridge catches panics at the boundary, so they must be catchable
+strip = true

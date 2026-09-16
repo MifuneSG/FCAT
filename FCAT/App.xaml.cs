@@ -69,14 +69,28 @@ public partial class App : Application
         // with the Intel page: it only ever knows about kills that land while it is watching, so
         // the FC's recent-kills window is only populated if it has been running.
         var killStream = new KillStreamService(httpClient);
+
+        // The FC's own Alliance Auth, when they have one. Unconfigured this does nothing at all and
+        // costs nothing - FCAT is a complete tool without it and most of its users never set it up.
+        var aaConnector = new AaConnectorService(httpClient, settingsService);
+
+        // Item attributes for the fits that come back with those doctrines. Fills itself from ESI
+        // the first time a doctrine is opened and then lives on disk - type data only moves when CCP
+        // patches. Nothing fetches through it unless an FC has connected an auth.
+        var typeCache = new EveTypeCache(httpClient);
+
+        // Real fit statistics, via EVEShipFit's dogma engine in a native DLL beside the exe. Loads
+        // itself the first time something asks for a number, so an FC with no auth never pays for it.
+        var dogma = new DogmaService();
         var battleReport = new BattleReportService(zkillService, esiService);
         var updater = new UpdaterService();
         var altTracker = new AltTracker(esiService, authService, alertHub);
 
         var shell = new ShellViewModel(authService, esiService, combatLogService, settingsService, alertHub,
                                        sessionLog, systemSearch, zkillService, killStream, battleReport,
-                                       updater, altTracker);
+                                       updater, altTracker, aaConnector, typeCache, dogma);
         killStream.Start();
+        aaConnector.Start();
 
         // The gamelog watcher runs for the whole session, not just while a fleet page is open. Every
         // client writes its own log, so this is also how an alt's tackle or decloak is noticed at all -

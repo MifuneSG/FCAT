@@ -24,17 +24,40 @@ public partial class ShellViewModel : ObservableObject
     private readonly BattleReportService _battleReport;
     private readonly UpdaterService _updater;
     private readonly AltTracker _altTracker;
+    private readonly AaConnectorService _aa;
+    private readonly EveTypeCache _types;
+    private readonly DogmaService _dogma;
 
     /// <summary>The one shared alt poll, exposed so pages read it instead of polling their own.</summary>
     public AltTracker AltTracker => _altTracker;
+
+    /// <summary>The Alliance Auth connector. Always present, usually switched off - pages ask it
+    /// for doctrines and structures and get empty lists when the FC has no auth.</summary>
+    public AaConnectorService Aa => _aa;
+
+    /// <summary>EVE item attributes, cached to disk. Only ever filled for doctrines an FC pulled
+    /// from their own auth, so it stays empty for everyone else.</summary>
+    public EveTypeCache Types => _types;
+
+    /// <summary>Real fit statistics from the dogma engine. Switches itself off when the native
+    /// bridge or sde.dat is absent, so callers must check IsAvailable before showing a number.</summary>
+    public DogmaService Dogma => _dogma;
+
+    /// <summary>Reads a doctrine fit into named modules, weapons and drones.</summary>
+    private FitAnalyzer? _fits;
+    public FitAnalyzer Fits => _fits ??= new FitAnalyzer(_types);
 
     public ShellViewModel(EsiAuthService auth, EsiService esi, CombatLogService combatLog,
                           SettingsService settings, AlertHub alertHub, SessionLog sessionLog,
                           SystemSearchService systemSearch, ZkillService zkill,
                           KillStreamService killStream,
                           BattleReportService battleReport, UpdaterService updater,
-                          AltTracker altTracker)
+                          AltTracker altTracker, AaConnectorService aa, EveTypeCache types,
+                          DogmaService dogma)
     {
+        _aa = aa;
+        _types = types;
+        _dogma = dogma;
         _auth = auth;
         _esi = esi;
         _combatLog = combatLog;
@@ -331,7 +354,7 @@ public partial class ShellViewModel : ObservableObject
     public void ShowSettings()
     {
         ActiveNav = "setup";
-        CurrentPage = new SettingsViewModel(_settings, _alertHub, _systemSearch, this, _auth);
+        CurrentPage = new SettingsViewModel(_settings, _alertHub, _systemSearch, this, _auth, _aa);
     }
 
     public void ShowSessionLog()

@@ -18,6 +18,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly SystemSearchService _systemSearch;
     private readonly ShellViewModel _shell;
     private readonly EsiAuthService _auth;
+    private readonly AaConnectorService _aa;
 
     /// <summary>The app-lifetime overlay/alert state - bound directly by the overlay controls.</summary>
     public AlertHub Overlay { get; }
@@ -26,13 +27,18 @@ public partial class SettingsViewModel : ObservableObject
     public ShellViewModel Shell => _shell;
 
     public SettingsViewModel(SettingsService settings, AlertHub overlay,
-                             SystemSearchService systemSearch, ShellViewModel shell, EsiAuthService auth)
+                             SystemSearchService systemSearch, ShellViewModel shell, EsiAuthService auth,
+                             AaConnectorService aa)
     {
         _settings = settings;
         Overlay   = overlay;
         _systemSearch = systemSearch;
         _shell = shell;
         _auth = auth;
+        _aa = aa;
+
+        _aaBaseUrlText = settings.Current.AaBaseUrl;
+        ReadAaState();
 
         EveLogsPath        = settings.Current.EveLogsPath;
         BoostChannelPrefix = settings.Current.BoostChannelPrefix;
@@ -72,6 +78,100 @@ public partial class SettingsViewModel : ObservableObject
         foreach (var scope in EsiAuthService.RequiredScopes)
             ScopeHealth.Add(new ScopeStatus(ScopeLabels.GetValueOrDefault(scope, scope), granted.Contains(scope)));
         MissingScopes = IsLoggedIn && ScopeHealth.Any(s => !s.Granted);
+    }
+
+    // Alliance Auth connector
+    // An FC pastes their auth's address and a key they generated there, and FCAT starts reading
+    // their alliance's doctrines and friendly structures. It is entirely optional: with nothing set
+    // up this section offers the two fields and the rest of the app behaves exactly as it always
+    // has. Nothing anywhere else in FCAT is allowed to require it.
+
+    [ObservableProperty] private string _aaBaseUrlText = string.Empty;
+    [ObservableProperty] private string _aaKeyText     = string.Empty;
+    [ObservableProperty] private string _aaStatus      = string.Empty;
+
+    /// <summary>True once a key is stored - swaps the two input fields for the connected summary.</summary>
+    [ObservableProperty] private bool _aaConnected;
+
+    /// <summary>A test or refresh is in flight; disables the buttons so it isn't fired twice.</summary>
+    [ObservableProperty] private bool _aaBusy;
+
+    /// <summary>Red rather than green - set when the last thing that happened was a failure.</summary>
+    [ObservableProperty] private bool _aaFailed;
+
+    /// <summary>What came back last time, e.g. "12 doctrines · 34 fits · 8 structures".</summary>
+    [ObservableProperty] private string _aaSummary = string.Empty;
+
+    private void ReadAaState()
+    {
+        AaConnected = _aa.IsConfigured;
+        AaFailed    = _aa.State is AaState.Failed or AaState.Stale;
+        AaStatus    = _aa.Status;
+
+        if (!_aa.IsConfigured) { AaSummary = string.Empty; return; }
+
+        var snapshot = _aa.Snapshot;
+        var parts = new List<string>();
+        if (snapshot.Doctrines.Count  > 0) parts.Add($"{snapshot.Doctrines.Count} doctrines");
+        if (snapshot.Fittings.Count   > 0) parts.Add($"{snapshot.Fittings.Count} fits");
+        if (snapshot.Structures.Count > 0) parts.Add($"{snapshot.Structures.Count} structures");
+        AaSummary = parts.Count > 0 ? string.Join(" · ", parts) : "Nothing to read from this auth yet";
+    }
+
+    /// <summary>Check the address and key before saving either, so a typo never half-configures it.</summary>
+    [RelayCommand]
+    private async Task ConnectAa()
+    {
+        if (AaBusy) return;
+        AaBusy   = true;
+        AaFailed = false;
+        AaStatus = "Checking…";
+
+        var (ok, message) = await _aa.TestAsync(AaBaseUrlText, AaKeyText);
+        AaStatus = message;
+        AaFailed = !ok;
+
+        if (ok)
+        {
+            _aa.Connect(AaBaseUrlText, AaKeyText);
+            AaKeyText    = string.Empty;   // it is stored encrypted now; no reason to keep it on screen
+            AaBaseUrlText = _aa.BaseUrl;
+            AaConnected  = true;
+        }
+
+        AaBusy = false;
+    }
+
+    /// <summary>Pull again now, for an FC who just had a doctrine added or a structure reinforced.</summary>
+    [RelayCommand]
+    private async Task RefreshAa()
+    {
+        if (AaBusy) return;
+        AaBusy   = true;
+        AaStatus = "Refreshing…";
+        await _aa.RefreshAsync();
+        ReadAaState();
+        AaBusy = false;
+    }
+
+    /// <summary>Forget the key and everything fetched with it. The key itself stays valid until the
+    /// FC revokes it on their auth, which is the only place that can revoke one.</summary>
+    [RelayCommand]
+    private void DisconnectAa()
+    {
+        _aa.Disconnect();
+        AaBaseUrlText = string.Empty;
+        AaKeyText     = string.Empty;
+        ReadAaState();
+        AaStatus = "Disconnected. Revoke the key on your auth if you want it dead for good.";
+    }
+
+    /// <summary>Opens the FC's own auth page where keys are generated.</summary>
+    [RelayCommand]
+    private void OpenAaKeys()
+    {
+        var root = AaConnectorService.NormaliseBaseUrl(AaBaseUrlText);
+        Open(root == null ? "https://github.com/MifuneSG/FCAT/tree/main/aa-connector" : $"{root}/fcat/");
     }
 
     [RelayCommand]

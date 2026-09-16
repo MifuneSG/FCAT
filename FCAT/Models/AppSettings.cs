@@ -30,6 +30,16 @@ public class AppSettings
     /// <summary>Colour theme: Nebula (violet, default), Carbon, Photon or Rust. See ThemeService.</summary>
     public string Theme { get; set; } = "Nebula";
 
+    // Alliance Auth connector. Optional, and off until an FC pastes their own auth's address -
+    // most of FCAT's users have no auth at all and never touch this. The API KEY is deliberately
+    // NOT here: it is a credential, so it lives DPAPI-encrypted in aa.dat beside the ESI tokens,
+    // along with the data it fetched. See AaConnectorService.
+    /// <summary>Root URL of the FC's Alliance Auth, e.g. https://auth.example.com. Empty = not set up.</summary>
+    public string AaBaseUrl { get; set; } = string.Empty;
+
+    /// <summary>Lets an FC switch the connector off without throwing their key away.</summary>
+    public bool AaEnabled { get; set; } = true;
+
     // Hunt: remembered so the FC's own hull and skills aren't re-picked every session.
     /// <summary>Jump-capable hull class the hunt board measures with. See JumpDrives.Classes.</summary>
     public string HuntHullClass { get; set; } = "Black Ops";
