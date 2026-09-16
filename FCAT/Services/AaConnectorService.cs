@@ -103,6 +103,13 @@ public class AaConnectorService
     public IReadOnlyList<AaDoctrine>  Doctrines  => Snapshot.Doctrines;
     public IReadOnlyList<AaFitting>   Fittings   => Snapshot.Fittings;
     public IReadOnlyList<AaStructure> Structures => Snapshot.Structures;
+    public IReadOnlyList<AaFatLink>   FatLinks   => Snapshot.FatLinks;
+    public IReadOnlyList<AaSrpFleet>  SrpFleets  => Snapshot.SrpFleets;
+
+    /// <summary>The FAT link an FC is most likely asking about: the newest one still open, or
+    /// failing that the newest one at all. Null when this auth serves no FAT.</summary>
+    public AaFatLink? CurrentFatLink =>
+        Snapshot.FatLinks.FirstOrDefault(f => f.IsOpen) ?? Snapshot.FatLinks.FirstOrDefault();
 
     public AaFitting? Fitting(int id) => Snapshot.Fittings.FirstOrDefault(f => f.Id == id);
 
@@ -193,6 +200,8 @@ public class AaConnectorService
             Doctrines  = Snapshot.Doctrines,
             Fittings   = Snapshot.Fittings,
             Structures = Snapshot.Structures,
+            FatLinks   = Snapshot.FatLinks,
+            SrpFleets  = Snapshot.SrpFleets,
         };
 
         var parts = new List<string>();
@@ -225,6 +234,28 @@ public class AaConnectorService
         else
         {
             snapshot.Structures = [];
+        }
+
+        // FAT and SRP ship with Alliance Auth itself, so an auth that serves the other two almost
+        // always serves these - but they can be taken out of INSTALLED_APPS, hence the check.
+        if (index.Sources.Fat)
+        {
+            var fat = await GetAsync<AaFatPayload>("fat/", ct);
+            if (fat != null) snapshot.FatLinks = fat.FatLinks;
+        }
+        else
+        {
+            snapshot.FatLinks = [];
+        }
+
+        if (index.Sources.Srp)
+        {
+            var srp = await GetAsync<AaSrpPayload>("srp/", ct);
+            if (srp != null) snapshot.SrpFleets = srp.Fleets;
+        }
+        else
+        {
+            snapshot.SrpFleets = [];
         }
 
         Snapshot = snapshot;
@@ -460,4 +491,16 @@ internal class AaStructurePayload
 {
     [System.Text.Json.Serialization.JsonPropertyName("structures")]
     public List<AaStructure> Structures { get; set; } = [];
+}
+
+internal class AaFatPayload
+{
+    [System.Text.Json.Serialization.JsonPropertyName("fatlinks")]
+    public List<AaFatLink> FatLinks { get; set; } = [];
+}
+
+internal class AaSrpPayload
+{
+    [System.Text.Json.Serialization.JsonPropertyName("fleets")]
+    public List<AaSrpFleet> Fleets { get; set; } = [];
 }

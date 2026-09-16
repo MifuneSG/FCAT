@@ -9,13 +9,20 @@ Two endpoints, both GET:
 
 | Endpoint | Serves | Needs |
 |---|---|---|
-| `/fcat/doctrines/` | Doctrines and fits, with modules as type ids and slots | the `fittings` app |
-| `/fcat/structures/` | Friendly structures: name, system, type, state, fuel | the `structures` app |
+| `/fcat/api/doctrines/` | Doctrines and fits, with modules as type ids and slots | the `fittings` app |
+| `/fcat/api/structures/` | Friendly structures: name, system, type, state, fuel | the `structures` app |
+| `/fcat/api/fat/` | The caller's own recent FAT links, and who has clicked each | `fleetactivitytracking` |
+| `/fcat/api/srp/` | Recent SRP fleets: code, status, pending count, running total | `srp` |
 
-`/fcat/` returns the connector version and which of those two this auth can actually serve.
+`/fcat/api/` returns the connector version and which of these this auth can actually serve.
 
-Both source apps are optional. If an auth doesn't run one, its endpoint returns 501 and
-everything else keeps working.
+Every source app is optional. If an auth doesn't run one, its endpoint returns 501 and everything
+else keeps working. `fleetactivitytracking` and `srp` ship with Alliance Auth itself, so they are
+normally present; `fittings` and `structures` are separate installs.
+
+FAT and SRP are read-only here too, which is the point of including them: an FC can see who has
+clicked and what is still owed without leaving the fleet, while creating links, approving requests
+and setting payouts stay on the website where they belong.
 
 ## What it does not do
 
@@ -36,8 +43,8 @@ It only says which Alliance Auth user is asking.** Every request is then answere
 1. The key resolves to a user, or the request is rejected.
 2. That user must have `fcatconnector.basic_access`, so an admin can lock the whole thing to
    one group.
-3. The endpoint re-checks the source app's own permission, `fittings.access_fittings` or
-   `structures.basic_access`.
+3. The endpoint re-checks the source app's own permission: `fittings.access_fittings`,
+   `structures.basic_access`, `auth.fleetactivitytracking` or `srp.access_srp`.
 4. The query uses the source app's own visibility rules. Structures go through
    `Structure.objects.visible_for_user(user)`, which is the same call the structures app's own
    pages make, so `view_corporation_structures` / `view_alliance_structures` /
@@ -101,8 +108,7 @@ them from the Django admin, but cannot create one for somebody else.
 
 ## Reviewing it
 
-It is about 250 lines. `models.py` is the key store, `views.py` holds the FC's page and both
-endpoints. The security-relevant lines are the two querysets in `views.py` that decide what a
+`models.py` is the key store; `views.py` holds the FC's page and every endpoint. The security-relevant lines are the two querysets in `views.py` that decide what a
 user can see, and `ApiKey.resolve`. Those are the ones worth your attention.
 
 ## Licence

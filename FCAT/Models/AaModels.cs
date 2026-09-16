@@ -28,6 +28,11 @@ public class AaSources
 {
     [JsonPropertyName("doctrines")]  public bool Doctrines  { get; set; }
     [JsonPropertyName("structures")] public bool Structures { get; set; }
+
+    // Core Alliance Auth apps, so usually true - but they can be left out of INSTALLED_APPS, and
+    // an older connector will not send these at all, which lands as false and hides the panels.
+    [JsonPropertyName("fat")] public bool Fat { get; set; }
+    [JsonPropertyName("srp")] public bool Srp { get; set; }
 }
 
 /// <summary>A doctrine: a name, the categories it is filed under, and the fits that make it up.</summary>
@@ -181,6 +186,100 @@ public class AaStructure
     }
 }
 
+/// <summary>
+/// A fleet activity tracking link on the FC's auth, and who is registered on it.
+///
+/// <para>Two apps do this and an auth runs one: AFAT, the community replacement most alliances
+/// use, or the one that ships with Alliance Auth. The connector answers in the same shape either
+/// way; the ESI fields below are AFAT's and stay empty for the core app.</para>
+///
+/// <para>That distinction decides what FCAT should even say. A link made "using ESI" registers the
+/// whole fleet automatically as pilots join, so nobody clicks anything and listing who has not
+/// clicked would be nonsense. The question that matters there is whether tracking is running for
+/// the fleet being flown right now - which FCAT can answer and the website cannot, because only
+/// FCAT knows which fleet that is.</para>
+///
+/// <para>Read-only. Creating a link stays on auth; the connector does not write and should not.</para>
+/// </summary>
+public class AaFatLink
+{
+    [JsonPropertyName("hash")]             public string Hash     { get; set; } = string.Empty;
+    [JsonPropertyName("fleet")]            public string Fleet    { get; set; } = string.Empty;
+    [JsonPropertyName("url")]              public string Url      { get; set; } = string.Empty;
+    [JsonPropertyName("doctrine")]         public string Doctrine { get; set; } = string.Empty;
+    [JsonPropertyName("created")]          public DateTimeOffset? Created { get; set; }
+    [JsonPropertyName("expires")]          public DateTimeOffset? Expires { get; set; }
+
+    /// <summary>Null on an ESI link: it runs until the fleet closes, not on a clock.</summary>
+    [JsonPropertyName("duration_minutes")] public int? DurationMinutes { get; set; }
+
+    // AFAT only. The core app has no ESI tracking, so these stay false/null there.
+    [JsonPropertyName("is_esi")]          public bool  IsEsi         { get; set; }
+    [JsonPropertyName("esi_registered")]  public bool  EsiRegistered { get; set; }
+    [JsonPropertyName("esi_fleet_id")]    public long? EsiFleetId    { get; set; }
+    [JsonPropertyName("esi_error")]       public string EsiError     { get; set; } = string.Empty;
+    [JsonPropertyName("esi_error_count")] public int   EsiErrorCount { get; set; }
+
+    [JsonPropertyName("attendees")] public List<AaFatAttendee> Attendees { get; set; } = [];
+
+    /// <summary>Still collecting attendance: an ESI link that auth still has a live fleet for, or a
+    /// clickable one that has not run out.</summary>
+    [JsonIgnore] public bool IsOpen => IsEsi
+        ? EsiRegistered
+        : Expires is { } e && e > DateTimeOffset.UtcNow;
+
+    /// <summary>Tracking is meant to be running but ESI has been failing.</summary>
+    [JsonIgnore] public bool HasEsiTrouble => IsEsi && EsiError.Length > 0;
+
+    /// <summary>How long is left to click, for an FC deciding whether to re-broadcast it.</summary>
+    [JsonIgnore] public string TimeLeft
+    {
+        get
+        {
+            if (IsEsi) return EsiRegistered ? "tracking via ESI" : "tracking stopped";
+            if (Expires is not { } e) return string.Empty;
+            var left = e - DateTimeOffset.UtcNow;
+            if (left <= TimeSpan.Zero)   return "closed";
+            if (left.TotalMinutes < 60)  return $"{(int)left.TotalMinutes}m left";
+            return $"{(int)left.TotalHours}h {left.Minutes}m left";
+        }
+    }
+}
+
+public class AaFatAttendee
+{
+    [JsonPropertyName("character_name")] public string CharacterName { get; set; } = string.Empty;
+    [JsonPropertyName("system")]         public string System        { get; set; } = string.Empty;
+    [JsonPropertyName("ship")]           public string Ship          { get; set; } = string.Empty;
+}
+
+/// <summary>An SRP fleet on the FC's auth: its code, what is still pending, and what it has cost.</summary>
+public class AaSrpFleet
+{
+    [JsonPropertyName("id")]        public int    Id        { get; set; }
+    [JsonPropertyName("name")]      public string Name      { get; set; } = string.Empty;
+    [JsonPropertyName("doctrine")]  public string Doctrine  { get; set; } = string.Empty;
+    [JsonPropertyName("code")]      public string Code      { get; set; } = string.Empty;
+    [JsonPropertyName("status")]    public string Status    { get; set; } = string.Empty;
+    [JsonPropertyName("commander")] public string Commander { get; set; } = string.Empty;
+    [JsonPropertyName("aar_link")]  public string AarLink   { get; set; } = string.Empty;
+    [JsonPropertyName("time")]      public DateTimeOffset? Time { get; set; }
+
+    [JsonPropertyName("pending")]    public int  Pending   { get; set; }
+    [JsonPropertyName("total_cost")] public long TotalCost { get; set; }
+
+    [JsonIgnore] public bool HasPending => Pending > 0;
+
+    [JsonIgnore] public string CostText =>
+        TotalCost >= 1_000_000_000 ? $"{TotalCost / 1_000_000_000.0:0.##}B ISK"
+      : TotalCost >= 1_000_000     ? $"{TotalCost / 1_000_000.0:0.#}M ISK"
+      : TotalCost > 0              ? $"{TotalCost:N0} ISK"
+      :                              "nothing yet";
+
+    [JsonIgnore] public string PendingText =>
+        Pending == 0 ? "none pending" : $"{Pending} pending";
+}
+
 /// <summary>Everything one refresh pulled down, as it is written to disk.</summary>
 public class AaSnapshot
 {
@@ -191,4 +290,6 @@ public class AaSnapshot
     public List<AaDoctrine>  Doctrines  { get; set; } = [];
     public List<AaFitting>   Fittings   { get; set; } = [];
     public List<AaStructure> Structures { get; set; } = [];
+    public List<AaFatLink>   FatLinks   { get; set; } = [];
+    public List<AaSrpFleet>  SrpFleets  { get; set; } = [];
 }

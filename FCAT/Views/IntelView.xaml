@@ -237,6 +237,19 @@
                                                         <TextBlock Text="{Binding Stats}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,3,0,0"/>
                                                         <TextBlock Text="{Binding AltTip}" Foreground="{StaticResource EveGoldSoft}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,3,0,0"
                                                                    Visibility="{Binding HasAlt, Converter={StaticResource BoolToVisibility}}"/>
+                                                        <TextBlock Text="{Binding StructureTip}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,3,0,0"
+                                                                   Visibility="{Binding HasStructure, Converter={StaticResource BoolToVisibility}}">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding CanShelter}" Value="True">
+                                                                            <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
                                                         <TextBlock Text="Click to focus · right-click for Dotlan / zKillboard" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,4,0,0"/>
                                                     </StackPanel>
                                                 </Grid.ToolTip>
@@ -333,6 +346,28 @@
                                                         </Border>
                                                     </Grid>
 
+                                                    <!-- A friendly structure in this system. Left shoulder, where nothing else
+                                                         sits: the kill badge owns the right and alts own the top. Green when the
+                                                         fleet could actually dock or tether, amber when the structure is there but
+                                                         reinforced, unfuelled or still going up - which an FC needs to see, because
+                                                         "there is a Fortizar here" and "you can hide in it" are different facts. -->
+                                                    <Path Width="11" Height="11" Stretch="Uniform" StrokeThickness="2"
+                                                          StrokeLineJoin="Round" Data="{StaticResource IconStructure}"
+                                                          HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-3,0,0,0"
+                                                          IsHitTestVisible="False"
+                                                          Visibility="{Binding HasStructure, Converter={StaticResource BoolToVisibility}}">
+                                                        <Path.Style>
+                                                            <Style TargetType="Path">
+                                                                <Setter Property="Stroke" Value="{StaticResource EveAmber}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding CanShelter}" Value="True">
+                                                                        <Setter Property="Stroke" Value="{StaticResource EveGreen}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Path.Style>
+                                                    </Path>
+
                                                     <!-- Where one of your own alts is sitting. Gold, above the dot, so it reads as
                                                          yours rather than as another piece of intel about the system. Negative
                                                          margin keeps it out of the layout box, so the dot stays centred on the
@@ -419,9 +454,44 @@
                                     <TextBlock Text="{Binding System.SysJumps}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold"/>
                                     <TextBlock Text="JUMPS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"/>
                                 </StackPanel>
-                                <StackPanel Width="54" Margin="0,0,0,8" ToolTip="NPC stations only - player citadels aren't listed by ESI">
+                                <StackPanel Width="54" Margin="0,0,0,8" ToolTip="NPC stations only - ESI does not list player citadels. Friendly ones appear beside this when your auth is connected.">
                                     <TextBlock Text="{Binding System.StationCount}" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold"/>
                                     <TextBlock Text="STATIONS" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"/>
+                                </StackPanel>
+
+                                <!-- The alliance's own structures here, from Alliance Auth. Hidden entirely
+                                     without it. Green counts the ones a fleet could actually dock or tether
+                                     in right now; a reinforced or unfuelled one still shows in the total,
+                                     because knowing it is there matters even when it is no help. -->
+                                <StackPanel Width="70" Margin="0,0,0,8"
+                                            Visibility="{Binding System.HasFriendly, Converter={StaticResource BoolToVisibility}}">
+                                    <StackPanel.ToolTip>
+                                        <StackPanel MaxWidth="280">
+                                            <TextBlock Text="Your alliance's structures in this system" Foreground="{StaticResource EveTextPrimary}"
+                                                       FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding System.FriendlyTip}" Foreground="{StaticResource EveTextSecondary}"
+                                                       FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </StackPanel.ToolTip>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding System.FriendlyDocking}" FontFamily="{StaticResource FontUI}" FontSize="18" FontWeight="SemiBold">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding System.FriendlyDocking}" Value="0">
+                                                            <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Text="/" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}"
+                                                   FontSize="14" VerticalAlignment="Bottom" Margin="3,0,3,2"/>
+                                        <TextBlock Text="{Binding System.FriendlyCount}" Foreground="{StaticResource EveTextDim}"
+                                                   FontFamily="{StaticResource FontUI}" FontSize="14" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                    </StackPanel>
+                                    <TextBlock Text="FRIENDLY" Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"/>
                                 </StackPanel>
                             </WrapPanel>
 

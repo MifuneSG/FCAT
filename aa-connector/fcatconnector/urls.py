@@ -17,4 +17,6 @@ urlpatterns = [
     path("api/", views.index, name="api_index"),
     path("api/doctrines/", views.doctrines, name="api_doctrines"),
     path("api/structures/", views.structures, name="api_structures"),
+    path("api/fat/", views.fat, name="api_fat"),
+    path("api/srp/", views.srp, name="api_srp"),
 ]

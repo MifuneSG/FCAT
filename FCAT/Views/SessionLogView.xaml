@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:FCAT.ViewModels"
              xmlns:svc="clr-namespace:FCAT.Services"
+             xmlns:mdl="clr-namespace:FCAT.Models"
              d:DataContext="{d:DesignInstance vm:SessionLogViewModel}"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -166,6 +167,121 @@
                                 <StackPanel Margin="0,16,0,0" Visibility="{Binding Report.HasKills, Converter={StaticResource BoolToVisibility}}">
                                     <TextBlock Text="KILLS" Style="{StaticResource SectionLabel}" Margin="0,0,0,5"/>
                                     <ItemsControl ItemsSource="{Binding Report.Kills}" ItemTemplate="{StaticResource BrLine}"/>
+                                </StackPanel>
+
+                                <!-- Fleet attendance, read from the FC's own Alliance Auth. Hidden
+                                     entirely without one. FCAT cannot create a FAT link and does not
+                                     try: the connector is read-only. What it adds is the half auth
+                                     cannot see, because only FCAT knows who was actually in fleet. -->
+                                <StackPanel Margin="0,18,0,0"
+                                            Visibility="{Binding HasFat, Converter={StaticResource BoolToVisibility}}">
+                                    <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,0,0,12"/>
+                                    <Grid Margin="0,0,0,6">
+                                        <TextBlock Text="FLEET ATTENDANCE" Style="{StaticResource SectionLabel}"/>
+                                        <TextBlock Text="{Binding FatStatus}" Foreground="{StaticResource EveTextDim}"
+                                                   FontFamily="{StaticResource FontUI}" FontSize="11"
+                                                   HorizontalAlignment="Right"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding FatFleet}" Foreground="{StaticResource EveTextSecondary}"
+                                               FontFamily="{StaticResource FontUI}" FontSize="12" Margin="0,0,0,4"/>
+                                    <TextBlock Text="{Binding FatTracking}" FontFamily="{StaticResource FontUI}" FontSize="12"
+                                               TextWrapping="Wrap" Margin="0,0,0,5"
+                                               Visibility="{Binding FatTracking, Converter={StaticResource StringToVisibility}}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource EveCritical}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding FatHealthy}" Value="True">
+                                                        <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding FatCounts}" FontFamily="{StaticResource FontMono}" FontSize="15" FontWeight="SemiBold">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding FatComplete}" Value="True">
+                                                        <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+
+                                    <StackPanel Visibility="{Binding FatMissing.Count, Converter={StaticResource CountToVisibility}}">
+                                        <TextBlock Text="Still to click" Foreground="{StaticResource EveAmber}"
+                                                   FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,8,0,3"/>
+                                        <ItemsControl ItemsSource="{Binding FatMissing}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding}" Foreground="{StaticResource EveTextSecondary}"
+                                                               FontFamily="{StaticResource FontUI}" FontSize="12" Margin="0,1,0,0"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                        <Button Command="{Binding CopyFatLinkCommand}" Style="{StaticResource GhostButton}"
+                                                Height="28" Padding="12,0" Margin="0,0,6,0"
+                                                ToolTip="The link you already made on auth, ready to paste into fleet">
+                                            <TextBlock Text="Copy link" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                                        </Button>
+                                        <Button Command="{Binding CopyFatMissingCommand}" Style="{StaticResource GhostButton}"
+                                                Height="28" Padding="12,0"
+                                                Visibility="{Binding FatMissing.Count, Converter={StaticResource CountToVisibility}}"
+                                                ToolTip="The names still owing a click, ready to paste into fleet chat">
+                                            <TextBlock Text="Copy names" FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- What the alliance still owes for this op and recent ones. Read-only:
+                                     approving a request and setting a payout stay on the website. -->
+                                <StackPanel Margin="0,18,0,0"
+                                            Visibility="{Binding HasSrp, Converter={StaticResource BoolToVisibility}}">
+                                    <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,0,0,12"/>
+                                    <TextBlock Text="SHIP REPLACEMENT" Style="{StaticResource SectionLabel}" Margin="0,0,0,6"/>
+                                    <ItemsControl ItemsSource="{Binding SrpFleets}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type mdl:AaSrpFleet}">
+                                                <Grid Margin="0,0,0,7">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}"
+                                                                   FontFamily="{StaticResource FontUI}" FontSize="12"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding Code}" Foreground="{StaticResource EveTextDim}"
+                                                                   FontFamily="{StaticResource FontMono}" FontSize="11"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding CostText}" Foreground="{StaticResource EveTextSecondary}"
+                                                                   FontFamily="{StaticResource FontMono}" FontSize="12"
+                                                                   HorizontalAlignment="Right"/>
+                                                        <TextBlock Text="{Binding PendingText}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                                                                   HorizontalAlignment="Right">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding HasPending}" Value="True">
+                                                                            <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                 </StackPanel>
 
                                 <TextBlock Text="{Binding ReportStatus}" Foreground="{StaticResource EveTextDim}"

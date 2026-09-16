@@ -60,6 +60,10 @@
         <FontFamily x:Key="FontMono">Cascadia Mono, Consolas</FontFamily>
 
         <!-- VALUE CONVERTERS -->
+        <!-- Friendly structure on a map node. A spire over a base: unmistakable next to the
+             circular system dots, and it still reads at 10px. -->
+        <PathGeometry x:Key="IconStructure" Figures="M12 3 L18 10 L15 10 L15 18 L9 18 L9 10 L6 10 Z"/>
+
         <local:BoolToVisibilityConverter   x:Key="BoolToVisibility"/>
         <local:BoolToInvisibilityConverter x:Key="BoolToInvisibility"/>
         <local:InvertBoolConverter         x:Key="InvertBool"/>

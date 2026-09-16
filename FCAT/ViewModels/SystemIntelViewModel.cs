@@ -24,10 +24,14 @@ public record SystemScope(int SystemId, int ConstellationId, int RegionId, strin
 public record MapNode(double NodeLeft, double NodeTop,
                       int SystemId, string Name, string SovLabel, string Stats, bool IsCurrent,
                       string KillBadge, bool Hot, bool Pulse, bool IsExit, bool IsHome,
-                      string AltBadge, string AltTip)
+                      string AltBadge, string AltTip,
+                      string StructureTip, bool CanShelter)
 {
     /// <summary>One of the FC's labelled alts is sitting here - see AltTracker.</summary>
     public bool HasAlt => AltBadge.Length > 0;
+
+    /// <summary>A friendly structure stands here, whether or not it is any use right now.</summary>
+    public bool HasStructure => StructureTip.Length > 0;
 }
 
 /// <summary>A gate link between two systems on the map. IsExit = the link leaves the constellation
@@ -104,18 +108,24 @@ public partial class SystemIntelViewModel : ObservableObject
     public event Action<string, List<string>>? LocationContextChanged;
 
     private readonly AltTracker _alts;
+    private readonly AaConnectorService _aa;
 
     /// <summary>The FC's labelled alts, grouped by the system they're sitting in.</summary>
     private Dictionary<int, List<AltStatus>> _altsBySystem = [];
 
     public SystemIntelViewModel(EsiService esi, EsiAuthService auth, SystemSearchService systemSearch,
-                                AltTracker alts)
+                                AltTracker alts, AaConnectorService aa)
     {
         _esi = esi;
         _auth = auth;
         _systemSearch = systemSearch;
         _alts = alts;
+        _aa = aa;
         _alts.Updated += OnAltsUpdated;
+
+        // Fuel burns down and timers start, so a structure that was somewhere to run to an hour ago
+        // may not be now. The connector refreshes on its own schedule; this just repaints.
+        _aa.Updated += () => App.Current?.Dispatcher.BeginInvoke(RedrawNodes);
         _ = _systemSearch.EnsureLoadedAsync();   // local name index, for systems past the constellation
     }
 
@@ -409,6 +419,15 @@ public partial class SystemIntelViewModel : ObservableObject
         return result;
     }
 
+    // Friendly structures in the system on screen, from the FC's own auth. Zero for everyone who
+    // has not connected one, which is when the tile hides itself entirely.
+    [ObservableProperty] private int _friendlyCount;
+    [ObservableProperty] private int _friendlyDocking;
+    [ObservableProperty] private string _friendlyTip = string.Empty;
+
+    /// <summary>Whether to show the friendly-structure tile at all.</summary>
+    public bool HasFriendly => FriendlyCount > 0;
+
     private void BuildHeader(EsiSystem sys)
     {
         SystemName    = sys.Name;
@@ -416,8 +435,18 @@ public partial class SystemIntelViewModel : ObservableObject
         ShipKills = k.ship; PodKills = k.pod; NpcKills = k.npc;
         SysJumps  = _jumps.GetValueOrDefault(sys.SystemId);
 
-        // Only NPC stations - player Upwell structures aren't enumerable, so the tile says "NPC".
+        // ESI lists NPC stations only: player Upwell structures are not enumerable, which is why
+        // this tile has always been labelled NPC. An Alliance Auth running the structures app does
+        // know about the alliance's own, so those get counted separately rather than folded in -
+        // "an NPC station" and "our Fortizar, currently reinforced" are not the same fact and an FC
+        // deciding where to dock needs them apart.
         StationCount = sys.Stations?.Length ?? 0;
+
+        var friendly = _aa.StructuresIn(sys.SystemId);
+        FriendlyCount   = friendly.Count;
+        FriendlyDocking = friendly.Count(f => f.CanShelter);
+        FriendlyTip     = StructureMarker(sys.SystemId).Tip;
+        OnPropertyChanged(nameof(HasFriendly));
 
         var sovId = _sov.GetValueOrDefault(sys.SystemId);
         SovHolder = sovId is > 0 ? _nameCache.GetValueOrDefault(sovId.Value, string.Empty) : string.Empty;
@@ -923,11 +952,46 @@ public partial class SystemIntelViewModel : ObservableObject
         var isHome = sys.SystemId == _homeSystemId && _homeSystemId != _currentSystemId;
 
         var (altBadge, altTip) = AltMarker(sys.SystemId);
+        var (structureTip, canShelter) = StructureMarker(sys.SystemId);
 
         return new MapNode(cx - NodeHalfW, cy - NodeHalfH,
             sys.SystemId, sys.Name, sovLabel, stats, isCurrent,
             hot ? pvp.ToString() : string.Empty, hot, pulse, isExit, isHome,
-            altBadge, altTip);
+            altBadge, altTip, structureTip, canShelter);
+    }
+
+    /// <summary>
+    /// Friendly structures in a system, as a tooltip line and a "could we actually dock here" flag.
+    ///
+    /// <para>Empty for every system unless the FC has connected an Alliance Auth running the
+    /// structures app, which is the normal case - so the map simply shows nothing extra rather than
+    /// an empty marker. Only structures that FC could already open in their own browser come back;
+    /// the connector reuses the structures app's own visibility filter.</para>
+    ///
+    /// <para>The flag is deliberately pessimistic. A reinforced structure is a fight rather than a
+    /// refuge and an unfuelled one has no services, so neither counts as shelter even though both
+    /// are drawn - an FC needs to see that the structure is there AND that it is no help.</para>
+    /// </summary>
+    private (string Tip, bool CanShelter) StructureMarker(int systemId)
+    {
+        var here = _aa.StructuresIn(systemId);
+        if (here.Count == 0) return (string.Empty, false);
+
+        var lines = here
+            .OrderByDescending(s => s.CanShelter)
+            .ThenBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(s =>
+            {
+                var notes = new List<string> { s.TypeName };
+                if (s.IsReinforced)      notes.Add("REINFORCED");
+                else if (s.IsAnchoring)  notes.Add("anchoring");
+                else if (s.IsOffline)    notes.Add("offline");
+                else if (!s.CanShelter)  notes.Add("low power");
+                if (s.FuelText.Length > 0) notes.Add(s.FuelText);
+                return $"{s.Name} · {string.Join(" · ", notes)}";
+            });
+
+        return (string.Join("\n", lines), here.Any(s => s.CanShelter));
     }
 
     /// <summary>
@@ -940,8 +1004,16 @@ public partial class SystemIntelViewModel : ObservableObject
         for (var i = 0; i < MapNodes.Count; i++)
         {
             var (badge, tip) = AltMarker(MapNodes[i].SystemId);
-            if (MapNodes[i].AltBadge == badge && MapNodes[i].AltTip == tip) continue;
-            MapNodes[i] = MapNodes[i] with { AltBadge = badge, AltTip = tip };
+            var (structureTip, canShelter) = StructureMarker(MapNodes[i].SystemId);
+
+            if (MapNodes[i].AltBadge == badge && MapNodes[i].AltTip == tip
+                && MapNodes[i].StructureTip == structureTip && MapNodes[i].CanShelter == canShelter) continue;
+
+            MapNodes[i] = MapNodes[i] with
+            {
+                AltBadge = badge, AltTip = tip,
+                StructureTip = structureTip, CanShelter = canShelter,
+            };
         }
     }
 

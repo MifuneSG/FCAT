@@ -24,7 +24,7 @@ def register_menu():
 def register_urls():
     # Alliance Auth wraps every hooked URL in main_character_required, which is
     # login_required underneath. FCAT calls the API with a key and no session, so left
-    # alone the endpoints answer a 302 to the login page instead of JSON. The three API
+    # alone the endpoints answer a 302 to the login page instead of JSON. The API
     # views opt out and do their own auth in the @api decorator; the FC's page keeps the
     # default gate, because a browser session is exactly what it wants.
     return UrlHook(
@@ -35,5 +35,7 @@ def register_urls():
             "fcatconnector.views.index",
             "fcatconnector.views.doctrines",
             "fcatconnector.views.structures",
+            "fcatconnector.views.fat",
+            "fcatconnector.views.srp",
         ],
     )

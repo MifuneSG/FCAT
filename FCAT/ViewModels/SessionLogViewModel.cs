@@ -1,6 +1,8 @@
+using System.Collections.ObjectModel;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FCAT.Models;
 using FCAT.Services;
 
 namespace FCAT.ViewModels;
@@ -22,6 +24,153 @@ public partial class SessionLogViewModel : ObservableObject
 
         // Auto-pull the report if this op already anchored a fight; killmails lag, so a Refresh is offered.
         if (Log.HasBattleReport) _ = LoadReportAsync();
+
+        BuildAuthPanels();
+        _shell.Aa.Updated += OnAaUpdated;
+    }
+
+    /// <summary>The connector refreshes on its own schedule; repaint when it does.</summary>
+    private void OnAaUpdated() =>
+        System.Windows.Application.Current?.Dispatcher.BeginInvoke(BuildAuthPanels);
+
+    // FAT and SRP, read from the FC's own Alliance Auth. Both panels hide completely without it,
+    // which is the normal case. Nothing here writes: creating a link and approving a payout stay on
+    // the website, because the connector is read-only and that is worth keeping.
+
+    [ObservableProperty] private bool   _hasFat;
+    [ObservableProperty] private string _fatFleet    = string.Empty;
+    [ObservableProperty] private string _fatStatus   = string.Empty;
+    [ObservableProperty] private string _fatCounts   = string.Empty;
+    [ObservableProperty] private bool   _fatComplete;
+
+    /// <summary>What auth is doing about attendance, when it tracks by ESI rather than by clicks.</summary>
+    [ObservableProperty] private string _fatTracking = string.Empty;
+
+    /// <summary>False when attendance for this op is not actually being recorded.</summary>
+    [ObservableProperty] private bool _fatHealthy = true;
+
+    /// <summary>
+    /// Pilots in the fleet who have not clicked the link.
+    ///
+    /// This is the half auth cannot do. Its own page lists who turned up; only FCAT knows who was
+    /// actually in the fleet, so only FCAT can name the ones still owing a click - which is the
+    /// thing an FC would otherwise chase by eye at the end of an op.
+    /// </summary>
+    public ObservableCollection<string> FatMissing { get; } = [];
+
+    [ObservableProperty] private bool _hasSrp;
+    public ObservableCollection<AaSrpFleet> SrpFleets { get; } = [];
+
+    private string _fatUrl = string.Empty;
+
+    private void BuildAuthPanels()
+    {
+        var aa = _shell.Aa;
+
+        // --- FAT
+        FatMissing.Clear();
+        var link = aa.CurrentFatLink;
+        HasFat = link != null;
+
+        if (link != null)
+        {
+            _fatUrl   = link.Url;
+            FatFleet  = link.Fleet;
+            FatStatus = link.TimeLeft;
+
+            var clicked = link.Attendees
+                .Select(a => a.CharacterName)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var roster  = _shell.ActiveSession?.AllMembers;
+            // The dashboard knows the fleet id before Fleet Ops has ever been opened, so fall back
+            // to it - otherwise opening the AAR straight from the dashboard downgrades a definite
+            // "tracking this fleet" into a vague "tracking a fleet" for no reason.
+            var fleetId = _shell.ActiveSession?.SessionFleetId is > 0 and var live
+                ? live
+                : _shell.DetectedFleetId;
+
+            // An ESI link tracks the fleet itself, so the useful question is not who has clicked -
+            // it is whether auth is watching THIS fleet. FCAT is the only thing that knows both
+            // sides of that, and a tracker quietly pointed at a fleet that has since re-formed is
+            // how an op ends up with no attendance recorded at all.
+            if (link.IsEsi)
+            {
+                var tracksThisFleet = fleetId != 0 && link.EsiFleetId == fleetId;
+
+                FatTracking = link.HasEsiTrouble
+                    ? $"Auth stopped tracking: {link.EsiError}"
+                    : !link.EsiRegistered ? "Auth is not tracking any fleet"
+                    : fleetId == 0        ? "Tracking a fleet via ESI"
+                    : tracksThisFleet     ? "Tracking this fleet"
+                    : "Tracking a DIFFERENT fleet - this op is not being recorded";
+
+                FatHealthy = link.EsiRegistered && !link.HasEsiTrouble
+                             && (fleetId == 0 || tracksThisFleet);
+
+                FatCounts   = roster is { Count: > 0 }
+                    ? $"{clicked.Count} of {roster.Count} registered"
+                    : $"{clicked.Count} registered";
+                FatComplete = FatHealthy;
+            }
+            else
+            {
+                // A clickable link, so chasing the ones who have not clicked is exactly the job.
+                FatTracking = string.Empty;
+                FatHealthy  = true;
+
+                if (roster is { Count: > 0 })
+                {
+                    foreach (var m in roster
+                                 .Where(m => !clicked.Contains(m.CharacterName))
+                                 .OrderBy(m => m.CharacterName, StringComparer.OrdinalIgnoreCase))
+                        FatMissing.Add(m.CharacterName);
+
+                    // Counted against the ROSTER, not the attendee list. The question is how many of
+                    // THIS fleet clicked, so someone who clicked then left must not pad the number -
+                    // and the count has to agree with the names listed under it.
+                    FatCounts   = $"{roster.Count - FatMissing.Count} of {roster.Count} clicked";
+                    FatComplete = FatMissing.Count == 0;
+                }
+                else
+                {
+                    FatCounts   = $"{clicked.Count} clicked";
+                    FatComplete = true;   // nothing to chase without a roster
+                }
+            }
+        }
+
+        // --- SRP
+        SrpFleets.Clear();
+        foreach (var fleet in aa.SrpFleets.Take(5)) SrpFleets.Add(fleet);
+        HasSrp = SrpFleets.Count > 0;
+    }
+
+    /// <summary>The FAT link on the clipboard, ready to broadcast. FCAT cannot make one - this is
+    /// the one the FC already made, fetched so they do not have to go and find it.</summary>
+    [RelayCommand]
+    private void CopyFatLink()
+    {
+        if (string.IsNullOrWhiteSpace(_fatUrl)) { StatusMessage = "No link to copy."; return; }
+        try
+        {
+            System.Windows.Clipboard.SetText(_fatUrl);
+            StatusMessage = "FAT link copied - paste it into fleet.";
+        }
+        catch { StatusMessage = "Couldn't access the clipboard."; }
+    }
+
+    /// <summary>The names still owing a click, ready to paste into fleet chat.</summary>
+    [RelayCommand]
+    private void CopyFatMissing()
+    {
+        if (FatMissing.Count == 0) { StatusMessage = "Everyone has clicked."; return; }
+        try
+        {
+            System.Windows.Clipboard.SetText(string.Join(", ", FatMissing) + " - click FAT");
+            StatusMessage = $"{FatMissing.Count} name(s) copied.";
+        }
+        catch { StatusMessage = "Couldn't access the clipboard."; }
     }
 
     [ObservableProperty] private string _statusMessage = string.Empty;
@@ -119,5 +268,9 @@ public partial class SessionLogViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void Back() => _shell.BackToMenu();
+    private void Back()
+    {
+        _shell.Aa.Updated -= OnAaUpdated;   // this page is rebuilt per visit; do not stack handlers
+        _shell.BackToMenu();
+    }
 }
