@@ -411,12 +411,25 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
 
     public async Task<Dictionary<int, string>> ResolveNamesAsync(IEnumerable<int> ids)
     {
-        if (DemoMode) return DemoData.Names(ids, authService.AuthenticatedCharacterId, authService.AuthenticatedCharacterName);
-
         var idList = ids.Distinct().ToList();
         if (idList.Count == 0) return [];
 
         var result = new Dictionary<int, string>();
+
+        // Demo mode fakes the FLEET, not the universe. The intel feed stays live even in demo - it
+        // reads the FC's real system and real kills off zKillboard - so those ids are real ids and
+        // have to be resolved for real. Returning only what the sandbox knows left every live kill
+        // rendering its ship, system and alliance as bare numbers, and because no request was made
+        // there was nothing in the log to say why.
+        if (DemoMode)
+        {
+            foreach (var (id, name) in DemoData.Names(idList, authService.AuthenticatedCharacterId,
+                                                      authService.AuthenticatedCharacterName))
+                result[id] = name;
+
+            idList = idList.Where(i => !result.ContainsKey(i)).ToList();
+            if (idList.Count == 0) return result;
+        }
 
         // ESI /v3/universe/names/ accepts up to 1000 IDs
         foreach (var chunk in idList.Chunk(1000))
@@ -448,6 +461,13 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
             foreach (var n in names)
                 result[n.Id] = n.Name;
         }
+
+        // A short answer is the failure that has no other symptom: the request succeeded, the body
+        // parsed, and the caller quietly falls back to printing raw ids. Say so rather than letting
+        // it look like nothing happened.
+        if (result.Count < idList.Count)
+            Log.Warn("esi", $"names: asked for {idList.Count} ({string.Join(",", idList.Take(8))}"
+                          + $"{(idList.Count > 8 ? "…" : string.Empty)}), got {result.Count}");
 
         return result;
     }
