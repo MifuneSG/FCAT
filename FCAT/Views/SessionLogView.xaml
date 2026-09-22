@@ -331,6 +331,7 @@
                                                     <ColumnDefinition Width="66"/>
                                                     <ColumnDefinition Width="104"/>
                                                     <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Grid.Column="0" Text="{Binding Time, StringFormat=HH:mm:ss}"
                                                            FontFamily="{StaticResource FontMono}" FontSize="12"
@@ -341,6 +342,16 @@
                                                 <TextBlock Grid.Column="2" Text="{Binding Text}"
                                                            FontFamily="{StaticResource FontUI}" FontSize="12.5"
                                                            Foreground="{StaticResource EveTextPrimary}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                                <!-- Only killmail rows carry a Url, so only they get a link. -->
+                                                <Button Grid.Column="3" Style="{StaticResource GhostButton}" Padding="7,1" Margin="8,0,0,0"
+                                                        VerticalAlignment="Center"
+                                                        Visibility="{Binding Url, Converter={StaticResource StringToVisibility}}"
+                                                        Command="{Binding DataContext.OpenLinkCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding Url}"
+                                                        ToolTip="{Binding Url}">
+                                                    <TextBlock Text="zkill ↗" Foreground="{DynamicResource EveAccent}"
+                                                               FontFamily="{StaticResource FontUI}" FontSize="11"/>
+                                                </Button>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>

@@ -235,6 +235,13 @@ public partial class ShellViewModel : ObservableObject
             (AlertType.CapTrouble, "",             "Large Micro Jump Drive"),
         };
         _sessionLog.MarkCombat(DemoData.StagingSystemId, DemoData.StagingName);   // give the demo AAR a battle report
+
+        // A kill and a loss, so the demo timeline shows what the live killmail feed puts there,
+        // link button and all. The ids are real public killmails - a dead link proves nothing.
+        _sessionLog.Record("KILL", $"Fleet killed Vng. Praetor's Nightmare in {DemoData.StagingName}, 1.6B ISK",
+                           "https://zkillboard.com/kill/138564201/");
+        _sessionLog.Record("LOSS", $"Ren Halloway lost their Ishtar in {DemoData.StagingName}, 210.0M ISK",
+                           "https://zkillboard.com/kill/138564126/");
         foreach (var (type, attacker, detail) in script)
         {
             await Task.Delay(1400);
@@ -469,7 +476,7 @@ public partial class ShellViewModel : ObservableObject
             return;
         }
         _session?.Shutdown();
-        _session = new FleetViewModel(_auth, _esi, _combatLog, _settings, _alertHub, _sessionLog, this, fleetId);
+        _session = new FleetViewModel(_auth, _esi, _combatLog, _settings, _alertHub, _sessionLog, _killStream, this, fleetId);
         CurrentPage = _session;
         OnPropertyChanged(nameof(CanEnterFleet));
         NavFleetCommand.NotifyCanExecuteChanged();

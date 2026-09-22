@@ -4,17 +4,25 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace FCAT.Services;
 
-/// <summary>One line in the after-action timeline.</summary>
-public record AarEntry(DateTime Time, string Category, string Text);
+/// <summary>One line in the after-action timeline. <paramref name="Url"/> is set on the lines that
+/// have something to open, like a killmail; the timeline renders those as a link.</summary>
+public record AarEntry(DateTime Time, string Category, string Text, string? Url = null);
 
 /// <summary>A system + EVE time the fleet fought in - one battle-report window. An op can rack up
 /// several as it moves, so the report isn't frozen to wherever the first blood landed.</summary>
 public record CombatAnchor(int SystemId, string SystemName, DateTime AtUtc)
 {
     // zKillboard + EVE-Tools share the /related/<systemID>/<yyyyMMddHHmm>/ scheme (EVE time = UTC).
-    private string Stamp        => AtUtc.ToString("yyyyMMddHHmm");
+    // The minutes MUST be 00 - zKill buckets a battle by the hour and throws "Minutes must be 00"
+    // on anything else. See <see cref="HourBucket"/>.
+    private string Stamp        => HourBucket.ToString("yyyyMMddHHmm");
     public string ZkillUrl      => $"https://zkillboard.com/related/{SystemId}/{Stamp}/";
     public string EvetoolsUrl   => $"https://br.evetools.org/related/{SystemId}/{Stamp}/";
+
+    /// <summary>The hour this fight belongs to. zKill's report for hour H covers H-1 to H+2, so
+    /// rounding an anchor DOWN keeps the whole fight inside the window even when it runs long.</summary>
+    public DateTime HourBucket =>
+        new(AtUtc.Year, AtUtc.Month, AtUtc.Day, AtUtc.Hour, 0, 0, DateTimeKind.Utc);
 }
 
 /// <summary>
@@ -58,6 +66,8 @@ public partial class SessionLog : ObservableObject
         if (_anchors.Any(a => a.SystemId == systemId && DateTime.UtcNow - a.AtUtc < AnchorWindow)) return;
         _anchors.Add(new CombatAnchor(systemId, systemName, DateTime.UtcNow));
         OnPropertyChanged(nameof(CombatAnchors));
+        OnPropertyChanged(nameof(HasBattleReport));
+        OnPropertyChanged(nameof(BattleReportSystem));
     }
 
     /// <summary>Records the fleet's own side (character ids + alliance) once, so the battle report can
@@ -70,11 +80,19 @@ public partial class SessionLog : ObservableObject
     }
 
     public bool    HasBattleReport      => _anchors.Count > 0;
+
+    /// <summary>How many systems the header names before it gives up and counts the rest. An op that
+    /// anchors in more than a handful is usually a roam, and the names stop fitting beside Refresh.</summary>
+    private const int HeaderSystemCap = 4;
+
+    /// <summary>The systems this op fought in, named. "5 systems" told the FC nothing they could act
+    /// on; the names are what they recognise and what they go looking for on zKill.</summary>
     public string  BattleReportSystem   => _anchors.Count switch
     {
         0 => string.Empty,
-        1 => _anchors[0].SystemName,
-        _ => $"{_anchors.Count} systems",
+        <= HeaderSystemCap => string.Join(", ", _anchors.Select(a => a.SystemName)),
+        _ => string.Join(", ", _anchors.Take(HeaderSystemCap).Select(a => a.SystemName))
+             + $" +{_anchors.Count - HeaderSystemCap} more",
     };
     // Persistent link used by the AAR footer button - the op's opening fight.
     public string? BattleReportZkill    => _anchors.Count > 0 ? _anchors[0].ZkillUrl    : null;
@@ -93,9 +111,9 @@ public partial class SessionLog : ObservableObject
         UpdateSummary();
     }
 
-    public void Record(string category, string text)
+    public void Record(string category, string text, string? url = null)
     {
-        Entries.Insert(0, new AarEntry(DateTime.Now, category, text));
+        Entries.Insert(0, new AarEntry(DateTime.Now, category, text, url));
         while (Entries.Count > 2000) Entries.RemoveAt(Entries.Count - 1);
         UpdateSummary();
     }
@@ -106,6 +124,8 @@ public partial class SessionLog : ObservableObject
         SessionStart = null;
         _anchors.Clear();
         OnPropertyChanged(nameof(CombatAnchors));
+        OnPropertyChanged(nameof(HasBattleReport));
+        OnPropertyChanged(nameof(BattleReportSystem));
         _friendlyCharIds = [];
         _friendlyAllianceId = 0;
         Summary = "No session recorded yet.";
@@ -169,7 +189,8 @@ public partial class SessionLog : ObservableObject
         sb.AppendLine();
         sb.AppendLine("## Timeline");
         foreach (var e in Entries.Reverse())   // chronological
-            sb.AppendLine($"- `{e.Time:HH:mm:ss}`  **{e.Category}**  {e.Text}");
+            sb.AppendLine($"- `{e.Time:HH:mm:ss}`  **{e.Category}**  {e.Text}"
+                + (string.IsNullOrEmpty(e.Url) ? string.Empty : $"  <{e.Url}>"));
         return sb.ToString();
     }
 
@@ -216,7 +237,8 @@ public partial class SessionLog : ObservableObject
         sb.AppendLine();
         sb.AppendLine("Timeline");
         foreach (var e in Entries.Reverse())   // chronological
-            sb.AppendLine($"{e.Time:HH:mm:ss}  {e.Category}  {e.Text}");
+            sb.AppendLine($"{e.Time:HH:mm:ss}  {e.Category}  {e.Text}"
+                + (string.IsNullOrEmpty(e.Url) ? string.Empty : $"  {e.Url}"));
         return sb.ToString();
     }
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace FCAT.Models;
@@ -339,8 +340,71 @@ public class ZkillBattleSummary
 }
 public class ZkillTeam
 {
+    [JsonConverter(typeof(LooseListConverter<ZkillTeamShip>))]
     [JsonPropertyName("list")]  public List<ZkillTeamShip>? List  { get; set; }   // every ship involved
+
+    [JsonConverter(typeof(LooseMapConverter<ZkillTeamKill>))]
     [JsonPropertyName("kills")] public Dictionary<string, ZkillTeamKill>? Kills { get; set; }  // killID -> detail (value)
+}
+
+// zKill is PHP, and PHP cannot tell an empty map from an empty list: both serialise as `[]`. So a
+// team that lost nothing sends `"kills": []` where a team that lost something sends an object keyed
+// by kill id. System.Text.Json refuses the array outright, and because the exception came out of one
+// shared deserialize, a single quiet team took down the whole battle report. Measured 2026-09-22 -
+// every empty team in every system came back as `[]`. These two read whichever shape turns up.
+
+/// <summary>A JSON object keyed by id, tolerating `[]` where a map was meant.</summary>
+public class LooseMapConverter<T> : JsonConverter<Dictionary<string, T>>
+{
+    public override Dictionary<string, T> Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.StartObject) { reader.Skip(); return []; }
+
+        var map = new Dictionary<string, T>();
+        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+        {
+            var key = reader.GetString();
+            reader.Read();
+            var value = JsonSerializer.Deserialize<T>(ref reader, options);
+            if (key != null && value != null) map[key] = value;
+        }
+        return map;
+    }
+
+    public override void Write(Utf8JsonWriter writer, Dictionary<string, T> value, JsonSerializerOptions options)
+        => JsonSerializer.Serialize(writer, value, options);
+}
+
+/// <summary>A JSON array, tolerating an object where PHP re-keyed the array and turned it into one.</summary>
+public class LooseListConverter<T> : JsonConverter<List<T>>
+{
+    public override List<T> Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+    {
+        var items = new List<T>();
+
+        if (reader.TokenType == JsonTokenType.StartArray)
+        {
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+                if (JsonSerializer.Deserialize<T>(ref reader, options) is { } item) items.Add(item);
+            return items;
+        }
+
+        if (reader.TokenType == JsonTokenType.StartObject)
+        {
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+            {
+                reader.Read();   // past the key, we only want the values
+                if (JsonSerializer.Deserialize<T>(ref reader, options) is { } item) items.Add(item);
+            }
+            return items;
+        }
+
+        reader.Skip();
+        return items;
+    }
+
+    public override void Write(Utf8JsonWriter writer, List<T> value, JsonSerializerOptions options)
+        => JsonSerializer.Serialize(writer, value, options);
 }
 public class ZkillTeamShip
 {

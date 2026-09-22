@@ -20,18 +20,34 @@ public class StreamEsi
     [JsonPropertyName("killmail_time")]   public DateTime      Time     { get; set; }
     [JsonPropertyName("solar_system_id")] public int           SystemId { get; set; }
     [JsonPropertyName("victim")]          public StreamVictim? Victim   { get; set; }
+
+    /// <summary>Everyone on the killmail. This is how the AAR tells a kill the fleet got from one it
+    /// merely watched go by - the fleet's own pilots are in here by character id.</summary>
+    [JsonPropertyName("attackers")]       public List<StreamAttacker>? Attackers { get; set; }
 }
 
 public class StreamVictim
 {
     [JsonPropertyName("ship_type_id")]   public int  ShipTypeId    { get; set; }
+    [JsonPropertyName("character_id")]   public int? CharacterId   { get; set; }   // absent when a structure dies
     [JsonPropertyName("corporation_id")] public int  CorporationId { get; set; }
     [JsonPropertyName("alliance_id")]    public int? AllianceId    { get; set; }
+}
+
+public class StreamAttacker
+{
+    [JsonPropertyName("character_id")]   public int? CharacterId { get; set; }     // absent on NPCs
+    [JsonPropertyName("alliance_id")]    public int? AllianceId  { get; set; }
+    [JsonPropertyName("final_blow")]     public bool FinalBlow   { get; set; }
 }
 
 public class StreamZkb
 {
     [JsonPropertyName("totalValue")] public double TotalValue { get; set; }
+
+    /// <summary>zKill's own verdict that this was rats, not players. A fleet grinding anomalies
+    /// would otherwise fill its own after-action report with them.</summary>
+    [JsonPropertyName("npc")]        public bool   Npc        { get; set; }
 }
 
 /// <summary>

@@ -67,27 +67,38 @@ public class ZkillService(HttpClient httpClient)
     /// <summary>The grouped "battle" at a system + EVE-time (/api/related/&lt;sys&gt;/&lt;yyyyMMddHHmm&gt;/).
     /// zKill splits the fight into two teams with pilot/ship/alliance names + the zkb ISK value per kill.
     /// This is the source for the battle report - it has the fresh fight when the systemID list still
-    /// doesn't. Null on failure. Uses a ~1h window around the timestamp (zKill's own grouping).</summary>
+    /// doesn't. Null on failure.
+    ///
+    /// <para><b>The timestamp is an HOUR, not a moment.</b> zKill buckets a battle by the hour and
+    /// rejects anything else outright: minutes of 30 return a 500 carrying
+    /// <c>InvalidArgumentException: Minutes must be 00</c> from its own RelatedReport. Anchors are
+    /// taken whenever first blood lands, so 59 minutes in 60 would have been thrown away. We round
+    /// DOWN, which is also the right direction: the report for hour H spans H-1 to H+2, so a fight
+    /// that runs past the hour is still inside its own bucket.</para></summary>
     public async Task<ZkillRelated?> GetBattleAsync(int systemId, DateTime atUtc)
     {
+        var stamp = new DateTime(atUtc.Year, atUtc.Month, atUtc.Day, atUtc.Hour, 0, 0, DateTimeKind.Utc)
+                        .ToString("yyyyMMddHHmm");
         try
         {
-            var stamp = atUtc.ToString("yyyyMMddHHmm");
             var request = new HttpRequestMessage(HttpMethod.Get, $"https://zkillboard.com/api/related/{systemId}/{stamp}/");
             request.Headers.Add("User-Agent", UserAgent);
 
             var response = await httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
             {
-                Log.Warn("zkill", $"related/{systemId} -> {(int)response.StatusCode}");
+                Log.Warn("zkill", $"related/{systemId}/{stamp} -> {(int)response.StatusCode}");
                 return null;
             }
 
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<ZkillRelated>(json);
         }
-        catch
+        catch (Exception ex)
         {
+            // A swallowed parse failure here reads as "no kills", which is the one answer an FC
+            // will believe and never question. Say what actually happened.
+            Log.Warn("zkill", $"related/{systemId}/{stamp} failed", ex);
             return null;
         }
     }

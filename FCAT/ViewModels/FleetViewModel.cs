@@ -16,6 +16,7 @@ public partial class FleetViewModel : ObservableObject
     private readonly SettingsService _settings;
     private readonly AlertHub        _alertHub;
     private readonly SessionLog      _sessionLog;
+    private readonly KillStreamService _killStream;
     private readonly ShellViewModel  _shell;
 
     private CancellationTokenSource? _pollCts;
@@ -60,7 +61,7 @@ public partial class FleetViewModel : ObservableObject
 
     public FleetViewModel(EsiAuthService auth, EsiService esi, CombatLogService combatLog,
                           SettingsService settings, AlertHub alertHub, SessionLog sessionLog,
-                          ShellViewModel shell, long fleetId)
+                          KillStreamService killStream, ShellViewModel shell, long fleetId)
     {
         _auth      = auth;
         _esi       = esi;
@@ -68,6 +69,7 @@ public partial class FleetViewModel : ObservableObject
         _settings  = settings;
         _alertHub  = alertHub;
         _sessionLog = sessionLog;
+        _killStream = killStream;
         _shell     = shell;
 
         SessionFleetId = fleetId;
@@ -78,6 +80,8 @@ public partial class FleetViewModel : ObservableObject
 
         // The gamelog watcher belongs to the app now (see App.xaml.cs) - it runs whether or not a
         // fleet is up, and it follows every client rather than just this character's.
+        _killStream.KillSeen += OnStreamKill;
+
         _boost.Updated += OnBoostUpdated;
         _boost.StartWatching(_settings.Current.ChatlogsPath, _settings.Current.BoostChannelPrefix);
         BoostChannelName = _esi.DemoMode ? "Boost III (demo)" : BoostChannelStatus();
@@ -282,11 +286,94 @@ public partial class FleetViewModel : ObservableObject
         }
     }
 
+    // Killmails in the AAR
+    //
+    // zKill's live stream is already running for the Intel feed, so matching it against the fleet
+    // roster costs nothing and answers the question an FC actually asks mid-op: what did we kill,
+    // what did we lose, and where is the link. Killmails land 1.5-3.5 minutes behind the fight, so
+    // these arrive after the DEATH line that ESI polling produces instantly - they are the
+    // confirmation, with the ISK and something to paste, not a replacement for it.
+    private readonly HashSet<long> _loggedKills = [];
+
+    private void OnStreamKill(StreamKill kill)
+    {
+        if (kill.Esi == null) return;
+        if (kill.Zkb?.Npc == true) return;   // rats. A ratting fleet would bury its own AAR in them.
+
+        // The backward walk replays up to an hour of history when Intel opens. Only this op's
+        // killmails belong in this op's report.
+        if (_sessionLog.SessionStart is { } start
+            && kill.Esi.Time.ToUniversalTime() < start.ToUniversalTime()) return;
+
+        // The roster lives on the UI thread; the stream does not. Hop over before touching it.
+        // Nothing awaits this, so an exception in there would otherwise vanish without trace.
+        _ = App.Current.Dispatcher.InvokeAsync(async () =>
+        {
+            try { await LogKillAsync(kill); }
+            catch (Exception ex) { Log.Warn("aar", $"killmail {kill.KillmailId} not logged", ex); }
+        });
+    }
+
+    private async Task LogKillAsync(StreamKill kill)
+    {
+        var esi      = kill.Esi!;
+        var victimId = esi.Victim?.CharacterId ?? 0;
+        var ourLoss  = victimId > 0 && _rosterNames.ContainsKey(victimId);
+        var ourKill  = !ourLoss
+                    && esi.Attackers?.Any(a => a.CharacterId is int c && _rosterNames.ContainsKey(c)) == true;
+
+        if (!ourLoss && !ourKill) return;
+        if (!_loggedKills.Add(kill.KillmailId)) return;   // the backfill and the live walk overlap
+
+        var shipId = esi.Victim?.ShipTypeId ?? 0;
+        var names  = await ResolveAsync(shipId, esi.SystemId, victimId);
+        var ship   = shipId   > 0 ? names.GetValueOrDefault(shipId,   "ship")  : "ship";
+        var system = names.GetValueOrDefault(esi.SystemId, esi.SystemId.ToString());
+        var pilot  = victimId > 0 ? names.GetValueOrDefault(victimId, "Someone") : "Someone";
+        var isk    = BattleReport.FormatIsk(kill.Zkb?.TotalValue ?? 0);
+        var url    = $"https://zkillboard.com/kill/{kill.KillmailId}/";
+
+        // A structure or an abandoned drone has no pilot on the mail, so there is no name to possess.
+        var what = victimId > 0 ? $"{pilot}'s {ship}" : $"{Article(ship)} {ship}";
+
+        _sessionLog.Record(ourLoss ? "LOSS" : "KILL",
+            ourLoss ? $"{pilot} lost their {ship} in {system}, {isk}"
+                    : $"Fleet killed {what} in {system}, {isk}",
+            url);
+
+        // A killmail with one of ours on it is the best evidence there is that the fight was here,
+        // and far better than the pod-transition guess: it carries the system on the mail itself.
+        if (_fcAllianceId < 0)
+        {
+            var info = await _esi.GetCharacterPublicInfoAsync(_auth.AuthenticatedCharacterId);
+            _fcAllianceId = info?.AllianceId ?? 0;
+        }
+        _sessionLog.MarkCombat(esi.SystemId, system);
+        _sessionLog.SetBattleSides(_rosterNames.Keys, _fcAllianceId);
+    }
+
+    private static string Article(string word) =>
+        word.Length > 0 && "AEIOUaeiou".Contains(word[0]) ? "an" : "a";
+
+    /// <summary>Names for ids we may not have seen on the roster, reusing the session name cache.</summary>
+    private async Task<Dictionary<int, string>> ResolveAsync(params int[] ids)
+    {
+        var wanted  = ids.Where(i => i > 0).Distinct().ToList();
+        var missing = wanted.Where(i => !_nameCache.ContainsKey(i)).ToList();
+
+        if (missing.Count > 0)
+            foreach (var (id, name) in await _esi.ResolveNamesAsync(missing))
+                if (!string.IsNullOrWhiteSpace(name)) _nameCache[id] = name;
+
+        return wanted.ToDictionary(i => i, i => _nameCache.GetValueOrDefault(i, i.ToString()));
+    }
+
     public void Shutdown()
     {
         _pollCts?.Cancel();
         _pollCts?.Dispose();
         _pollCts = null;
+        _killStream.KillSeen -= OnStreamKill;
         _boost.Updated -= OnBoostUpdated;
         _boost.StopWatching();
         IsLive = false;
@@ -403,7 +490,14 @@ public partial class FleetViewModel : ObservableObject
         foreach (var m in members)
         {
             var isCapsule = _groupIdCache.TryGetValue(m.ShipTypeId, out var g) && ShipRoleClassifier.IsCapsule(g);
-            var wasCapsule = _inCapsule.TryGetValue(m.CharacterId, out var prev) && prev;
+
+            // A death is a TRANSITION into a pod, so a pilot we have never seen before cannot have
+            // died: we have nothing to compare against. Someone who joins the fleet already in a pod
+            // reads as capsule on their first tick, and treating that as a loss filed a DEATH at the
+            // same second as their JOIN, anchored the battle report wherever the FC happened to be,
+            // and fed a phantom into the DPS-loss alert. First sight only records state.
+            var seenBefore = _inCapsule.TryGetValue(m.CharacterId, out var prev);
+            var wasCapsule = prev;
 
             // A capsule in the staging system is only a station reship DURING form-up. Once the fleet
             // has DEPARTED, a capsule in staging is a real pod respawning home, so we still count it -
@@ -412,7 +506,7 @@ public partial class FleetViewModel : ObservableObject
                              && _formupPhase == FormupPhase.Forming
                              && string.Equals(m.SolarSystemName, formupSys, StringComparison.OrdinalIgnoreCase);
 
-            if (isCapsule && !wasCapsule && !stagingReship)
+            if (isCapsule && seenBefore && !wasCapsule && !stagingReship)
             {
                 newlyPodded.Add(m.CharacterId);
 

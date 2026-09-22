@@ -193,13 +193,16 @@ public partial class SessionLogViewModel : ObservableObject
         ReportStatus = "Pulling kills from zKillboard…";
         try
         {
-            var report = await _battleReport.BuildAsync(
+            var (report, answered, mainFight) = await _battleReport.BuildAsync(
                 Log.CombatAnchors, Log.FriendlyCharIds, Log.FriendlyAllianceId);
 
+            _mainFight = mainFight;
             Report = report;
-            ReportStatus = report == null
-                ? "No kills on zKillboard yet. They lag a few minutes, try Refresh."
-                : $"Updated {DateTime.Now:HH:mm:ss}";
+            ReportStatus = report != null
+                ? $"Updated {DateTime.Now:HH:mm:ss}" + (mainFight != null ? $" · {mainFight.SystemName}" : string.Empty)
+                : answered
+                    ? "No kills on zKillboard yet. They lag a few minutes, try Refresh."
+                    : "zKillboard didn't answer. Refreshing won't help - check the log (Setup, About).";
         }
         catch (Exception ex) { ReportStatus = $"Couldn't reach zKillboard: {ex.Message}"; }
         finally { IsLoadingReport = false; }
@@ -257,12 +260,28 @@ public partial class SessionLogViewModel : ObservableObject
         StatusMessage = "Cleared.";
     }
 
+    /// <summary>Whichever system the op's real fight happened in, once a report has been built.</summary>
+    private CombatAnchor? _mainFight;
+
     // Opens the op's zKillboard related-kills battle report in the browser. Same system+time also
-    // works on EVE-Tools (Log.BattleReportEvetools) - zKill is the default.
+    // works on EVE-Tools (EvetoolsUrl) - zKill is the default.
+    //
+    // Prefer the system the fight actually happened in. Falling back to the op's first anchor lands
+    // the FC on the staging system, where a lone ship died on the undock before the fleet moved out,
+    // which is not the battle anyone wants to link in Discord.
     [RelayCommand]
     private void OpenBattleReport()
     {
-        if (Log.BattleReportZkill is not { } url) return;
+        if ((_mainFight?.ZkillUrl ?? Log.BattleReportZkill) is not { } url) return;
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); }
+        catch (Exception ex) { StatusMessage = $"Couldn't open the browser: {ex.Message}"; }
+    }
+
+    /// <summary>Opens a killmail from a timeline row. Same browser hand-off as the report button.</summary>
+    [RelayCommand]
+    private void OpenLink(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return;
         try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); }
         catch (Exception ex) { StatusMessage = $"Couldn't open the browser: {ex.Message}"; }
     }
