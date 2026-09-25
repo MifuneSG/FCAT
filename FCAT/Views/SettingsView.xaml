@@ -288,6 +288,45 @@
                            FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,5,0,0"
                            Visibility="{Binding SystemsLoading, Converter={StaticResource BoolToVisibility}}"/>
 
+                <!-- Alliance capital system (autocomplete). Prices every Ansiblex jump, and ESI
+                     will not tell us which system it is, so the FC does. -->
+                <TextBlock Text="ALLIANCE CAPITAL SYSTEM" Style="{StaticResource SectionLabel}" Margin="0,24,0,7"/>
+                <TextBlock Text="Your alliance's capital. Ansiblex jump cost is set by how far the gate you jump TO sits from it, so the fleet panel needs this to price a bridge. Leave it blank and the bridge tile shows all five zones instead."
+                           Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                           TextWrapping="Wrap" Margin="0,0,0,9"/>
+                <Grid Width="300" HorizontalAlignment="Left">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBox x:Name="CapitalBox" Style="{StaticResource DarkTextBox}"
+                                 Text="{Binding CapitalSystemText, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Type a system name and pick from the list"/>
+                        <Border Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1"
+                                CornerRadius="7" Margin="0,4,0,0" Padding="4"
+                                Visibility="{Binding CapitalSuggestions.Count, Converter={StaticResource CountToVisibility}}">
+                            <ItemsControl ItemsSource="{Binding CapitalSuggestions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Command="{Binding DataContext.PickCapitalCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                                Height="28" Padding="8,0">
+                                            <TextBlock Text="{Binding Name}" Foreground="{StaticResource EveTextSecondary}"
+                                                       FontFamily="{StaticResource FontUI}" FontSize="12"/>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </StackPanel>
+                    <Button Grid.Column="1" Command="{Binding ClearCapitalCommand}" Style="{StaticResource GhostButton}"
+                            Padding="10,0" Margin="6,0,0,0" VerticalAlignment="Top" Height="34" ToolTip="Clear">
+                        <TextBlock Text="✕" FontSize="12" Foreground="{StaticResource EveCritical}"/>
+                    </Button>
+                </Grid>
+
             </StackPanel>
             </Border>
 

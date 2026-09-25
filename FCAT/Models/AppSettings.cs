@@ -19,6 +19,12 @@ public class AppSettings
     public string FormupSystem   { get; set; } = string.Empty;
     public int    FormupSystemId { get; set; }
 
+    /// <summary>Your alliance's capital system, for the Ansiblex bridge cost. Every jump is priced
+    /// by the light years between the destination gate and this system, and ESI does not expose it
+    /// (esi-issues #1519 asked and was closed), so the FC has to tell us. Name + id.</summary>
+    public string CapitalSystem   { get; set; } = string.Empty;
+    public int    CapitalSystemId { get; set; }
+
     /// <summary>Ping/MOTD profiles (one per alliance + a personal one) and the active selection.</summary>
     public List<PingProfile> PingProfiles      { get; set; } = [];
     public string            ActivePingProfile { get; set; } = string.Empty;

@@ -401,6 +401,84 @@
                                FontFamily="{StaticResource FontUI}" FontSize="11" Margin="6,0,0,0" VerticalAlignment="Center"/>
                 </StackPanel>
 
+                <!-- Ansiblex bridge cost. Same shape as the mass tile: a number on the strip, and the
+                     go/no-go per zone in the tooltip. -->
+                <Rectangle Width="1" Height="18" Fill="{DynamicResource EveHairlineStrong}" Margin="16,0,16,0" VerticalAlignment="Center"
+                           Visibility="{Binding HasBridge, Converter={StaticResource BoolToVisibility}}"/>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                            Visibility="{Binding HasBridge, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel.ToolTip>
+                        <ToolTip Padding="0" Background="Transparent" BorderThickness="0">
+                            <Border Background="{DynamicResource EvePanelBg}" BorderBrush="{DynamicResource EveHairlineStrong}"
+                                    BorderThickness="1" CornerRadius="6" Padding="14,12">
+                                <StackPanel MinWidth="250">
+                                    <TextBlock Text="ANSIBLEX" Style="{StaticResource SectionLabel}"/>
+                                    <TextBlock Text="{Binding BridgeZoneNote}" Foreground="{StaticResource EveTextSecondary}"
+                                               FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                    <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,10,0,8"/>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="78"/>
+                                            <ColumnDefinition Width="60"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="COST"     Style="{StaticResource SectionLabel}" TextAlignment="Right"/>
+                                        <TextBlock Grid.Column="2" Text="1 CHARGE" Style="{StaticResource SectionLabel}" TextAlignment="Center"/>
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding BridgeZoneCosts}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type svc:AnsiblexZoneCost}">
+                                                <Grid Margin="0,3,0,0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="78"/>
+                                                        <ColumnDefinition Width="60"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding Label}" Foreground="{StaticResource EveTextSecondary}"
+                                                               FontFamily="{StaticResource FontMono}" FontSize="13" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding RangeText}" Foreground="{StaticResource EveTextDim}"
+                                                               FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding TjText}" TextAlignment="Right"
+                                                               Foreground="{StaticResource EveTextPrimary}"
+                                                               FontFamily="{StaticResource FontMono}" FontSize="13" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="3" Text="{Binding FitsText}" TextAlignment="Center"
+                                                               FontFamily="{StaticResource FontMono}" FontSize="13" FontWeight="SemiBold">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding FitsOneCharge}" Value="False">
+                                                                        <Setter Property="Foreground" Value="{StaticResource EveCritical}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,9,0,7"/>
+                                    <TextBlock Text="{Binding BridgeChargeText}" Foreground="{StaticResource EveTextSecondary}"
+                                               FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding BridgeBlockedText}" Foreground="{StaticResource EveAmber}"
+                                               FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap" Margin="0,5,0,0"
+                                               Visibility="{Binding BridgeBlockedText, Converter={StaticResource StringToVisibility}}"/>
+                                    <TextBlock Text="cost is set by the zone you jump TO, and the gate you leave from pays it"
+                                               Foreground="{StaticResource EveTextDim}"
+                                               FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </ToolTip>
+                    </StackPanel.ToolTip>
+                    <TextBlock Text="{Binding BridgeHeadline}" Foreground="{DynamicResource EveAccent}"
+                               FontFamily="{StaticResource FontMono}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding BridgeTileLabel}" Foreground="{StaticResource EveTextSecondary}"
+                               FontFamily="{StaticResource FontUI}" FontSize="11" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+
                 <!-- What the fleet is worth, from the alliance's doctrine fits. Only appears when an
                      Alliance Auth is connected and a doctrine covers some of these hulls. -->
                 <Rectangle Width="1" Height="18" Fill="{DynamicResource EveHairlineStrong}" Margin="16,0,16,0" VerticalAlignment="Center"

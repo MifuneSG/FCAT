@@ -82,6 +82,10 @@ public partial class FleetViewModel : ObservableObject
         // fleet is up, and it follows every client rather than just this character's.
         _killStream.KillSeen += OnStreamKill;
 
+        // Reads the gate's real capacity, recharge and mass limit out of EVE. Fire and forget: the
+        // built-in figures are current, so the tile is right either way.
+        _ = shell.Ansiblex.RefreshFromEsiAsync();
+
         _boost.Updated += OnBoostUpdated;
         _boost.StartWatching(_settings.Current.ChatlogsPath, _settings.Current.BoostChannelPrefix);
         BoostChannelName = _esi.DemoMode ? "Boost III (demo)" : BoostChannelStatus();
@@ -1086,6 +1090,104 @@ public partial class FleetViewModel : ObservableObject
         }
     }
 
+    // Ansiblex bridge cost
+    //
+    // Cradle of War put a 1250 TJ capacitor on every jump bridge, so a big enough fleet can run a
+    // gate dry and strand the rest of itself. The cost is the sum of every hull's class cost times
+    // the zone of the gate they jump TO, which is a sum no FC is doing in their head on comms.
+    // See AnsiblexBridge for where the numbers come from and which of them EVE will confirm.
+    [ObservableProperty] private bool   _hasBridge;
+    [ObservableProperty] private string _bridgeHeadline   = string.Empty;
+    [ObservableProperty] private string _bridgeTileLabel  = "BRIDGE";
+    [ObservableProperty] private string _bridgeZoneNote   = string.Empty;
+    [ObservableProperty] private string _bridgeChargeText = string.Empty;
+    [ObservableProperty] private string _bridgeBlockedText = string.Empty;
+    [ObservableProperty] private bool   _bridgeVerified;
+    public ObservableCollection<AnsiblexZoneCost> BridgeZoneCosts { get; } = [];
+
+    private void ComputeBridgeCost()
+    {
+        var bridge = _shell.Ansiblex;
+        BridgeZoneCosts.Clear();
+        HasBridge = false;
+
+        // Sum the class costs. A hull whose group has not resolved yet is skipped rather than
+        // guessed, the same way the mass tile waits for masses to land.
+        double baseTj = 0;
+        var counted = 0;
+        var blocked = new List<string>();
+
+        foreach (var m in _currentMembers)
+        {
+            if (!_groupIdCache.TryGetValue(m.ShipTypeId, out var groupId)) continue;
+
+            // Over the gate's mass limit, so this pilot is taking gates whatever the fleet does.
+            var mass = _doctrineMass.TryGetValue(m.ShipTypeId, out var fitted) && fitted > 0
+                     ? fitted
+                     : _shipMassCache.GetValueOrDefault(m.ShipTypeId);
+            if (mass > bridge.MaxJumpMassKg)
+            {
+                if (!blocked.Contains(m.ShipTypeName)) blocked.Add(m.ShipTypeName);
+                continue;
+            }
+
+            if (AnsiblexBridge.BaseCost(groupId) is not { } tj)
+            {
+                // A class with no published cost cannot use a bridge at all (supers, dreads, carriers).
+                if (!blocked.Contains(m.ShipTypeName)) blocked.Add(m.ShipTypeName);
+                continue;
+            }
+
+            baseTj += tj;
+            counted++;
+        }
+
+        if (counted == 0)
+        {
+            BridgeBlockedText = blocked.Count > 0
+                ? $"Nobody here can use a bridge: {string.Join(", ", blocked)}"
+                : string.Empty;
+            return;
+        }
+
+        HasBridge       = true;
+        BridgeVerified  = bridge.VerifiedAgainstEsi;
+        BridgeBlockedText = blocked.Count == 0
+            ? string.Empty
+            : $"{blocked.Count} hull type{(blocked.Count == 1 ? "" : "s")} cannot use it: {string.Join(", ", blocked)}";
+
+        foreach (var z in bridge.ZoneCosts(baseTj)) BridgeZoneCosts.Add(z);
+
+        // With a capital system set we can price the fleet's own zone, which is what a jump back to
+        // where they are standing costs. Without it, all five rows stand on their own.
+        var capitalId = _settings.Current.CapitalSystemId;
+        var fleetSys  = _currentMembers.FirstOrDefault(m => m.CharacterId == _auth.AuthenticatedCharacterId)?.SolarSystemId
+                     ?? _currentMembers.FirstOrDefault()?.SolarSystemId
+                     ?? 0;
+
+        var ly = capitalId > 0 && fleetSys > 0 ? SystemSpace.LightYearsBetween(fleetSys, capitalId) : null;
+        if (ly is { } distance)
+        {
+            var zone = AnsiblexBridge.ZoneFor(distance);
+            var here = BridgeZoneCosts.First(z => z.Zone == zone);
+            BridgeTileLabel = $"BRIDGE Z{zone}";
+            BridgeHeadline  = here.TjText;
+            BridgeZoneNote  = $"here is zone {zone}, {distance:0.0} ly from {_settings.Current.CapitalSystem}";
+            BridgeChargeText = here.Multiplier == 0
+                ? "free at this range, the gate spends nothing"
+                : $"{here.Tj / bridge.CapacityTj:P0} of a full gate, {bridge.RecoveryHours(here.Tj):0.0} h to recover";
+        }
+        else
+        {
+            BridgeTileLabel = "BRIDGE";
+            BridgeHeadline  = AnsiblexBridge.FormatTj(baseTj);
+            BridgeZoneNote  = capitalId > 0
+                ? "no position yet, so no zone"
+                : "set your alliance capital in Setup to price the zone you are in";
+            BridgeChargeText = $"base for {counted} ship{(counted == 1 ? "" : "s")}, multiplied by the destination zone";
+        }
+    }
+
     private enum FleetKind { Combat, Mining, Capital, Covert }
 
     private void ComputeStats()
@@ -1124,6 +1226,8 @@ public partial class FleetViewModel : ObservableObject
             FleetMassText = WormholeMass.Format(fleetMass);
             foreach (var c in WormholeMass.Checks(fleetMass)) WormholeChecks.Add(c);
         }
+
+        ComputeBridgeCost();
 
         // Dominant hull + fleet kind
         var dominant      = _currentMembers.GroupBy(m => m.ShipTypeId)

@@ -63,6 +63,10 @@ public partial class FleetMemberViewModel : ObservableObject
     private ShipRole _shipRole = ShipRole.Unknown;
 
     public int    CharacterId => _member.CharacterId;
+
+    /// <summary>Where this pilot is. The name is what the grid shows; the id is what distance work
+    /// needs, since light years come from system positions and not from a label.</summary>
+    public int    SolarSystemId => _member.SolarSystemId;
     public long   WingId      => _member.WingId;
     public long   SquadId     => _member.SquadId;
     public string Role        => _member.Role;

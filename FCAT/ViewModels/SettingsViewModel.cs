@@ -45,6 +45,8 @@ public partial class SettingsViewModel : ObservableObject
         IntelChannelPrefix = settings.Current.IntelChannelPrefix;
         _formupSystemText  = settings.Current.FormupSystem;
         _formupSystemId    = settings.Current.FormupSystemId;
+        _capitalSystemText = settings.Current.CapitalSystem;
+        _capitalSystemId   = settings.Current.CapitalSystemId;
 
         _themeName = ThemeService.Name(ThemeService.Current);
 
@@ -218,6 +220,12 @@ public partial class SettingsViewModel : ObservableObject
 
     // Form-up system (autocomplete search)
     [ObservableProperty] private string _formupSystemText = string.Empty;
+
+    /// <summary>The alliance capital, for the Ansiblex bridge cost. Its own text, id and suggestion
+    /// list, because two pickers sharing one dropdown would drop their results into each other.</summary>
+    [ObservableProperty] private string _capitalSystemText = string.Empty;
+    public ObservableCollection<SystemMatch> CapitalSuggestions { get; } = [];
+    private int _capitalSystemId;
     [ObservableProperty] private bool   _systemsLoading;
     public ObservableCollection<SystemMatch> SystemSuggestions { get; } = [];
 
@@ -237,6 +245,35 @@ public partial class SettingsViewModel : ObservableObject
         SystemSuggestions.Clear();
         foreach (var m in _systemSearch.Search(value)) SystemSuggestions.Add(m);
         _formupSystemId = _systemSearch.ResolveId(value) ?? 0;   // 0 until a real system is matched
+    }
+
+    partial void OnCapitalSystemTextChanged(string value)
+    {
+        if (_suppressSearch) return;
+        CapitalSuggestions.Clear();
+        foreach (var m in _systemSearch.Search(value)) CapitalSuggestions.Add(m);
+        _capitalSystemId = _systemSearch.ResolveId(value) ?? 0;
+    }
+
+    [RelayCommand]
+    private void PickCapital(SystemMatch? match)
+    {
+        if (match == null) return;
+        _suppressSearch = true;
+        CapitalSystemText = match.Name;
+        _capitalSystemId  = match.Id;
+        _suppressSearch = false;
+        CapitalSuggestions.Clear();
+    }
+
+    [RelayCommand]
+    private void ClearCapital()
+    {
+        _suppressSearch = true;
+        CapitalSystemText = string.Empty;
+        _capitalSystemId = 0;
+        _suppressSearch = false;
+        CapitalSuggestions.Clear();
     }
 
     [RelayCommand]
@@ -364,6 +401,8 @@ public partial class SettingsViewModel : ObservableObject
             ? "Intel" : IntelChannelPrefix.Trim();
         _settings.Current.FormupSystem       = FormupSystemText.Trim();
         _settings.Current.FormupSystemId     = _formupSystemId;
+        _settings.Current.CapitalSystem      = CapitalSystemText.Trim();
+        _settings.Current.CapitalSystemId    = _capitalSystemId;
 
         // Alert configuration lives on the Alerts page now, and saves itself there.
         _settings.Save();

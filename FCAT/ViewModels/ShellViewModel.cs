@@ -419,6 +419,10 @@ public partial class ShellViewModel : ObservableObject
     private JumpDrives? _jumpDrives;
     public JumpDrives JumpDrives => _jumpDrives ??= new JumpDrives(_esi);
 
+    private AnsiblexBridge? _ansiblex;
+    /// <summary>Ansiblex jump-bridge capacity, for the fleet panel's bridge tile.</summary>
+    public AnsiblexBridge Ansiblex => _ansiblex ??= new AnsiblexBridge(_esi);
+
     /// <summary>The FC's own alert rules, evaluated against the intel channel and the gamelog.</summary>
     private CustomAlertService? _customAlerts;
     public CustomAlertService CustomAlerts => _customAlerts ??= new CustomAlertService(_settings, _alertHub);
