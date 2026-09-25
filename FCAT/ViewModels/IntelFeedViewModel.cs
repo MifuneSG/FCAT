@@ -57,7 +57,6 @@ public partial class IntelFeedViewModel : ObservableObject
     // Both of these are now written from the kill stream's background thread as well as the UI
     // thread, and a plain HashSet/Dictionary torn by two writers can corrupt itself outright.
     private readonly ConcurrentDictionary<long, byte> _seenKills = new();
-    private readonly ConcurrentDictionary<int, string> _names = new();   // type/system id -> name
 
     // Systems worth shouting about when the intel channel names them.
     private string _watchedSystem = string.Empty;
@@ -405,17 +404,7 @@ public partial class IntelFeedViewModel : ObservableObject
     /// numbers. A failed lookup is never cached: caching the fallback meant one hiccup left that id
     /// showing as a number for the rest of the session.
     /// </summary>
-    private async Task<Dictionary<int, string>> NamesAsync(params int[] ids)
-    {
-        var wanted = ids.Where(i => i > 0).Distinct().ToList();
-        var missing = wanted.Where(i => !_names.ContainsKey(i)).ToList();
-
-        if (missing.Count > 0)
-            foreach (var (id, name) in await _esi.ResolveNamesAsync(missing))
-                if (!string.IsNullOrWhiteSpace(name)) _names[id] = name;
-
-        return wanted.ToDictionary(i => i, i => _names.GetValueOrDefault(i, i.ToString()));
-    }
+    private Task<Dictionary<int, string>> NamesAsync(params int[] ids) => _esi.NamesAsync(ids);
 
     /// <summary>Ours or theirs. Unknown until the FC's own affiliation has resolved.</summary>
     private KillSide SideOf(StreamVictim? victim)

@@ -17,10 +17,6 @@ public class ZkillService(HttpClient httpClient)
     /// <summary>How wide a net the kill feed casts - one system, the constellation, or the region.</summary>
     public enum KillScope { System, Constellation, Region }
 
-    /// <summary>Recent killmails for a system (newest first), or empty on failure.</summary>
-    public Task<List<ZkillEntry>> GetRecentSystemKillsAsync(int systemId) =>
-        GetRecentKillsAsync(KillScope.System, systemId);
-
     /// <summary>
     /// Recent killmails for a system, constellation or region, newest first, empty on failure.
     /// (/api/systemID|constellationID|regionID/ -> bare array of {killmail_id, zkb}; the detail -

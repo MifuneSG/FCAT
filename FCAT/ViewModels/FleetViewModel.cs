@@ -24,8 +24,6 @@ public partial class FleetViewModel : ObservableObject
     // run concurrently and race the shared caches / collections.
     private readonly SemaphoreSlim _loadGate = new(1, 1);
 
-    // Persistent name cache - typeId/charId/sysId -> display name, survives poll ticks
-    private readonly Dictionary<int, string> _nameCache    = [];
 
     // Persistent ship role cache - typeId -> group_id from ESI
     private readonly Dictionary<int, int>    _groupIdCache = [];
@@ -330,7 +328,7 @@ public partial class FleetViewModel : ObservableObject
         if (!_loggedKills.Add(kill.KillmailId)) return;   // the backfill and the live walk overlap
 
         var shipId = esi.Victim?.ShipTypeId ?? 0;
-        var names  = await ResolveAsync(shipId, esi.SystemId, victimId);
+        var names  = await _esi.NamesAsync([shipId, esi.SystemId, victimId]);
         var ship   = shipId   > 0 ? names.GetValueOrDefault(shipId,   "ship")  : "ship";
         var system = names.GetValueOrDefault(esi.SystemId, esi.SystemId.ToString());
         var pilot  = victimId > 0 ? names.GetValueOrDefault(victimId, "Someone") : "Someone";
@@ -358,19 +356,6 @@ public partial class FleetViewModel : ObservableObject
 
     private static string Article(string word) =>
         word.Length > 0 && "AEIOUaeiou".Contains(word[0]) ? "an" : "a";
-
-    /// <summary>Names for ids we may not have seen on the roster, reusing the session name cache.</summary>
-    private async Task<Dictionary<int, string>> ResolveAsync(params int[] ids)
-    {
-        var wanted  = ids.Where(i => i > 0).Distinct().ToList();
-        var missing = wanted.Where(i => !_nameCache.ContainsKey(i)).ToList();
-
-        if (missing.Count > 0)
-            foreach (var (id, name) in await _esi.ResolveNamesAsync(missing))
-                if (!string.IsNullOrWhiteSpace(name)) _nameCache[id] = name;
-
-        return wanted.ToDictionary(i => i, i => _nameCache.GetValueOrDefault(i, i.ToString()));
-    }
 
     public void Shutdown()
     {
@@ -442,18 +427,7 @@ public partial class FleetViewModel : ObservableObject
         _boost.Refresh();
 
         // 1. Resolve uncached names (character / ship / system)
-        var uncachedNameIds = members
-            .SelectMany(m => new[] { m.CharacterId, m.ShipTypeId, m.SolarSystemId })
-            .Where(id => id > 0 && !_nameCache.ContainsKey(id))
-            .Distinct()
-            .ToList();
-
-        if (uncachedNameIds.Count > 0)
-        {
-            var resolved = await _esi.ResolveNamesAsync(uncachedNameIds);
-            foreach (var (id, name) in resolved)
-                _nameCache[id] = name;
-        }
+        await _esi.NamesAsync(members.SelectMany(m => new[] { m.CharacterId, m.ShipTypeId, m.SolarSystemId }));
 
         // 2. Fetch group_ids for any ship types we haven't seen yet
         var uncachedTypeIds = members
@@ -478,9 +452,9 @@ public partial class FleetViewModel : ObservableObject
         // 3. Apply cached names to every member every tick
         foreach (var m in members)
         {
-            if (_nameCache.TryGetValue(m.CharacterId,  out var cn))  m.CharacterName   = cn;
-            if (_nameCache.TryGetValue(m.ShipTypeId,   out var sn))  m.ShipTypeName    = sn;
-            if (_nameCache.TryGetValue(m.SolarSystemId,out var sys)) m.SolarSystemName = sys;
+            if (_esi.TryName(m.CharacterId,   out var cn))  m.CharacterName   = cn;
+            if (_esi.TryName(m.ShipTypeId,    out var sn))  m.ShipTypeName    = sn;
+            if (_esi.TryName(m.SolarSystemId, out var sys)) m.SolarSystemName = sys;
         }
 
         // 4. Death detection: a member that flipped to a pod lost their ship
@@ -1102,7 +1076,6 @@ public partial class FleetViewModel : ObservableObject
     [ObservableProperty] private string _bridgeZoneNote   = string.Empty;
     [ObservableProperty] private string _bridgeChargeText = string.Empty;
     [ObservableProperty] private string _bridgeBlockedText = string.Empty;
-    [ObservableProperty] private bool   _bridgeVerified;
     public ObservableCollection<AnsiblexZoneCost> BridgeZoneCosts { get; } = [];
 
     private void ComputeBridgeCost()
@@ -1151,7 +1124,6 @@ public partial class FleetViewModel : ObservableObject
         }
 
         HasBridge       = true;
-        BridgeVerified  = bridge.VerifiedAgainstEsi;
         BridgeBlockedText = blocked.Count == 0
             ? string.Empty
             : $"{blocked.Count} hull type{(blocked.Count == 1 ? "" : "s")} cannot use it: {string.Join(", ", blocked)}";

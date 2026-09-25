@@ -286,33 +286,6 @@ public class CharacterShip
     [JsonPropertyName("ship_name")]    public string ShipName   { get; set; } = string.Empty;
 }
 
-// Killmail (ESI detail, for the intel feed + battle report)
-public class EsiKillmail
-{
-    [JsonPropertyName("killmail_id")]    public long     KillmailId    { get; set; }
-    [JsonPropertyName("killmail_time")]  public DateTime KillmailTime  { get; set; }
-    [JsonPropertyName("solar_system_id")] public int     SolarSystemId { get; set; }
-    [JsonPropertyName("victim")]         public EsiKillmailVictim? Victim { get; set; }
-    [JsonPropertyName("attackers")]      public List<EsiKillmailAttacker>? Attackers { get; set; }
-}
-
-public class EsiKillmailVictim
-{
-    [JsonPropertyName("character_id")]   public int? CharacterId   { get; set; }
-    [JsonPropertyName("corporation_id")] public int? CorporationId { get; set; }
-    [JsonPropertyName("alliance_id")]    public int? AllianceId    { get; set; }
-    [JsonPropertyName("ship_type_id")]   public int  ShipTypeId    { get; set; }
-}
-
-/// <summary>One attacker on a killmail - used to tell which side landed the kill.</summary>
-public class EsiKillmailAttacker
-{
-    [JsonPropertyName("character_id")]   public int? CharacterId   { get; set; }
-    [JsonPropertyName("corporation_id")] public int? CorporationId { get; set; }
-    [JsonPropertyName("alliance_id")]    public int? AllianceId    { get; set; }
-    [JsonPropertyName("final_blow")]     public bool FinalBlow     { get; set; }
-}
-
 /// <summary>A zKillboard list entry - id + the "zkb" envelope (hash, value). Detail comes from ESI.</summary>
 public class ZkillEntry
 {

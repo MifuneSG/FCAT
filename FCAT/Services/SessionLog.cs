@@ -96,7 +96,6 @@ public partial class SessionLog : ObservableObject
     };
     // Persistent link used by the AAR footer button - the op's opening fight.
     public string? BattleReportZkill    => _anchors.Count > 0 ? _anchors[0].ZkillUrl    : null;
-    public string? BattleReportEvetools => _anchors.Count > 0 ? _anchors[0].EvetoolsUrl : null;
 
     /// <summary>Begins (or continues) the AAR for a fleet session. History is preserved across fleet
     /// re-forms within an app run - EVE hands out a new fleet ID when an FC recreates the fleet, and
@@ -156,7 +155,7 @@ public partial class SessionLog : ObservableObject
             sb.AppendLine("## Battle Report");
             sb.AppendLine($"- **Systems:** {string.Join(", ", _anchors.Select(a => a.SystemName))}");
             foreach (var a in _anchors)
-                sb.AppendLine($"- **{a.SystemName}:** {a.ZkillUrl}");
+                sb.AppendLine($"- **{a.SystemName}:** {a.ZkillUrl} · [EVE-Tools]({a.EvetoolsUrl})");
 
             if (report != null)
             {
@@ -209,7 +208,7 @@ public partial class SessionLog : ObservableObject
             sb.AppendLine();
             sb.AppendLine($"Battle Report: {string.Join(", ", _anchors.Select(a => a.SystemName))}");
             foreach (var a in _anchors)
-                sb.AppendLine($"{a.SystemName}: {a.ZkillUrl}");
+                sb.AppendLine($"{a.SystemName}: {a.ZkillUrl}  |  {a.EvetoolsUrl}");
 
             if (report != null)
             {

@@ -63,15 +63,4 @@ public static class BoostChargeCatalog
                 yield return charge;
     }
 
-    public static string CategoryTag(BoostCategory c) => c switch
-    {
-        BoostCategory.Skirmish       => "SKIRM",
-        BoostCategory.Armor          => "ARMOR",
-        BoostCategory.Shield         => "SHIELD",
-        BoostCategory.Info           => "INFO",
-        BoostCategory.MiningYield     => "YIELD",
-        BoostCategory.MiningOptimal   => "RANGE",
-        BoostCategory.MiningPreserve  => "PRESV",
-        _                            => "?"
-    };
 }

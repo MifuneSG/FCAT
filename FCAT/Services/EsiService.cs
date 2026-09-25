@@ -238,24 +238,6 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
         return result;
     }
 
-    // System intel
-    public async Task<int?> ResolveSystemIdAsync(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name)) return null;
-        var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/v1/universe/ids/");
-        request.Headers.Add("User-Agent", "FCAT/1.0 (Fleet Commander Assistance Tool)");
-        request.Content = new StringContent(JsonSerializer.Serialize(new[] { name.Trim() }),
-            System.Text.Encoding.UTF8, "application/json");
-        var response = await httpClient.SendAsync(request);
-        if (!response.IsSuccessStatusCode) return null;
-        var json = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<UniverseIdsResult>(json);
-        // /universe/ids/ returns systems under a "systems" array - reuse a small inline read
-        using var doc = System.Text.Json.JsonDocument.Parse(json);
-        if (doc.RootElement.TryGetProperty("systems", out var systems) && systems.GetArrayLength() > 0)
-            return systems[0].GetProperty("id").GetInt32();
-        return null;
-    }
 
     /// <summary>All solar system IDs in New Eden (GET /v1/universe/systems/).</summary>
     public async Task<List<int>>         GetAllSystemIdsAsync()        => await GetPublicAsync<List<int>>("/v1/universe/systems/") ?? [];
@@ -297,10 +279,6 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
         if (ids.Count > 0) _regionSystems[regionId] = ids;
         return ids;
     }
-
-    /// <summary>Full killmail detail (public - needs the killmail id + zKill hash).</summary>
-    public async Task<EsiKillmail?> GetKillmailAsync(long killmailId, string hash)
-        => await GetPublicAsync<EsiKillmail>($"/v1/killmails/{killmailId}/{hash}/");
 
     public async Task<List<SystemKills>> GetSystemKillsAsync() => await GetPublicAsync<List<SystemKills>>("/v2/universe/system_kills/") ?? [];
     public async Task<List<SystemJumps>> GetSystemJumpsAsync() => await GetPublicAsync<List<SystemJumps>>("/v1/universe/system_jumps/") ?? [];
@@ -409,6 +387,35 @@ public class EsiService(HttpClient httpClient, EsiAuthService authService)
         return infos.ToDictionary(kv => kv.Key, kv => kv.Value.CategoryId);
     }
 
+    // One name cache for the whole app.
+    //
+    // Names in EVE do not change, so a character, ship type or system only ever needs resolving
+    // once per run. Four view models used to keep a private dictionary and their own copy of the
+    // resolve-what-is-missing loop, which meant the fleet panel and the intel feed each paid ESI
+    // separately for the same ship and system ids off the same killmail. One cache, one loop.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, string> _nameCache = new();
+
+    /// <summary>A name already resolved this session, without going anywhere near the network.</summary>
+    public bool TryName(int id, out string name) => _nameCache.TryGetValue(id, out name!);
+
+    /// <summary>
+    /// Names for these ids, resolving only the ones nobody has asked for yet. Anything that will
+    /// not resolve comes back as its own id in string form, so a caller always gets something to
+    /// print rather than a hole.
+    /// </summary>
+    public async Task<Dictionary<int, string>> NamesAsync(IEnumerable<int> ids)
+    {
+        var wanted  = ids.Where(i => i > 0).Distinct().ToList();
+        var missing = wanted.Where(i => !_nameCache.ContainsKey(i)).ToList();
+
+        if (missing.Count > 0)
+            foreach (var (id, name) in await ResolveNamesAsync(missing))
+                if (!string.IsNullOrWhiteSpace(name)) _nameCache[id] = name;
+
+        return wanted.ToDictionary(i => i, i => _nameCache.GetValueOrDefault(i, i.ToString()));
+    }
+
+    /// <summary>The raw lookup, with no caching. Prefer <see cref="NamesAsync"/>.</summary>
     public async Task<Dictionary<int, string>> ResolveNamesAsync(IEnumerable<int> ids)
     {
         var idList = ids.Distinct().ToList();

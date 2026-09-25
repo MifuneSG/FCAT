@@ -263,8 +263,8 @@ public partial class SessionLogViewModel : ObservableObject
     /// <summary>Whichever system the op's real fight happened in, once a report has been built.</summary>
     private CombatAnchor? _mainFight;
 
-    // Opens the op's zKillboard related-kills battle report in the browser. Same system+time also
-    // works on EVE-Tools (EvetoolsUrl) - zKill is the default.
+    // Opens the op's zKillboard related-kills battle report in the browser. The same system and
+    // hour also works on EVE-Tools, and the exported AAR carries both links per system.
     //
     // Prefer the system the fight actually happened in. Falling back to the op's first anchor lands
     // the FC on the staging system, where a lone ship died on the undock before the fleet moved out,

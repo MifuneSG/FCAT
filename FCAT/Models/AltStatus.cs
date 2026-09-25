@@ -36,10 +36,4 @@ public class AltStatus
     /// <summary>Docked at an NPC station or a citadel. A podded character that is docked has
     /// respawned and is safe; a podded one in space has just lost its ship.</summary>
     public bool Docked => StationId > 0 || StructureName.Length > 0;
-
-    /// <summary>Where it's docked, for the status line. Citadels resolve by name, NPC stations by id.</summary>
-    public string DockedAt =>
-        StationId > 0        ? (StationName.Length > 0 ? StationName : "station")
-      : StructureName.Length > 0 ? StructureName
-      :                            string.Empty;
 }
