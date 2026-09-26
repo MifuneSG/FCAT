@@ -714,16 +714,11 @@ public partial class HuntViewModel : ObservableObject
     [RelayCommand] private static void OpenZkill(HuntRow? row)             { if (row  != null) OpenZkill(row.SystemId); }
 
     private static void OpenDotlan(string systemName)
-        => OpenUrl($"https://evemaps.dotlan.net/system/{Uri.EscapeDataString(systemName.Replace(' ', '_'))}");
+        => Browser.Open($"https://evemaps.dotlan.net/system/{Uri.EscapeDataString(systemName.Replace(' ', '_'))}");
 
     private static void OpenZkill(int systemId)
-        => OpenUrl($"https://zkillboard.com/system/{systemId}/");
+        => Browser.Open($"https://zkillboard.com/system/{systemId}/");
 
-    private static void OpenUrl(string url)
-    {
-        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch { /* no browser / blocked - nothing useful to do */ }
-    }
 
     // Property change handlers
     partial void OnSelectedHullChanged(JumpClass value)

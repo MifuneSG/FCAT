@@ -90,6 +90,8 @@ public class UrlToImageConverter : IValueConverter
             Cache[url] = bmp;
             return bmp;
         }
+        // A portrait that will not load leaves the initials fallback showing, which is the
+        // intended look anyway. Logging one line per avatar would drown the file.
         catch
         {
             return null;

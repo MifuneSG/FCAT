@@ -19,6 +19,7 @@ public partial class App : Application
         if (plus > 0) version = version[..plus];
 
         Log.Start(version);
+        BindingWatch.Start();   // a broken binding is silent otherwise; see BindingWatch
 
         // A crash otherwise leaves nothing behind: the window disappears and the user has a story
         // rather than a stack. These two cover both threads an FCAT crash can come off.

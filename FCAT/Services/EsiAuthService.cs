@@ -63,7 +63,9 @@ public class EsiAuthService(HttpClient httpClient, CharacterStore store)
                       $"&scope={Uri.EscapeDataString(scopeString)}" +
                       $"&state={state}";
 
-        Process.Start(new ProcessStartInfo(authUrl) { UseShellExecute = true });
+        // No browser means no login. Failing here with a log beats throwing out of the login flow,
+        // and beats silently waiting on a callback that can never arrive.
+        if (!Browser.Open(authUrl)) return false;
 
         var code = await WaitForCallbackAsync(state);
         if (string.IsNullOrEmpty(code)) return false;
@@ -274,7 +276,7 @@ public class EsiAuthService(HttpClient httpClient, CharacterStore store)
                 _                    => []
             };
         }
-        catch { return []; }
+        catch { return []; }   // unreadable scope claim: the caller treats no scopes as a failed login
     }
 
     /// <summary>Decodes the access-token JWT to (characterId, name).</summary>

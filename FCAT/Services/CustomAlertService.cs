@@ -78,7 +78,13 @@ public class CustomAlertService
             _regexCache[rule.Id] = (rule.Pattern, rx);
             return rx;
         }
-        catch (ArgumentException) { return null; }
+        catch (ArgumentException ex)
+        {
+            // IsValidPattern should have caught this when the rule was saved, so reaching here
+            // means a rule went bad. Silence would just look like an alert that never fires.
+            Log.Warn("alerts", $"rule \"{rule.Name}\" has an unusable pattern, it will never match", ex);
+            return null;
+        }
     }
 
     /// <summary>True if the pattern is usable - used by the rule editor to flag a bad regex.</summary>
@@ -86,6 +92,7 @@ public class CustomAlertService
     {
         if (string.IsNullOrWhiteSpace(pattern)) return false;
         if (match == AlertRuleMatch.Contains) return true;
+        // This IS the validity check - a throw is the answer, not a failure.
         try { _ = new Regex(pattern); return true; }
         catch (ArgumentException) { return false; }
     }

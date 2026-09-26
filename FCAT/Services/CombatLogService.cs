@@ -161,6 +161,8 @@ public partial class CombatLogService : IDisposable
                 lock (_filesLock)
                     _files[path] = new LogFile { Position = info.Length, Listener = ReadListener(path) };
             }
+            // EVE writes these files while we read them, so a locked or half-written file is
+            // normal. It will be picked up on the next change notification.
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }
         }
@@ -182,6 +184,7 @@ public partial class CombatLogService : IDisposable
                 if (m.Success) return m.Groups[1].Value.Trim();
             }
         }
+        // Locked mid-write by EVE. No listener name this pass; the next read gets it.
         catch (IOException) { }
         catch (UnauthorizedAccessException) { }
         return string.Empty;
@@ -203,6 +206,7 @@ public partial class CombatLogService : IDisposable
                 if (!isNewFile)
                 {
                     try { position = new FileInfo(path).Length; }
+                    // Locked mid-write. Leave the position alone and try again next time.
                     catch (IOException) { return; }
                     catch (UnauthorizedAccessException) { return; }
                 }
@@ -231,7 +235,7 @@ public partial class CombatLogService : IDisposable
                 file.Position = stream.Position;
             }
             catch (IOException) { /* locked - retry on the next change */ }
-            catch (UnauthorizedAccessException) { }
+            catch (UnauthorizedAccessException) { /* same, on a file we cannot open at all */ }
         }
     }
 

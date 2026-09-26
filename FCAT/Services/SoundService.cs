@@ -40,7 +40,7 @@ public static class SoundService
             return new DirectoryInfo(CustomDir).GetFiles("*.wav")
                 .OrderByDescending(f => f.LastWriteTimeUtc).Select(f => f.Name).ToArray();
         }
-        catch { return []; }
+        catch { return []; }   // no custom sounds folder, or unreadable: the built-ins still work
     }
 
     /// <summary>
@@ -69,7 +69,12 @@ public static class SoundService
             using (var probe = new SoundPlayer(dest)) probe.Load();
             return name;
         }
-        catch { return null; }
+        catch
+        {
+            // The file is not a sound we can play. The caller reports that to the user, so the
+            // rule never ends up pointing at something silent.
+            return null;
+        }
     }
 
     public static void DeleteCustomSound(string name)

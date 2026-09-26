@@ -82,7 +82,7 @@ public partial class AccountViewModel : ObservableObject
         while (!ct.IsCancellationRequested)
         {
             await PollOnceAsync();
-            try { await Task.Delay(TimeSpan.FromSeconds(20), ct); } catch { return; }
+            try { await Task.Delay(TimeSpan.FromSeconds(20), ct); } catch (OperationCanceledException) { return; }
         }
     }
 

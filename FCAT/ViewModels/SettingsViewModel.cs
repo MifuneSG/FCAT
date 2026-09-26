@@ -43,10 +43,10 @@ public partial class SettingsViewModel : ObservableObject
         EveLogsPath        = settings.Current.EveLogsPath;
         BoostChannelPrefix = settings.Current.BoostChannelPrefix;
         IntelChannelPrefix = settings.Current.IntelChannelPrefix;
-        _formupSystemText  = settings.Current.FormupSystem;
-        _formupSystemId    = settings.Current.FormupSystemId;
-        _capitalSystemText = settings.Current.CapitalSystem;
-        _capitalSystemId   = settings.Current.CapitalSystemId;
+        Formup  = new SystemPicker(systemSearch) { Key = "FormupBox"  };
+        Capital = new SystemPicker(systemSearch) { Key = "CapitalBox" };
+        Formup .Set(settings.Current.FormupSystem,  settings.Current.FormupSystemId);
+        Capital.Set(settings.Current.CapitalSystem, settings.Current.CapitalSystemId);
 
         _themeName = ThemeService.Name(ThemeService.Current);
 
@@ -219,82 +219,20 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     // Form-up system (autocomplete search)
-    [ObservableProperty] private string _formupSystemText = string.Empty;
+    /// <summary>The fleet form-up system, used by the straggler check.</summary>
+    public SystemPicker Formup { get; }
 
-    /// <summary>The alliance capital, for the Ansiblex bridge cost. Its own text, id and suggestion
-    /// list, because two pickers sharing one dropdown would drop their results into each other.</summary>
-    [ObservableProperty] private string _capitalSystemText = string.Empty;
-    public ObservableCollection<SystemMatch> CapitalSuggestions { get; } = [];
-    private int _capitalSystemId;
-    [ObservableProperty] private bool   _systemsLoading;
-    public ObservableCollection<SystemMatch> SystemSuggestions { get; } = [];
+    /// <summary>The alliance capital, which prices every Ansiblex jump. See AnsiblexBridge.</summary>
+    public SystemPicker Capital { get; }
 
-    private int  _formupSystemId;
-    private bool _suppressSearch;   // stops the dropdown re-opening when we set the text programmatically
+    /// <summary>True while the system name index is still being built, so the boxes can say so.</summary>
+    [ObservableProperty] private bool _systemsLoading;
 
     private async Task LoadSystemsAsync()
     {
         SystemsLoading = true;
         await _systemSearch.EnsureLoadedAsync();
         SystemsLoading = false;
-    }
-
-    partial void OnFormupSystemTextChanged(string value)
-    {
-        if (_suppressSearch) return;
-        SystemSuggestions.Clear();
-        foreach (var m in _systemSearch.Search(value)) SystemSuggestions.Add(m);
-        _formupSystemId = _systemSearch.ResolveId(value) ?? 0;   // 0 until a real system is matched
-    }
-
-    partial void OnCapitalSystemTextChanged(string value)
-    {
-        if (_suppressSearch) return;
-        CapitalSuggestions.Clear();
-        foreach (var m in _systemSearch.Search(value)) CapitalSuggestions.Add(m);
-        _capitalSystemId = _systemSearch.ResolveId(value) ?? 0;
-    }
-
-    [RelayCommand]
-    private void PickCapital(SystemMatch? match)
-    {
-        if (match == null) return;
-        _suppressSearch = true;
-        CapitalSystemText = match.Name;
-        _capitalSystemId  = match.Id;
-        _suppressSearch = false;
-        CapitalSuggestions.Clear();
-    }
-
-    [RelayCommand]
-    private void ClearCapital()
-    {
-        _suppressSearch = true;
-        CapitalSystemText = string.Empty;
-        _capitalSystemId = 0;
-        _suppressSearch = false;
-        CapitalSuggestions.Clear();
-    }
-
-    [RelayCommand]
-    private void PickSystem(SystemMatch? match)
-    {
-        if (match == null) return;
-        _suppressSearch = true;
-        FormupSystemText = match.Name;
-        _formupSystemId  = match.Id;
-        _suppressSearch = false;
-        SystemSuggestions.Clear();
-    }
-
-    [RelayCommand]
-    private void ClearFormup()
-    {
-        _suppressSearch = true;
-        FormupSystemText = string.Empty;
-        _formupSystemId = 0;
-        _suppressSearch = false;
-        SystemSuggestions.Clear();
     }
 
 
@@ -385,11 +323,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void OpenDiscord() => Open("https://discord.gg/fFznkAFen8");
 
-    private static void Open(string url)
-    {
-        // A browser that won't open is not worth taking the settings page down over.
-        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); } catch { }
-    }
+    private static void Open(string url) => Browser.Open(url);
 
     [RelayCommand]
     private void Save()
@@ -399,10 +333,10 @@ public partial class SettingsViewModel : ObservableObject
             ? "Boost" : BoostChannelPrefix.Trim();
         _settings.Current.IntelChannelPrefix = string.IsNullOrWhiteSpace(IntelChannelPrefix)
             ? "Intel" : IntelChannelPrefix.Trim();
-        _settings.Current.FormupSystem       = FormupSystemText.Trim();
-        _settings.Current.FormupSystemId     = _formupSystemId;
-        _settings.Current.CapitalSystem      = CapitalSystemText.Trim();
-        _settings.Current.CapitalSystemId    = _capitalSystemId;
+        _settings.Current.FormupSystem       = Formup.Text.Trim();
+        _settings.Current.FormupSystemId     = Formup.Id;
+        _settings.Current.CapitalSystem      = Capital.Text.Trim();
+        _settings.Current.CapitalSystemId    = Capital.Id;
 
         // Alert configuration lives on the Alerts page now, and saves itself there.
         _settings.Save();

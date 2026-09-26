@@ -428,6 +428,6 @@ public partial class IntelFeedViewModel : ObservableObject
     private static void Open(IntelEntry? entry)
     {
         if (entry?.Url is not { Length: > 0 } url) return;
-        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); } catch { }
+        Browser.Open(url);
     }
 }

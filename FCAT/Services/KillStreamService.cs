@@ -175,7 +175,7 @@ public class KillStreamService(HttpClient httpClient) : IDisposable
                 // Network hiccup, or we have been told to back off. Either way, wait it out rather
                 // than hammering - zKill bans for an hour.
                 Log.Warn("killstream", $"sequence {sequence} failed, backing off", ex);
-                try { await Task.Delay(ErrorWait, ct); } catch { return; }
+                try { await Task.Delay(ErrorWait, ct); } catch (OperationCanceledException) { return; }
             }
         }
     }

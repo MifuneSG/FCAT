@@ -1084,19 +1084,14 @@ public partial class SystemIntelViewModel : ObservableObject
     {
         if (node == null) return;
         var name = node.Name.Replace(' ', '_');
-        OpenUrl($"https://evemaps.dotlan.net/system/{Uri.EscapeDataString(name)}");
+        Browser.Open($"https://evemaps.dotlan.net/system/{Uri.EscapeDataString(name)}");
     }
 
     [RelayCommand]
     private static void OpenZkill(MapNode? node)
     {
         if (node == null) return;
-        OpenUrl($"https://zkillboard.com/system/{node.SystemId}/");
+        Browser.Open($"https://zkillboard.com/system/{node.SystemId}/");
     }
 
-    private static void OpenUrl(string url)
-    {
-        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch { /* no browser / blocked - nothing useful to do */ }
-    }
 }

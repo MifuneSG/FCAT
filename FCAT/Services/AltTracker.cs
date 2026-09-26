@@ -121,7 +121,7 @@ public class AltTracker(EsiService esi, EsiAuthService auth, AlertHub hub)
     public async Task RefreshNowAsync()
     {
         try { await PollOnceAsync(); }
-        catch { }
+        catch (Exception ex) { Log.Warn("alts", "manual refresh failed", ex); }
     }
 
     // Polling

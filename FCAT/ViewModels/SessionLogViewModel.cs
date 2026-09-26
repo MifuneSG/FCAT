@@ -273,17 +273,14 @@ public partial class SessionLogViewModel : ObservableObject
     private void OpenBattleReport()
     {
         if ((_mainFight?.ZkillUrl ?? Log.BattleReportZkill) is not { } url) return;
-        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch (Exception ex) { StatusMessage = $"Couldn't open the browser: {ex.Message}"; }
+        if (!Browser.Open(url, out var why)) StatusMessage = $"Couldn't open the browser: {why}";
     }
 
     /// <summary>Opens a killmail from a timeline row. Same browser hand-off as the report button.</summary>
     [RelayCommand]
     private void OpenLink(string? url)
     {
-        if (string.IsNullOrWhiteSpace(url)) return;
-        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch (Exception ex) { StatusMessage = $"Couldn't open the browser: {ex.Message}"; }
+        if (!Browser.Open(url, out var why)) StatusMessage = $"Couldn't open the browser: {why}";
     }
 
     [RelayCommand]

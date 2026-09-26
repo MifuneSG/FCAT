@@ -132,7 +132,7 @@ public partial class AlertHub : ObservableObject
 
     private async Task ExpireAlertAsync(FcAlert alert, int seconds)
     {
-        try { await Task.Delay(TimeSpan.FromSeconds(seconds)); } catch { return; }
+        try { await Task.Delay(TimeSpan.FromSeconds(seconds)); } catch (OperationCanceledException) { return; }
         // Clear from the overlay only - the in-app Alerts list keeps the full session history.
         App.Current.Dispatcher.Invoke(() => OverlayAlerts.Remove(alert));
     }

@@ -147,7 +147,7 @@ public class AaConnectorService
         while (!ct.IsCancellationRequested)
         {
             await RefreshAsync(ct);
-            try { await Task.Delay(RefreshEvery, ct); } catch { return; }
+            try { await Task.Delay(RefreshEvery, ct); } catch (OperationCanceledException) { return; }
         }
     }
 
@@ -303,6 +303,7 @@ public class AaConnectorService
         }
         catch (TaskCanceledException)
         {
+            // Not swallowed: the caller shows this string on the Setup page.
             return (false, "Auth didn't answer in time. Check the address, and that you're on the VPN if it needs one.");
         }
         catch (Exception ex)
