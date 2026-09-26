@@ -43,8 +43,8 @@ public partial class SettingsViewModel : ObservableObject
         EveLogsPath        = settings.Current.EveLogsPath;
         BoostChannelPrefix = settings.Current.BoostChannelPrefix;
         IntelChannelPrefix = settings.Current.IntelChannelPrefix;
-        Formup  = new SystemPicker(systemSearch) { Key = "FormupBox"  };
-        Capital = new SystemPicker(systemSearch) { Key = "CapitalBox" };
+        Formup  = new SystemPicker(systemSearch);
+        Capital = new SystemPicker(systemSearch);
         Formup .Set(settings.Current.FormupSystem,  settings.Current.FormupSystemId);
         Capital.Set(settings.Current.CapitalSystem, settings.Current.CapitalSystemId);
 

@@ -19,7 +19,6 @@
                 <!-- The box + its suggestion dropdown share column 0 -->
                 <StackPanel Grid.Column="0">
                     <TextBox Style="{StaticResource DarkTextBox}"
-                             AutomationProperties.AutomationId="{Binding Key}"
                              Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
                              ToolTip="Type a system name and pick from the list"/>
                     <Border Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1"
@@ -296,7 +295,7 @@
                 <!-- Alliance capital system (autocomplete). Prices every Ansiblex jump, and ESI
                      will not tell us which system it is, so the FC does. -->
                 <TextBlock Text="ALLIANCE CAPITAL SYSTEM" Style="{StaticResource SectionLabel}" Margin="0,24,0,7"/>
-                <TextBlock Text="Your alliance's capital. Ansiblex jump cost is set by how far the gate you jump TO sits from it, so the fleet panel needs this to price a bridge. Leave it blank and the bridge tile shows all five zones instead."
+                <TextBlock Text="Your alliance's capital. Ansiblex jump cost is set by how far the gate you jump TO sits from it, so without this there is no honest number to show and the fleet panel leaves the bridge tile off."
                            Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
                            TextWrapping="Wrap" Margin="0,0,0,9"/>
                 <ContentControl Content="{Binding Capital}" ContentTemplate="{StaticResource SystemPickerBox}"

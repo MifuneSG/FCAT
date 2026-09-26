@@ -25,9 +25,6 @@ public partial class SystemPicker(SystemSearchService search) : ObservableObject
     /// <summary>The matched system, or 0 while the text is not a real system name.</summary>
     public int Id { get; private set; }
 
-    /// <summary>Names the box for UI automation, so a test can address one picker and not the other.</summary>
-    public string Key { get; init; } = string.Empty;
-
     // Set by Set() so filling the box in code does not re-open the dropdown or drop the id.
     private bool _suppress;
 

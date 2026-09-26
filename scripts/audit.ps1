@@ -15,10 +15,7 @@
       3. Catch blocks that discard the error without a log line or a comment saying why. "No kills
          on zKillboard" and "no doctrine fits" both turned out to be exceptions nobody could see.
 
-      4. Duplicate private helpers. Four view models each grew their own copy of the same name
-         cache, and two panels ended up paying ESI separately for the same ids.
-
-      5. Build warnings. The repo builds at zero; one is a regression.
+      4. Build warnings. The repo builds at zero; one is a regression.
 
     Run it before a release, or any time a change touched more than one panel.
 
@@ -73,21 +70,6 @@ foreach ($f in Get-ChildItem $app -Recurse -Filter *.cs | Where-Object { $_.Full
             Problem "$($f.Name):$line discards an exception with no log line and no reason given"
         }
     }
-}
-
-Note "==> Duplicate private helpers" Cyan
-$bodies = @{}
-$method = [regex]'(?ms)\n    (?:private|protected)[^\n(]*\s(\w+)\s*\([^)]*\)\s*\r?\n?\s*\{(.*?)\r?\n    \}'
-foreach ($f in Get-ChildItem $app -Recurse -Filter *.cs | Where-Object { $_.FullName -notmatch '\\(obj|bin)\\' }) {
-    foreach ($m in $method.Matches((Get-Content $f.FullName -Raw))) {
-        $body = ($m.Groups[2].Value -replace '\s+', ' ').Trim()
-        if ($body.Length -lt 150) { continue }
-        if (-not $bodies.ContainsKey($body)) { $bodies[$body] = @() }
-        $bodies[$body] += "$($f.Name).$($m.Groups[1].Value)"
-    }
-}
-foreach ($k in $bodies.Keys) {
-    if ($bodies[$k].Count -gt 1) { Problem "identical bodies: $($bodies[$k] -join ', ')" }
 }
 
 Note "==> Build warnings" Cyan

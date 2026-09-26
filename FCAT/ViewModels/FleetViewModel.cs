@@ -1138,26 +1138,23 @@ public partial class FleetViewModel : ObservableObject
                      ?? 0;
 
         var ly = capitalId > 0 && fleetSys > 0 ? SystemSpace.LightYearsBetween(fleetSys, capitalId) : null;
-        if (ly is { } distance)
-        {
-            var zone = AnsiblexBridge.ZoneFor(distance);
-            var here = BridgeZoneCosts.First(z => z.Zone == zone);
-            BridgeTileLabel = $"BRIDGE Z{zone}";
-            BridgeHeadline  = here.TjText;
-            BridgeZoneNote  = $"here is zone {zone}, {distance:0.0} ly from {_settings.Current.CapitalSystem}";
-            BridgeChargeText = here.Multiplier == 0
-                ? "free at this range, the gate spends nothing"
-                : $"{here.Tj / bridge.CapacityTj:P0} of a full gate, {bridge.RecoveryHours(here.Tj):0.0} h to recover";
-        }
-        else
-        {
-            BridgeTileLabel = "BRIDGE";
-            BridgeHeadline  = AnsiblexBridge.FormatTj(baseTj);
-            BridgeZoneNote  = capitalId > 0
-                ? "no position yet, so no zone"
-                : "set your alliance capital in Setup to price the zone you are in";
-            BridgeChargeText = $"base for {counted} ship{(counted == 1 ? "" : "s")}, multiplied by the destination zone";
-        }
+
+        // No capital, no tile.
+        //
+        // Without it the only number we could show is the zone 1 base, and zone 1 is free, so that
+        // figure is never what a jump costs. A headline an FC might act on and be wrong is worse
+        // than no headline, and the panel's own habit elsewhere is to hide rather than show a
+        // number it cannot stand behind. Setup explains what setting it turns on.
+        if (ly is not { } distance) { HasBridge = false; BridgeZoneCosts.Clear(); return; }
+
+        var zone = AnsiblexBridge.ZoneFor(distance);
+        var here = BridgeZoneCosts.First(z => z.Zone == zone);
+        BridgeTileLabel  = $"BRIDGE Z{zone}";
+        BridgeHeadline   = here.TjText;
+        BridgeZoneNote   = $"here is zone {zone}, {distance:0.0} ly from {_settings.Current.CapitalSystem}";
+        BridgeChargeText = here.Multiplier == 0
+            ? $"free at this range, the gate spends nothing on these {counted} ships"
+            : $"{here.Tj / bridge.CapacityTj:P0} of a full gate, {bridge.RecoveryHours(here.Tj):0.0} h to recover";
     }
 
     private enum FleetKind { Combat, Mining, Capital, Covert }
