@@ -14,8 +14,10 @@ namespace FCAT;
 /// Use it for a field whose CONTENT needs explaining, not as a replacement for a label. A hint that
 /// vanishes the moment someone types cannot carry anything they will need again.
 /// </summary>
-public static class Placeholder
+public class Placeholder
 {
+    private Placeholder() { }   // never instantiated; WPF resolves the attached property on the TYPE
+
     public static readonly DependencyProperty TextProperty =
         DependencyProperty.RegisterAttached(
             "Text", typeof(string), typeof(Placeholder), new PropertyMetadata(string.Empty));
