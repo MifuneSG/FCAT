@@ -87,6 +87,18 @@ if (Test-Path $publish) { Remove-Item -Recurse -Force $publish }
 dotnet publish FCAT/FCAT.csproj -c Release -r win-x64 --self-contained true -o $publish
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed." }
 
+# Releases/ has to hold ONE version by the time it is uploaded, because the instruction is to
+# upload the folder. Two things used to fill it up: vpk download drops the previous release's
+# assets in here to diff against, and nothing ever took them back out. So v0.20 shipped carrying
+# 0.16 and 0.17 packages, those came straight back down on the next download, and v0.21 went out
+# with four versions in it. Every release cut by hand before that carried exactly one.
+#
+# Nothing here is precious: the previous packages come from GitHub and the rest is rebuilt below.
+$releasesDir = Join-Path $root "Releases"
+if (Test-Path $releasesDir) {
+    Get-ChildItem $releasesDir -File | Where-Object { $_.Name -notlike "notes-*" } | Remove-Item -Force
+}
+
 if ($Delta) {
     Write-Host "==> Downloading previous release for delta generation..." -ForegroundColor Cyan
     vpk download github --repoUrl $Repo --pre
@@ -120,10 +132,27 @@ if ($packed) {
     } finally { $zip.Dispose() }
 }
 
+# The previous version's packages were only ever needed to build the delta against. Drop them, so
+# the folder is exactly what this release should carry.
+Get-ChildItem $releasesDir -File -Filter "*.nupkg" |
+    Where-Object { $_.Name -notlike "*$Version*" } |
+    ForEach-Object {
+        Write-Host ("    dropped (only needed for the delta): {0}" -f $_.Name) -ForegroundColor DarkGray
+        Remove-Item $_.FullName -Force
+    }
+
+# Release notes live beside the packages but are not an asset anyone downloads.
+$notesDir = Join-Path $releasesDir "notes"
+New-Item -ItemType Directory -Force -Path $notesDir | Out-Null
+Get-ChildItem $releasesDir -File -Filter "notes-*.md" |
+    ForEach-Object { Move-Item $_.FullName (Join-Path $notesDir $_.Name) -Force }
+
 Write-Host ""
 Write-Host "Done. Artifacts are in .\Releases :" -ForegroundColor Green
 Write-Host "  - FCAT-win-Setup.exe   <- the installer to share / pin to the release"
 Write-Host "  - *-full.nupkg (+ *-delta.nupkg) and RELEASES / releases.*.json"
 Write-Host ""
-Write-Host "Upload ALL files in .\Releases to a GitHub Release tagged v$Version." -ForegroundColor Yellow
+Write-Host "Upload the FILES in .\Releases (not the subfolders) to a GitHub Release tagged v$Version." -ForegroundColor Yellow
+Write-Host "  gh release create v$Version --title ""FCAT $Version"" --notes-file .\Releases\notes\notes-$Version.md --prerelease (Get-ChildItem .\Releases -File)" -ForegroundColor DarkGray
+Write-Host "  Only this version's files are left in the folder. Nothing else should be attached." -ForegroundColor DarkGray
 Write-Host "See RELEASING.md for the full checklist." -ForegroundColor Yellow

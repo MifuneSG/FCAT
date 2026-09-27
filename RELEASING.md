@@ -84,7 +84,9 @@ numbers like `-12` for DPS, and they are assigned per name rather than fixed by 
 
 3. **Publish the GitHub Release.** Tag it `v<version>` (e.g. `v0.12.0-beta`), mark it
    **pre-release** while the version is `-beta` (the app's updater is prerelease-aware), and
-   **upload every file from `.\Releases\`**. The updater reads these assets directly.
+   **upload every file from `.\Releases\`** (the files, not the `notes\` subfolder). The updater
+   reads these assets directly. `pack.ps1` leaves exactly one version in there; if you ever see
+   more than one, something did not clean up and the extras do not belong on the release.
 
    Either do it on github.com (no `gh` CLI needed), or let Velopack push it for you:
 
