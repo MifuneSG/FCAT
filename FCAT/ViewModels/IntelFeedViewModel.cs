@@ -136,7 +136,13 @@ public partial class IntelFeedViewModel : ObservableObject
         if (scope.SystemId != _currentSystemId)
         {
             _currentSystemId = scope.SystemId;
-            _seenKills.Clear();
+
+            // _seenKills is NOT cleared here. It records what is already on screen, and nothing
+            // ever takes a row off, so forgetting means the next poll replays kills the FC is
+            // already looking at - once per jump. A roam through five systems showed the same
+            // Gila kill five times. Clearing was never needed either: Show() applies the scope
+            // filter BEFORE the dedupe, so a kill outside the watched systems never gets marked
+            // seen, and widens in on its own the moment the scope grows.
 
             // Poll now rather than waiting out the 90s tick. The ids only arrive once the
             // constellation has loaded, which is after the feed started, so the first tick
@@ -297,7 +303,7 @@ public partial class IntelFeedViewModel : ObservableObject
     {
         if (scope == _killScope) return;
         _killScope = scope;
-        _seenKills.Clear();
+        // Same as SetSystem: what is on screen stays remembered, or widening the scope re-shows it.
         _ = SafePollKillsAsync();   // rebuilds the watched set, then replays what the stream holds
     }
 
