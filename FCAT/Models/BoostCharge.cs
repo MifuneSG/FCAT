@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace FCAT.Models;
 
 public enum BoostCategory
@@ -22,7 +24,7 @@ public record BoostChargeInfo(string Name, BoostCategory Category, string Effect
 /// to this list to learn what each booster is running.
 /// Names taken verbatim from EVE's charge items (see in-game boost channel MOTD).
 /// </summary>
-public static class BoostChargeCatalog
+public static partial class BoostChargeCatalog
 {
     public static readonly IReadOnlyList<BoostChargeInfo> All =
     [
@@ -54,6 +56,21 @@ public static class BoostChargeCatalog
 
     private static readonly Dictionary<string, BoostChargeInfo> ByName =
         All.ToDictionary(c => c.Name, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Does this line claim a mindlink implant?
+    ///
+    /// Boosters post the charge itself by dragging the item, which is how the catalogue below gets
+    /// matched. The implant is not an item they can drag into the channel in the same way, so the
+    /// convention is to type a marker beside it: "+ml", "+mindlink", or just "mindlink".
+    ///
+    /// Matched on a word boundary on purpose. A bare "ml" would fire on half the words in English,
+    /// and the charge names themselves run through the same lines.
+    /// </summary>
+    public static bool ClaimsMindlink(string text) => MindlinkRegex().IsMatch(text);
+
+    [GeneratedRegex(@"(^|\s)\+?(ml|mindlink)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex MindlinkRegex();
 
     /// <summary>Returns every catalogued charge name found as a substring of <paramref name="text"/>.</summary>
     public static IEnumerable<BoostChargeInfo> FindIn(string text)

@@ -86,6 +86,10 @@ public partial class FleetMemberViewModel : ObservableObject
 
     public bool HasBoosts => !string.IsNullOrEmpty(BoostSummary);
 
+    /// <summary>This booster has claimed a mindlink. Worth showing because a mindlinked booster
+    /// outranks one without, so an FC picking who holds the links needs to see it.</summary>
+    [ObservableProperty] private bool _hasMindlink;
+
     /// <summary>Distinct boost categories this pilot is providing (for fleet coverage tallies).</summary>
     public IReadOnlyList<BoostCategory> BoostCategories { get; set; } = [];
 

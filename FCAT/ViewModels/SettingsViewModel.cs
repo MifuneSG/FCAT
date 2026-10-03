@@ -45,6 +45,8 @@ public partial class SettingsViewModel : ObservableObject
         IntelChannelPrefix = settings.Current.IntelChannelPrefix;
         Formup  = new SystemPicker(systemSearch);
         Capital = new SystemPicker(systemSearch);
+
+        _showPortraits = settings.Current.ShowPortraits;
         Formup .Set(settings.Current.FormupSystem,  settings.Current.FormupSystemId);
         Capital.Set(settings.Current.CapitalSystem, settings.Current.CapitalSystemId);
 
@@ -219,6 +221,18 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     // Form-up system (autocomplete search)
+    /// <summary>Portraits on the fleet roster. Saved the moment it is toggled rather than on Save,
+    /// because it is a view preference and an FC flips it to see the effect.</summary>
+    [ObservableProperty] private bool _showPortraits = true;
+
+    partial void OnShowPortraitsChanged(bool value)
+    {
+        _settings.Current.ShowPortraits = value;
+        _settings.Save();
+    }
+
+    [RelayCommand] private void TogglePortraits() => ShowPortraits = !ShowPortraits;
+
     /// <summary>The fleet form-up system, used by the straggler check.</summary>
     public SystemPicker Formup { get; }
 

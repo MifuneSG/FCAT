@@ -16,7 +16,8 @@ public partial class WingViewModel : ObservableObject
         WingId = wing.Id;
         Name = wing.Name;
 
-        foreach (var squad in wing.Squads)
+        // By id for the same reason the wings are - see RebuildHierarchy in FleetViewModel.
+        foreach (var squad in wing.Squads.OrderBy(s => s.Id))
             Squads.Add(new SquadViewModel(squad));
     }
 

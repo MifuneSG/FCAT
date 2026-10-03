@@ -210,6 +210,10 @@ public partial class FleetViewModel : ObservableObject
     // Pilots not in the configured form-up system (the straggler check).
     public ObservableCollection<string>               Stragglers       { get; } = [];
     public bool   FormupConfigured => !string.IsNullOrWhiteSpace(_settings.Current.FormupSystem);
+
+    /// <summary>Whether the roster draws portraits. Read fresh each rebuild so a change in Setup
+    /// shows up on the next poll rather than needing the page reopened.</summary>
+    public bool   ShowPortraits    => _settings.Current.ShowPortraits;
     public bool   HasStragglers    => Stragglers.Count > 0;
     [ObservableProperty] private string _stragglerSummary = string.Empty;
     [ObservableProperty] private bool   _showFormupCard;   // visible only during form-up, hides once fleet departs
@@ -566,11 +570,17 @@ public partial class FleetViewModel : ObservableObject
     private void RebuildHierarchy(List<FleetMember> members, List<FleetWing> wings)
     {
         MemberCount = members.Count;
+        OnPropertyChanged(nameof(ShowPortraits));   // picks up a Setup change without a page reload
         Wings.Clear();
         FleetCommandLevel.Clear();
         _currentMembers.Clear();
 
-        foreach (var wing in wings)
+        // Ordered by id, not by name. ESI returns wings in no particular order, so the hierarchy
+        // reshuffled itself between polls. Name is the wrong key because most fleets rename their
+        // wings (Anchor, DPS, Logistics) and alphabetical is not the order anyone built them in.
+        // EVE hands out ids in creation order and a rename does not change them, so this is both
+        // stable and the order the FC already sees in their own fleet window.
+        foreach (var wing in wings.OrderBy(w => w.Id))
             Wings.Add(new WingViewModel(wing));
 
         // Squad commanders first so each squad lead sits at the top of its squad.
@@ -1274,8 +1284,12 @@ public partial class FleetViewModel : ObservableObject
             {
                 var charges = string.Join(", ", m.BoostCharges.Where(c => c.Category == cat)
                                                               .Select(c => c.Name.Replace(" Charge", "")));
-                sources.Add(new BoostSource(m.CharacterName, charges));
+                sources.Add(new BoostSource(m.CharacterName, charges, m.HasMindlink));
             }
+
+            // Mindlinked boosters first: they out-boost one without, and the FC reads this list to
+            // decide who holds the link.
+            sources = [.. sources.OrderByDescending(s => s.Mindlink).ThenBy(s => s.Pilot)];
             BoostStats.Add(new BoostStat(label, sources.Count, sources.Count > 0 ? color : BrUncovered, sources));
         }
         if (kind == FleetKind.Mining)
@@ -1580,6 +1594,9 @@ public partial class FleetViewModel : ObservableObject
         // Demo mode can't read the boost channel, so stand in synthetic loadouts for the demo booster(s).
         if (loadout.Count == 0 && _esi.DemoMode)
             loadout = DemoData.BoostLoadout(vm.CharacterName);
+        vm.HasMindlink = _boost.HasMindlink(vm.CharacterName)
+                      || (_esi.DemoMode && DemoData.BoostMindlink(vm.CharacterName));
+
         if (loadout.Count == 0)
         {
             vm.BoostSummary    = string.Empty;
@@ -1592,7 +1609,8 @@ public partial class FleetViewModel : ObservableObject
         // Show the specific charges (short names), ordered by category for stability.
         var ordered = loadout.OrderBy(c => c.Category).ThenBy(c => c.Name).ToList();
         vm.BoostSummary    = string.Join(" · ", ordered.Select(c => c.Name.Replace(" Charge", "")));
-        vm.BoostDetail     = string.Join("\n", ordered.Select(c => $"{c.Name}: {c.Effect}"));
+        vm.BoostDetail     = string.Join("\n", ordered.Select(c => $"{c.Name}: {c.Effect}"))
+                           + (vm.HasMindlink ? "\n\nMindlink: stronger links, and takes priority over a booster without one" : string.Empty);
         vm.BoostCategories = ordered.Select(c => c.Category).Distinct().ToList();
         vm.BoostCharges    = ordered;
     }

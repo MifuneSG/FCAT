@@ -70,6 +70,7 @@
         <local:CountToVisibilityConverter  x:Key="CountToVisibility"/>
         <local:CountToInvisibilityConverter x:Key="CountToInvisibility"/>
         <local:StringToVisibilityConverter x:Key="StringToVisibility"/>
+        <local:BoolToColumnWidthConverter  x:Key="BoolToColumnWidth"/>
         <local:UrlToImageConverter         x:Key="UrlToImage"/>
         <local:NavActiveMultiConverter     x:Key="NavActiveMulti"/>
 

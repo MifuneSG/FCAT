@@ -280,8 +280,18 @@
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate DataType="{x:Type vm:BoostSource}">
                                                             <StackPanel Margin="0,0,0,6">
-                                                                <TextBlock Text="{Binding Pilot}" Foreground="{StaticResource EveTextPrimary}"
-                                                                           FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <TextBlock Text="{Binding Pilot}" Foreground="{StaticResource EveTextPrimary}"
+                                                                               FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
+                                                                    <!-- A mindlinked booster out-boosts one without, so it is called out here where
+                                                                         the FC decides who holds the link. -->
+                                                                    <Border Background="{DynamicResource EveAccent}" CornerRadius="3" Padding="3,0"
+                                                                            Margin="5,0,0,0" VerticalAlignment="Center"
+                                                                            Visibility="{Binding Mindlink, Converter={StaticResource BoolToVisibility}}">
+                                                                        <TextBlock Text="ML" Foreground="{DynamicResource EvePanelBg}"
+                                                                                   FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold"/>
+                                                                    </Border>
+                                                                </StackPanel>
                                                                 <TextBlock Text="{Binding Charges}" Foreground="{StaticResource EveTextSecondary}"
                                                                            FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap"
                                                                            Visibility="{Binding Charges, Converter={StaticResource StringToVisibility}}"/>
@@ -660,7 +670,7 @@
                                             <Grid Margin="6,0,6,0">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="3"/>
-                                                    <ColumnDefinition Width="46"/>
+                                                    <ColumnDefinition Width="{Binding DataContext.ShowPortraits, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToColumnWidth}, ConverterParameter=46}"/>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="44"/>
                                                     <ColumnDefinition Width="150"/>
@@ -672,6 +682,7 @@
                                                            Fill="{StaticResource EveGold}" Margin="0,2"/>
 
                                                 <Border Grid.Column="1" Width="34" Height="34" CornerRadius="9"
+                                                        Visibility="{Binding DataContext.ShowPortraits, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}"
                                                         Background="#101a26" HorizontalAlignment="Center">
                                                     <Border CornerRadius="9">
                                                         <Border.Background>
@@ -688,6 +699,12 @@
                                                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0" ToolTip="{Binding BoostDetail}"
                                                                 Visibility="{Binding HasBoosts, Converter={StaticResource BoolToVisibility}}">
                                                         <Path Data="{StaticResource IconBoost}" Style="{StaticResource ButtonIcon}" Width="11" Height="11" Stroke="{DynamicResource EveAccent}" Margin="0,0,4,0"/>
+                                                        <Border Background="{DynamicResource EveAccent}" CornerRadius="3" Padding="3,0" Margin="0,0,5,0"
+                                                                VerticalAlignment="Center"
+                                                                Visibility="{Binding HasMindlink, Converter={StaticResource BoolToVisibility}}">
+                                                            <TextBlock Text="ML" Foreground="{DynamicResource EvePanelBg}"
+                                                                       FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold"/>
+                                                        </Border>
                                                         <TextBlock Text="{Binding BoostSummary}" Foreground="{DynamicResource EveAccent}"
                                                                    FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center"/>
                                                     </StackPanel>
@@ -772,7 +789,7 @@
                                                             <Grid Margin="6,0,6,0">
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="3"/>
-                                                                    <ColumnDefinition Width="46"/>
+                                                                    <ColumnDefinition Width="{Binding DataContext.ShowPortraits, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToColumnWidth}, ConverterParameter=46}"/>
                                                                     <ColumnDefinition Width="*"/>
                                                                     <ColumnDefinition Width="44"/>
                                                                     <ColumnDefinition Width="150"/>
@@ -785,6 +802,7 @@
                                                                            Visibility="{Binding RoleBadgeVisible, Converter={StaticResource BoolToVisibility}}"/>
 
                                                                 <Border Grid.Column="1" Width="32" Height="32" CornerRadius="8"
+                                                                        Visibility="{Binding DataContext.ShowPortraits, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}"
                                                                         Background="#101a26" HorizontalAlignment="Center">
                                                                     <Border CornerRadius="8">
                                                                         <Border.Background>
@@ -801,6 +819,12 @@
                                                                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0" ToolTip="{Binding BoostDetail}"
                                                                                 Visibility="{Binding HasBoosts, Converter={StaticResource BoolToVisibility}}">
                                                                         <Path Data="{StaticResource IconBoost}" Style="{StaticResource ButtonIcon}" Width="11" Height="11" Stroke="{DynamicResource EveAccent}" Margin="0,0,4,0"/>
+                                                                        <Border Background="{DynamicResource EveAccent}" CornerRadius="3" Padding="3,0" Margin="0,0,5,0"
+                                                                                VerticalAlignment="Center"
+                                                                                Visibility="{Binding HasMindlink, Converter={StaticResource BoolToVisibility}}">
+                                                                            <TextBlock Text="ML" Foreground="{DynamicResource EvePanelBg}"
+                                                                                       FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold"/>
+                                                                        </Border>
                                                                         <TextBlock Text="{Binding BoostSummary}" Foreground="{DynamicResource EveAccent}"
                                                                                    FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center"/>
                                                                     </StackPanel>
@@ -874,7 +898,7 @@
                                                                             <Grid Margin="6,0,6,0">
                                                                                 <Grid.ColumnDefinitions>
                                                                                     <ColumnDefinition Width="3"/>
-                                                                                    <ColumnDefinition Width="46"/>
+                                                                                    <ColumnDefinition Width="{Binding DataContext.ShowPortraits, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToColumnWidth}, ConverterParameter=46}"/>
                                                                                     <ColumnDefinition Width="*"/>
                                                                                     <ColumnDefinition Width="44"/>
                                                                                     <ColumnDefinition Width="150"/>
@@ -887,6 +911,7 @@
                                                                                            Visibility="{Binding RoleBadgeVisible, Converter={StaticResource BoolToVisibility}}"/>
 
                                                                                 <Border Grid.Column="1" Width="32" Height="32" CornerRadius="8"
+                                                                                        Visibility="{Binding DataContext.ShowPortraits, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}"
                                                                                         Background="#101a26" HorizontalAlignment="Center">
                                                                                     <Border CornerRadius="8">
                                                                                         <Border.Background>
@@ -915,6 +940,12 @@
                                                                                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0" ToolTip="{Binding BoostDetail}"
                                                                                                 Visibility="{Binding HasBoosts, Converter={StaticResource BoolToVisibility}}">
                                                                                         <Path Data="{StaticResource IconBoost}" Style="{StaticResource ButtonIcon}" Width="11" Height="11" Stroke="{DynamicResource EveAccent}" Margin="0,0,4,0"/>
+                                                                                        <Border Background="{DynamicResource EveAccent}" CornerRadius="3" Padding="3,0" Margin="0,0,5,0"
+                                                                                                VerticalAlignment="Center"
+                                                                                                Visibility="{Binding HasMindlink, Converter={StaticResource BoolToVisibility}}">
+                                                                                            <TextBlock Text="ML" Foreground="{DynamicResource EvePanelBg}"
+                                                                                                       FontFamily="{StaticResource FontUI}" FontSize="10" FontWeight="SemiBold"/>
+                                                                                        </Border>
                                                                                         <TextBlock Text="{Binding BoostSummary}" Foreground="{DynamicResource EveAccent}"
                                                                                                    FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center"/>
                                                                                     </StackPanel>

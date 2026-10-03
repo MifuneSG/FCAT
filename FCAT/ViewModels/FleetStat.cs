@@ -22,7 +22,10 @@ public record FleetStat(string Label, int Count, Brush Color, IReadOnlyList<Hull
 }
 
 /// <summary>One booster behind a link chip: who's running it and which charges.</summary>
-public record BoostSource(string Pilot, string Charges);
+/// <summary>One booster covering a link category. <paramref name="Mindlink"/> matters to an FC
+/// choosing who holds it: a mindlinked booster puts out stronger links and takes priority over one
+/// without, so they are flagged and sorted to the top.</summary>
+public record BoostSource(string Pilot, string Charges, bool Mindlink = false);
 
 /// <summary>A boost-link coverage chip (e.g. "Shield ×2", or "Armor -" when uncovered).</summary>
 public record BoostStat(string Label, int Count, Brush Color, IReadOnlyList<BoostSource> Sources)

@@ -419,6 +419,28 @@
                     </TextBlock.Style>
                 </TextBlock>
 
+                <!-- Fleet roster display -->
+                <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,24,0,18"/>
+                <TextBlock Text="FLEET ROSTER" Style="{StaticResource SectionLabel}" Margin="0,0,0,7"/>
+                <TextBlock Text="Character portraits on the fleet roster. A large fleet spends a lot of the panel on faces, so they can be turned off."
+                           Foreground="{StaticResource EveTextDim}" FontFamily="{StaticResource FontUI}" FontSize="11"
+                           TextWrapping="Wrap" Margin="0,0,0,9"/>
+                <Button Command="{Binding TogglePortraitsCommand}" Style="{StaticResource SecondaryButton}"
+                        HorizontalAlignment="Left" Height="34" Padding="14,0">
+                    <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="Character portraits: ON"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ShowPortraits}" Value="False">
+                                        <Setter Property="Text" Value="Character portraits: OFF"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Button>
+
                 <!-- Actions -->
                 <!-- Demo / sandbox -->
                 <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,24,0,18"/>

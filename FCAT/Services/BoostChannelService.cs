@@ -25,6 +25,10 @@ public partial class BoostChannelService : IDisposable
     private readonly Dictionary<string, HashSet<BoostChargeInfo>> _loadouts =
         new(StringComparer.OrdinalIgnoreCase);
 
+    // Boosters who have claimed a mindlink this session. Per pilot rather than per charge: it is an
+    // implant in their head, so it applies to everything they run.
+    private readonly HashSet<string> _mindlinked = new(StringComparer.OrdinalIgnoreCase);
+
     private readonly object _lock = new();
 
     /// <summary>Raised whenever a booster's posted loadout changes.</summary>
@@ -111,6 +115,12 @@ public partial class BoostChannelService : IDisposable
         ReadNewLines();
     }
 
+    /// <summary>Has this pilot claimed a mindlink implant in the channel?</summary>
+    public bool HasMindlink(string characterName)
+    {
+        lock (_lock) return _mindlinked.Contains(characterName.Trim());
+    }
+
     /// <summary>Charges a given pilot has posted, or empty if none.</summary>
     public IReadOnlyCollection<BoostChargeInfo> GetLoadout(string characterName)
     {
@@ -124,8 +134,13 @@ public partial class BoostChannelService : IDisposable
     public void ClearPilot(string characterName)
     {
         lock (_lock)
-            if (_loadouts.Remove(characterName.Trim()))
-                Updated?.Invoke();
+        {
+            var name = characterName.Trim();
+            var had  = _loadouts.Remove(name);
+            // The implant went down with the pod too.
+            had |= _mindlinked.Remove(name);
+            if (had) Updated?.Invoke();
+        }
     }
 
     private void AttachToLatestBoostLog()
@@ -207,11 +222,22 @@ public partial class BoostChannelService : IDisposable
 
         var message = Regex.Replace(m.Groups[2].Value, "<[^>]+>", "");   // strip item-link markup
 
-        var charges = BoostChargeCatalog.FindIn(message).ToList();
-        if (charges.Count == 0) return false;
+        var charges  = BoostChargeCatalog.FindIn(message).ToList();
+        var mindlink = BoostChargeCatalog.ClaimsMindlink(message);
+
+        // A bare "+ml" on its own line is a claim too. Boosters do not always put it in the same
+        // message as the charges, so a line with no charge in it is still worth reading.
+        if (charges.Count == 0 && !mindlink) return false;
 
         lock (_lock)
         {
+            // Sticky once claimed. An implant does not come out mid-fleet, and a booster re-posting
+            // their charges without retyping the marker should not read as having lost it. Only
+            // getting podded clears it, which ClearPilot handles.
+            if (mindlink) _mindlinked.Add(speaker);
+
+            if (charges.Count == 0) return true;   // the marker alone, loadout untouched
+
             // Last message wins - a fresh post replaces the pilot's previous loadout, so
             // swapping links (e.g. shield -> armor) is reflected immediately. Boosters drag
             // all their charges in a single chat message, so one message = full loadout.

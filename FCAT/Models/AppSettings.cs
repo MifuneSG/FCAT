@@ -19,6 +19,10 @@ public class AppSettings
     public string FormupSystem   { get; set; } = string.Empty;
     public int    FormupSystemId { get; set; }
 
+    /// <summary>Character portraits on the fleet roster. On by default; an FC running a sixty man
+    /// fleet spends most of a screen on faces, so it can be turned off.</summary>
+    public bool ShowPortraits { get; set; } = true;
+
     /// <summary>Your alliance's capital system, for the Ansiblex bridge cost. Every jump is priced
     /// by the light years between the destination gate and this system, and ESI does not expose it
     /// (esi-issues #1519 asked and was closed), so the FC has to tell us. Name + id.</summary>

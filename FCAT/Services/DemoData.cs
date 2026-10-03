@@ -228,6 +228,11 @@ public static class DemoData
         ],
     };
 
+    /// <summary>Demo boosters who have claimed a mindlink, so the ML badge is visible without a
+    /// real boost channel. Mirrors <c>BoostChannelService.HasMindlink</c>.</summary>
+    public static bool BoostMindlink(string pilotName) =>
+        pilotName.Trim().Equals("Dren Mox", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>A demo booster's posted charges (empty for non-boosters). Mirrors
     /// <c>BoostChannelService.GetLoadout</c> so Demo mode shows loaded scripts.</summary>
     public static IReadOnlyCollection<BoostChargeInfo> BoostLoadout(string pilotName) =>

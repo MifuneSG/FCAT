@@ -46,6 +46,22 @@ public class CountToInvisibilityConverter : IValueConverter
         => throw new NotImplementedException();
 }
 
+/// <summary>
+/// A column width that collapses when a flag is off. Hiding the child alone is not enough: a fixed
+/// ColumnDefinition keeps its width and leaves a gutter where the portrait used to be.
+/// Parameter is the width to use when on.
+/// </summary>
+public class BoolToColumnWidthConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is true && double.TryParse(parameter as string, NumberStyles.Any, CultureInfo.InvariantCulture, out var w)
+           ? new GridLength(w)
+           : new GridLength(0);
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => Binding.DoNothing;
+}
+
 public class StringToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
