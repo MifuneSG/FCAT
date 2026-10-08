@@ -121,6 +121,22 @@ public partial class BoostChannelService : IDisposable
         lock (_lock) return _mindlinked.Contains(characterName.Trim());
     }
 
+    /// <summary>
+    /// How many of the given pilots have posted a loadout. Answers "is anyone boosting this fleet"
+    /// without the caller having to walk the roster itself.
+    /// </summary>
+    public int BoostersAmong(IEnumerable<string> characterNames)
+    {
+        lock (_lock)
+            return characterNames.Count(n => _loadouts.ContainsKey(n.Trim()));
+    }
+
+    /// <summary>
+    /// True when FCAT is actually reading a boost channel. Without one, "nobody is boosting" and
+    /// "we cannot see the channel" look identical, and only one of them is worth saying.
+    /// </summary>
+    public bool IsWatchingChannel => !string.IsNullOrEmpty(ActiveChannel);
+
     /// <summary>Charges a given pilot has posted, or empty if none.</summary>
     public IReadOnlyCollection<BoostChargeInfo> GetLoadout(string characterName)
     {

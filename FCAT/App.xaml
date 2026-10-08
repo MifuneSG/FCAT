@@ -329,6 +329,80 @@
              give it scale, which in practice means the nav rail and the wordmark. Panel headings sit
              directly above the thing they name and read better tight, so they get none. -->
 
+        <!-- ALERT SEVERITY COLOURING - the one definition of what a severity looks like on an
+             alert card. The card itself is drawn in three places (the Alerts feed, the Fleet Ops
+             panel and the on-screen overlay) and each carried its own copy of these triggers, so a
+             fix to one quietly left the other two behind. The overlay keeps its own palette, since
+             it draws over the game and needs more contrast than a panel inside the app.
+             Both expect an FcAlert as the DataContext. -->
+        <Style x:Key="AlertSeverityRail" TargetType="Rectangle">
+            <Setter Property="Width"   Value="3"/>
+            <Setter Property="RadiusX" Value="1.5"/>
+            <Setter Property="RadiusY" Value="1.5"/>
+            <Setter Property="Fill"    Value="{StaticResource EveAmber}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Severity}" Value="Info">
+                    <Setter Property="Fill" Value="{StaticResource EveTextDim}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Severity}" Value="Critical">
+                    <Setter Property="Fill" Value="{StaticResource EveCritical}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="AlertSeverityTag" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource FontUI}"/>
+            <Setter Property="FontSize"   Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Severity}" Value="Info">
+                    <Setter Property="Foreground" Value="{StaticResource EveTextSecondary}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Severity}" Value="Critical">
+                    <Setter Property="Foreground" Value="{StaticResource EveCritical}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- TOGGLE SWITCH - for a setting that is on or off right now, as opposed to a button that
+             performs an action. The alerts list used to show the word "On" in a ghost button, which
+             read as a status label and gave no sign it could be clicked. The track physically moves,
+             so the control says which state it is in and that it can be changed. -->
+        <Style x:Key="ToggleSwitch" TargetType="ToggleButton">
+            <Setter Property="Cursor"      Value="Hand"/>
+            <Setter Property="Width"       Value="38"/>
+            <Setter Property="Height"      Value="21"/>
+            <Setter Property="Background"  Value="{StaticResource EveTextDim}"/>
+            <Setter Property="Focusable"   Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Grid Background="Transparent">
+                            <Border x:Name="Track" CornerRadius="10.5" Background="#1b2230"
+                                    BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1"/>
+                            <Ellipse x:Name="Knob" Width="15" Height="15" HorizontalAlignment="Left"
+                                     Margin="3,0,0,0" Fill="{StaticResource EveTextDim}"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background"  Value="#13351f"/>
+                                <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource EveGreen}"/>
+                                <Setter TargetName="Knob"  Property="Fill"        Value="{StaticResource EveGreen}"/>
+                                <Setter TargetName="Knob"  Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="Knob"  Property="Margin"      Value="0,0,3,0"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource EveAccent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- SMALL UPPERCASE SECTION LABEL - the app's standard "what is this panel" label. -->
         <Style x:Key="SectionLabel" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>

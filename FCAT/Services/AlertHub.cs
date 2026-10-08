@@ -60,6 +60,10 @@ public partial class AlertHub : ObservableObject
     /// Must be called on the UI thread.</summary>
     public void Raise(FcAlert alert)
     {
+        if (IsSwitchedOff(alert)) return;
+
+        ApplyConfiguredSeverity(alert);
+
         Alerts.Insert(0, alert);
         while (Alerts.Count > 100)
             Alerts.RemoveAt(Alerts.Count - 1);
@@ -70,12 +74,17 @@ public partial class AlertHub : ObservableObject
 
         UnreadCount++;
 
-        // Permanent AAR record - the live feeds are bounded/auto-cleared, this isn't.
-        var line = string.IsNullOrEmpty(alert.SubText) ? alert.Headline : $"{alert.Headline}: {alert.SubText}";
-        _sessionLog.Record(alert.AlertTag, line);
+        // Permanent AAR record - the live feeds are bounded/auto-cleared, this isn't. A test fire
+        // is skipped: auditioning a cue is not something that happened to the fleet, and an FC
+        // reading the report back has no way to tell a phantom entry from a real one.
+        if (!alert.IsTest)
+        {
+            var line = string.IsNullOrEmpty(alert.SubText) ? alert.Headline : $"{alert.Headline}: {alert.SubText}";
+            _sessionLog.Record(alert.AlertTag, line);
+        }
 
         var cfg = _settings.Current;
-        if (cfg.AlertSoundsEnabled && !cfg.MutedAlertTypes.Contains(alert.AlertType.ToString()))
+        if (cfg.AlertSoundsEnabled)
         {
             var preset = SoundFor(alert);
             // Throttle per type so repeated alerts don't machine-gun the speaker.
@@ -91,6 +100,39 @@ public partial class AlertHub : ObservableObject
             _                      => cfg.AlertClearSeconds,
         };
         if (clearSecs > 0) _ = ExpireAlertAsync(alert, clearSecs);
+    }
+
+    /// <summary>
+    /// Has the FC switched this alert off?
+    ///
+    /// Off means off: no feed row, no overlay card, no sound, and no AAR line. It used to mean only
+    /// "do not play the sound", which left a switch labelled ON beside an alert that kept arriving.
+    ///
+    /// A test fire is exempt. The FC pressed the button, and the one time you want to hear an alert
+    /// you have switched off is while you are deciding whether to switch it back on. Custom rules
+    /// are exempt too: they are switched off on the rule itself, which stops them being evaluated
+    /// at all, and every Custom alert shares the one type name.
+    /// </summary>
+    private bool IsSwitchedOff(FcAlert alert)
+        => !alert.IsTest
+        && alert.AlertType != AlertType.Custom
+        && _settings.Current.MutedAlertTypes.Contains(alert.AlertType.ToString());
+
+    /// <summary>
+    /// Stamps on the severity the FC chose for this type, if they changed it.
+    ///
+    /// Three alerts set their own severity as things get worse - DPS loss and logi ratio go red at
+    /// the bad end, and intel goes red when the hostiles are in your system rather than next door.
+    /// A chosen severity wins over that. It has to: an FC who moves intel down to Info and still
+    /// gets a red siren would reasonably call that broken. The escalation stays for every type they
+    /// have not touched, which is why only changed types are stored at all.
+    /// </summary>
+    private void ApplyConfiguredSeverity(FcAlert alert)
+    {
+        if (alert.AlertType == AlertType.Custom) return;   // the rule carries its own
+        if (_settings.Current.AlertSeverities.TryGetValue(alert.AlertType.ToString(), out var name)
+            && Enum.TryParse<AlertSeverity>(name, out var severity))
+            alert.SeverityOverride = severity;
     }
 
     /// <summary>Custom rules carry their own sound; built-ins use their per-type setting.</summary>
@@ -113,6 +155,8 @@ public partial class AlertHub : ObservableObject
             AlertType.AltPodded    => cfg.AltPoddedSound,
             AlertType.AltKills     => cfg.AltKillsSound,
             AlertType.CloakDropped => cfg.CloakDroppedSound,
+            AlertType.NoFleetWarp  => cfg.NoFleetWarpSound,
+            AlertType.NoBooster    => cfg.NoBoosterSound,
             _                      => "None",
         };
     }

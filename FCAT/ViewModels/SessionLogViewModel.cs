@@ -22,11 +22,24 @@ public partial class SessionLogViewModel : ObservableObject
         _battleReport = battleReport;
         _shell = shell;
 
-        // Auto-pull the report if this op already anchored a fight; killmails lag, so a Refresh is offered.
-        if (Log.HasBattleReport) _ = LoadReportAsync();
-
-        BuildAuthPanels();
+        // Subscribed for the life of the app, because the shell keeps this page rather than
+        // rebuilding it per visit. It used to unsubscribe in Back(), which only runs if the FC
+        // actually presses Back - leaving by the nav rail left the handler, and the page, alive.
         _shell.Aa.Updated += OnAaUpdated;
+
+        Refresh();
+    }
+
+    /// <summary>
+    /// Called each time the page is shown. The page is kept between visits now, so what used to
+    /// happen in the constructor has to happen here instead - otherwise a fight anchored while the
+    /// FC was on another page would never pull its report.
+    /// </summary>
+    public void Refresh()
+    {
+        BuildAuthPanels();
+        // Killmails lag a few minutes behind a fight, so a Refresh button is offered regardless.
+        if (Log.HasBattleReport && Report == null) _ = LoadReportAsync();
     }
 
     /// <summary>The connector refreshes on its own schedule; repaint when it does.</summary>
@@ -284,9 +297,5 @@ public partial class SessionLogViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void Back()
-    {
-        _shell.Aa.Updated -= OnAaUpdated;   // this page is rebuilt per visit; do not stack handlers
-        _shell.BackToMenu();
-    }
+    private void Back() => _shell.BackToMenu();
 }

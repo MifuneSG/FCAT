@@ -73,6 +73,8 @@ public class AppSettings
     public string AltPoddedSound     { get; set; } = "Low Buzz";
     public string AltKillsSound      { get; set; } = "Beep";
     public string CloakDroppedSound  { get; set; } = "Alarm";
+    public string NoFleetWarpSound   { get; set; } = "Beep";
+    public string NoBoosterSound     { get; set; } = "Beep";
 
     /// <summary>
     /// An extra regex the gamelog is checked against for a cloak failure, on top of the two lines
@@ -81,12 +83,26 @@ public class AppSettings
     /// </summary>
     public string CloakDroppedLogPattern { get; set; } = string.Empty;
 
-    /// <summary>Alert types the FC has muted, by <c>AlertType</c> name. Muting stops the sound only -
-    /// the alert still appears in the feed and the AAR log.</summary>
-    public List<string> MutedAlertTypes { get; set; } = [];
+    /// <summary>
+    /// Alert types the FC has switched off, by <c>AlertType</c> name. Off means off: the alert is
+    /// not raised at all, so it reaches neither the feed, the overlay, the sound nor the AAR.
+    ///
+    /// Cap-out ships switched off. It fires every time a module blinks in a long fight, and it is
+    /// about the FC's own capacitor, which their own HUD is already showing them. An existing
+    /// install has this list saved already, so this default only reaches a fresh one.
+    /// </summary>
+    public List<string> MutedAlertTypes { get; set; } = ["CapTrouble"];
 
     /// <summary>User-defined alert rules (intel-channel / gamelog text triggers).</summary>
     public List<CustomAlertRule> CustomAlerts { get; set; } = [];
+
+    /// <summary>
+    /// Severities the FC has changed, by <c>AlertType</c> name. Only types they actually moved are
+    /// in here. That matters for the three alerts that pick their own severity as things get worse
+    /// (DPS loss, logi ratio, intel) - leaving a type out keeps that escalation, and setting one
+    /// pins it, so what the FC chose is what they get.
+    /// </summary>
+    public Dictionary<string, string> AlertSeverities { get; set; } = [];
 
     /// <summary>Seconds before an alert auto-clears from the on-screen overlay, per severity, so a
     /// tackle lingers while routine chatter clears fast. The in-app Alerts list always keeps the
@@ -98,13 +114,16 @@ public class AppSettings
     /// <summary>Minimum gap between repeats of the same alert type's sound.</summary>
     public int AlertSoundThrottleSeconds { get; set; } = 2;
 
-    // Logi-ratio alert: warn when logi drop below this share of the fleet (0 = off).
-    public bool   LogiRatioAlertEnabled { get; set; } = true;
-    public double LogiRatioThreshold    { get; set; } = 0.10;   // 10% of fleet, a common floor
+    /// <summary>Warn when logi drop below this share of the fleet. Switching the alert off is what
+    /// turns it off; this is only where the line sits.</summary>
+    public double LogiRatioThreshold { get; set; } = 0.10;   // 10% of fleet, a common floor
 
-    /// <summary>Raise an alert when the intel channel names your system or one next door.</summary>
-    public bool IntelHostileAlertEnabled  { get; set; } = true;
-    public bool IntelHostileAdjacentToo   { get; set; } = true;
+    /// <summary>Fleet size at or above which an unboosted fleet is worth saying out loud. A roam of
+    /// five does not need links; a fleet of forty flying without them is a mistake.</summary>
+    public int NoBoosterMinFleet { get; set; } = 10;
+
+    /// <summary>Also alert when the intel channel names a system NEXT DOOR, not just your own.</summary>
+    public bool IntelHostileAdjacentToo { get; set; } = true;
 
     // Alert overlay (on-screen, over the game)
     public bool   OverlayEnabled { get; set; }

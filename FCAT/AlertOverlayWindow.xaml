@@ -52,6 +52,9 @@
                                             <Style TargetType="Rectangle">
                                                 <Setter Property="Fill" Value="#c9883e"/>
                                                 <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Severity}" Value="Info">
+                                                        <Setter Property="Fill" Value="#7d8696"/>
+                                                    </DataTrigger>
                                                     <DataTrigger Binding="{Binding IsCritical}" Value="True">
                                                         <Setter Property="Fill" Value="#e2574c"/>
                                                     </DataTrigger>
@@ -65,6 +68,9 @@
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Foreground" Value="#c9883e"/>
                                                     <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Severity}" Value="Info">
+                                                            <Setter Property="Foreground" Value="#9aa3b3"/>
+                                                        </DataTrigger>
                                                         <DataTrigger Binding="{Binding IsCritical}" Value="True">
                                                             <Setter Property="Foreground" Value="#e2574c"/>
                                                         </DataTrigger>

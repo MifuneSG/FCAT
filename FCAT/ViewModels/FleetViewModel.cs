@@ -320,6 +320,9 @@ public partial class FleetViewModel : ObservableObject
         });
     }
 
+    /// <summary>Ties the roster's reading of a death to the killmail that confirms it.</summary>
+    private static string LossKey(int characterId) => $"loss:{characterId}";
+
     private async Task LogKillAsync(StreamKill kill)
     {
         var esi      = kill.Esi!;
@@ -342,10 +345,15 @@ public partial class FleetViewModel : ObservableObject
         // A structure or an abandoned drone has no pilot on the mail, so there is no name to possess.
         var what = victimId > 0 ? $"{pilot}'s {ship}" : $"{Article(ship)} {ship}";
 
-        _sessionLog.Record(ourLoss ? "LOSS" : "KILL",
-            ourLoss ? $"{pilot} lost their {ship} in {system}, {isk}"
-                    : $"Fleet killed {what} in {system}, {isk}",
-            url);
+        var line = ourLoss ? $"{pilot} lost their {ship} in {system}, {isk}"
+                           : $"Fleet killed {what} in {system}, {isk}";
+
+        // The roster already wrote a bare line for this death seconds after it happened, with no
+        // system, no ISK and nothing to click. Fill that one in rather than adding a second row
+        // about the same pilot minutes later. Upgrade says so when there was nothing to fill in -
+        // FCAT started mid-fight, say - and then this is the first anyone has heard of the loss.
+        if (!ourLoss || !_sessionLog.Upgrade(LossKey(victimId), line, url))
+            _sessionLog.Record(ourLoss ? "LOSS" : "KILL", line, url);
 
         // A killmail with one of ours on it is the best evidence there is that the fight was here,
         // and far better than the pod-transition guess: it carries the system on the mail itself.
@@ -467,7 +475,9 @@ public partial class FleetViewModel : ObservableObject
         // die at home. Those are skipped so reshipping doesn't spam false DEATH / DPS-loss entries.
         var formupSys   = _settings.Current.FormupSystem?.Trim() ?? string.Empty;
         var deathAlerts = new List<FcAlert>();
-        var deathLogs   = new List<string>();   // AAR lines for every loss (category DEATH)
+        // AAR lines for every loss, each carrying the pilot it is about so the killmail can find it
+        // again and fill it in. One loss is one row in the timeline, however many sources see it.
+        var deathLogs   = new List<(string Key, string Text)>();
         var newlyPodded = new List<int>();       // every pilot who flipped to a pod this tick (for DPS-attrition)
         foreach (var m in members)
         {
@@ -496,7 +506,7 @@ public partial class FleetViewModel : ObservableObject
                 // hull they actually lost comes from the previous tick's snapshot.
                 var name = string.IsNullOrEmpty(m.CharacterName) ? $"#{m.CharacterId}" : m.CharacterName;
                 var lost = _lastShipName.TryGetValue(m.CharacterId, out var ship) ? ship : "ship";
-                deathLogs.Add($"{name} lost their {lost}");
+                deathLogs.Add((LossKey(m.CharacterId), $"{name} lost their {lost}"));
 
                 var loadout = _boost.GetLoadout(m.CharacterName);
                 if (loadout.Count > 0)
@@ -548,7 +558,9 @@ public partial class FleetViewModel : ObservableObject
 
         await App.Current.Dispatcher.InvokeAsync(() =>
         {
-            foreach (var d in deathLogs) _sessionLog.Record("DEATH", d);   // permanent AAR record of every loss
+            // Recorded as LOSS, not DEATH. It is the same event the killmail will confirm, and two
+            // names for one thing read as two things in an exported report.
+            foreach (var (key, text) in deathLogs) _sessionLog.Record("LOSS", text, matchKey: key);
             if (deathLogs.Count > 0)
             {
                 _sessionLog.MarkCombat(fcSysId, fcSysName);   // anchor the battle report
@@ -869,7 +881,6 @@ public partial class FleetViewModel : ObservableObject
     /// </summary>
     private void EvaluateLogiRatio(int logi, int total)
     {
-        if (!_settings.Current.LogiRatioAlertEnabled) return;
         if (total < MinLogiRatioFleet) { _logiRatioFired = false; return; }
 
         var threshold = _settings.Current.LogiRatioThreshold;
@@ -890,6 +901,78 @@ public partial class FleetViewModel : ObservableObject
                 : $"{logi} logi across {total} pilots ({ratio:P0}), below {threshold:P0}",
             // Losing logi entirely is a different order of problem from thinning out.
             SeverityOverride = logi == 0 ? AlertSeverity.Critical : AlertSeverity.Warning,
+        });
+    }
+
+    // Latched the same way the logi-ratio watch is: these describe a STATE, not an event, so they
+    // speak once when it starts and stay quiet until it is fixed and breaks again.
+    private bool _noWarpFired;
+    private bool _noBoosterFired;
+
+    /// <summary>
+    /// Names the pilots who have fleet warp switched off, because the moment you find out otherwise
+    /// is after the warp, with them still on the gate. ESI hands this over with every roster poll
+    /// and nothing was reading it.
+    ///
+    /// The FC is skipped: they are the one initiating the warp, so their own flag cannot strand them.
+    /// </summary>
+    private void EvaluateFleetWarp()
+    {
+        var stuck = _currentMembers
+            .Where(m => !m.TakesFleetWarp && m.CharacterId != _auth.AuthenticatedCharacterId)
+            .Select(m => m.CharacterName)
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .ToList();
+
+        if (stuck.Count == 0) { _noWarpFired = false; return; }   // fixed - re-arm
+        if (_noWarpFired) return;
+        _noWarpFired = true;
+
+        // Name them if it is a handful, count them if it is the whole fleet - a wall of forty names
+        // is not something an FC reads mid-fight.
+        var who = stuck.Count <= 4
+            ? string.Join(", ", stuck)
+            : $"{string.Join(", ", stuck.Take(3))} and {stuck.Count - 3} more";
+
+        RaiseAlert(new FcAlert
+        {
+            Timestamp = DateTime.Now,
+            AlertType = AlertType.NoFleetWarp,
+            Detail    = $"{who} will not follow a fleet warp",
+        });
+    }
+
+    /// <summary>
+    /// Says so when a fleet big enough to need links is flying without any.
+    ///
+    /// Only runs while FCAT is actually reading a boost channel. With no channel joined, nobody
+    /// having posted a loadout means FCAT cannot see, not that nobody is boosting, and an alert that
+    /// fires on every fleet because the FC never joined the channel is one they switch off for good.
+    /// </summary>
+    private void EvaluateBoostCover(FleetKind kind)
+    {
+        if (kind != FleetKind.Combat || !_boost.IsWatchingChannel)
+        {
+            _noBoosterFired = false;
+            return;
+        }
+
+        var total = _currentMembers.Count;
+        if (total < Math.Max(2, _settings.Current.NoBoosterMinFleet)) { _noBoosterFired = false; return; }
+
+        if (_boost.BoostersAmong(_currentMembers.Select(m => m.CharacterName)) > 0)
+        {
+            _noBoosterFired = false;   // someone is boosting - re-arm
+            return;
+        }
+        if (_noBoosterFired) return;
+        _noBoosterFired = true;
+
+        RaiseAlert(new FcAlert
+        {
+            Timestamp = DateTime.Now,
+            AlertType = AlertType.NoBooster,
+            Detail    = $"{total} pilots and nobody has posted links in {_boost.ActiveChannel}",
         });
     }
 
@@ -1272,6 +1355,8 @@ public partial class FleetViewModel : ObservableObject
         if (kind == FleetKind.Combat)
             EvaluateLogiRatio(_currentMembers.Count(m => EffectiveRole(m) is ShipRole.Logi or ShipRole.CapLogi),
                               _currentMembers.Count);
+        EvaluateFleetWarp();
+        EvaluateBoostCover(kind);
 
         // Boost coverage
         // The boost row tracks the link types that matter for the fleet kind: combat fleets

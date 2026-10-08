@@ -342,7 +342,8 @@ public partial class IntelFeedViewModel : ObservableObject
     /// </summary>
     private void RaiseIntelAlertIfWatched(string system, IntelStatus status, string speaker, string message)
     {
-        if (!_settings.Current.IntelHostileAlertEnabled) return;
+        // Whether this alert runs at all is the hub's business now - it is one switch on the Alerts
+        // page, and a second flag here could only ever disagree with it.
         if (status == IntelStatus.Clear) return;
 
         bool here = system.Equals(_watchedSystem, StringComparison.OrdinalIgnoreCase);

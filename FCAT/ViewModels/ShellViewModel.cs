@@ -232,7 +232,9 @@ public partial class ShellViewModel : ObservableObject
             (AlertType.BoostLost,  "",             "Damnation down, gang links dropped"),
             (AlertType.LogiChain,  "",             "Guardian ring lost a link, re-anchor"),
             (AlertType.DpsLoss,    "",             "~50% of fleet DPS lost - 8.5k of 17k, 8 ships down"),
-            (AlertType.CapTrouble, "",             "Large Micro Jump Drive"),
+            // Not cap-out: it ships switched off, and a demo alert that silently never arrives
+            // because of a default is worse than no demo at all.
+            (AlertType.NoFleetWarp, "",            "Ren Halloway, Dren Mox will not follow a fleet warp"),
         };
         _sessionLog.MarkCombat(DemoData.StagingSystemId, DemoData.StagingName);   // give the demo AAR a battle report
 
@@ -318,6 +320,13 @@ public partial class ShellViewModel : ObservableObject
             {
                 IsLoggedIn = false;
                 _altTracker.Stop();   // nothing left to poll, and no token to poll it with
+
+                // The kept pages belong to the character who just signed out - their alts are on
+                // the alert rows, their op is in the report. Dropping them means the next sign-in
+                // builds its own rather than inheriting someone else's.
+                _alerts = null;
+                _report = null;
+
                 CurrentPage = new LoginViewModel(_auth, this);
             }
             else if (IsLoggedIn)
@@ -330,12 +339,10 @@ public partial class ShellViewModel : ObservableObject
 
     /// <summary>
     /// A character's role changed, so any page showing per-alt rows is now stale. The alerts page
-    /// builds its rows once on construction, and it outlives navigation, so it has to be told.
+    /// builds its rows once and is kept across navigation, so it has to be told - and told whether
+    /// or not it is the page on screen, since it will be shown again without being rebuilt.
     /// </summary>
-    public void OnAltRolesChanged()
-    {
-        if (CurrentPage is AlertsViewModel alerts) alerts.ReloadRows();
-    }
+    public void OnAltRolesChanged() => _alerts?.ReloadRows();
 
     /// <summary>
     /// Re-point the gamelog watcher after the logs path is changed in setup. The watcher starts at
@@ -366,12 +373,22 @@ public partial class ShellViewModel : ObservableObject
     [RelayCommand]
     private void NavAlerts() => ShowAlerts();
 
-    /// <summary>The session alert feed - a standalone page over the app-lifetime AlertHub.</summary>
+    /// <summary>
+    /// The session alert feed - a standalone page over the app-lifetime AlertHub.
+    ///
+    /// Built once and kept, like <see cref="CustomAlerts"/>. It listens to the hub's alert list to
+    /// keep its filtered count honest, and the hub lives as long as the app, so a fresh page per
+    /// visit would leave every previous one subscribed and alive. Keeping it also means the FC's
+    /// tab and severity filter are still where they left them.
+    /// </summary>
+    private AlertsViewModel? _alerts;
+    public AlertsViewModel Alerts => _alerts ??= new AlertsViewModel(_alertHub, _settings, _altTracker);
+
     public void ShowAlerts()
     {
         ActiveNav = "alerts";
         _alertHub.MarkRead();   // opening the page clears the unread badge
-        CurrentPage = new AlertsViewModel(_alertHub, _settings, _altTracker);
+        CurrentPage = Alerts;
     }
 
     // The live fleet-monitoring session. Kept alive across navigation so the alert overlay and
@@ -394,9 +411,22 @@ public partial class ShellViewModel : ObservableObject
         CurrentPage = new SettingsViewModel(_settings, _alertHub, _systemSearch, this, _auth, _aa);
     }
 
+    /// <summary>
+    /// The after-action report. Built once and kept, for the same reason the alerts page is: it
+    /// listens to the Alliance Auth connector, the connector lives as long as the app, and a page
+    /// built per visit left a dead view model subscribed to it every time.
+    ///
+    /// The AAR is not a nav-rail destination, so nothing on the rail should look selected while it
+    /// is open - it used to leave whichever page you came from still lit.
+    /// </summary>
+    private SessionLogViewModel? _report;
+
     public void ShowSessionLog()
     {
-        CurrentPage = new SessionLogViewModel(_sessionLog, _battleReport, this);
+        ActiveNav = "report";
+        _report ??= new SessionLogViewModel(_sessionLog, _battleReport, this);
+        _report.Refresh();
+        CurrentPage = _report;
     }
 
     public void ShowPing()

@@ -22,8 +22,29 @@ public enum AlertType
     AltPodded,      // A tracked alt is in a pod in space, so whatever it was doing has stopped
     AltKills,       // Kills appeared in the system a tracked alt is sitting in
     CloakDropped,   // Your cloak deactivated, or refused to activate, because something got close
+    NoFleetWarp,    // Pilots have fleet warp switched off, so your next warp leaves them behind
+    NoBooster,      // Nobody in the fleet has posted links - the whole fleet is flying unboosted
     Custom,         // Fired by a user-defined rule (see CustomAlertRule)
     Info
+}
+
+/// <summary>
+/// What an alert watches, which is how the Alerts page groups them. An FC deciding what they want
+/// to be told thinks in terms of "my fleet" or "my own ship", not in terms of which EVE API the
+/// answer came from - and the group is the unit they switch on and off.
+/// </summary>
+public enum AlertGroup
+{
+    /// <summary>The fleet roster and the boost channel.</summary>
+    Fleet,
+    /// <summary>The in-game intel channel.</summary>
+    Intel,
+    /// <summary>Your own client's game log.</summary>
+    Ship,
+    /// <summary>Characters labelled Cyno or Scout on the Account page.</summary>
+    Alts,
+    /// <summary>The FC's own rules.</summary>
+    Own,
 }
 
 /// <summary>
@@ -68,7 +89,20 @@ public class FcAlert
     /// <summary>Set when the source is NOT the active character, so the feed can name the alt.</summary>
     public bool FromOtherClient { get; set; }
 
-    public AlertSeverity Severity => SeverityOverride ?? AlertType switch
+    /// <summary>
+    /// Fired from the Alerts page to audition a cue, not by anything that happened in space.
+    /// It behaves like a real alert everywhere the FC can see it, but stays out of the session log
+    /// so auditioning a sound does not leave a phantom entry in the after-action report.
+    /// </summary>
+    public bool IsTest { get; set; }
+
+    public AlertSeverity Severity => SeverityOverride ?? DefaultSeverityFor(AlertType);
+
+    /// <summary>
+    /// How loud a type is before the FC has said otherwise. Kept as one static so the Alerts page
+    /// can show the same answer this property uses, rather than carrying its own copy of the table.
+    /// </summary>
+    public static AlertSeverity DefaultSeverityFor(AlertType type) => type switch
     {
         AlertType.Tackled      => AlertSeverity.Critical,
         AlertType.CapTrouble   => AlertSeverity.Warning,
@@ -84,11 +118,25 @@ public class FcAlert
         AlertType.AltKills     => AlertSeverity.Info,
         // A dropped cloak on a covert alt means it is visible and probably about to die.
         AlertType.CloakDropped => AlertSeverity.Critical,
+        AlertType.NoFleetWarp  => AlertSeverity.Warning,
+        AlertType.NoBooster    => AlertSeverity.Warning,
         _                      => AlertSeverity.Info,
     };
 
     /// <summary>Kept so the existing alert-card styling keeps working off one flag.</summary>
     public bool IsCritical => Severity == AlertSeverity.Critical;
+
+    /// <summary>What this alert watches. Drives how the Alerts page groups the list.</summary>
+    public static AlertGroup GroupFor(AlertType type) => type switch
+    {
+        AlertType.DpsLoss or AlertType.LogiRatio or AlertType.LogiChain
+            or AlertType.BoostLost or AlertType.NoFleetWarp or AlertType.NoBooster => AlertGroup.Fleet,
+        AlertType.IntelHostile                                                     => AlertGroup.Intel,
+        AlertType.Tackled or AlertType.CapTrouble                                  => AlertGroup.Ship,
+        AlertType.AltOffline or AlertType.AltPodded or AlertType.AltKills
+            or AlertType.CloakDropped                                              => AlertGroup.Alts,
+        _                                                                          => AlertGroup.Own,
+    };
 
     public string AlertTag => AlertType switch
     {
@@ -103,6 +151,8 @@ public class FcAlert
         AlertType.AltPodded    => "ALT PODDED",
         AlertType.AltKills     => "ALT SYSTEM",
         AlertType.CloakDropped => "CLOAK",
+        AlertType.NoFleetWarp  => "FLEET WARP",
+        AlertType.NoBooster    => "NO BOOST",
         AlertType.Custom       => string.IsNullOrWhiteSpace(CustomTag) ? "CUSTOM" : CustomTag,
         _                      => "INFO"
     };
@@ -123,6 +173,8 @@ public class FcAlert
         AlertType.AltKills     => "Kills where your alt is",
         // The headline says WHICH way the cloak failed; the detail says what caused it.
         AlertType.CloakDropped => string.IsNullOrWhiteSpace(CustomHeadline) ? "Cloak dropped" : CustomHeadline,
+        AlertType.NoFleetWarp  => "Pilots will not follow fleet warp",
+        AlertType.NoBooster    => "Nobody is boosting",
         AlertType.Custom       => string.IsNullOrWhiteSpace(CustomHeadline) ? Detail : CustomHeadline,
         _                      => string.IsNullOrEmpty(CustomHeadline) ? Detail : CustomHeadline
     };

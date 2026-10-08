@@ -10,7 +10,7 @@
              mc:Ignorable="d">
 
     <UserControl.Resources>
-        <!-- Segmented tab button (Feed / Configure) -->
+        <!-- Segmented tab button (Feed / Alerts / Overlay) -->
         <Style x:Key="AlertTabBtn" TargetType="Button">
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -26,6 +26,62 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <!-- Column heading over the alert list. The controls in a row are a dropdown, a dropdown,
+             an icon and a switch; without headings there is nothing saying what any of them set. -->
+        <Style x:Key="ColumnHead" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+            <Setter Property="FontFamily" Value="{StaticResource FontUI}"/>
+            <Setter Property="FontSize"   Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="VerticalAlignment" Value="Bottom"/>
+        </Style>
+
+        <!-- Segmented picker: three buttons that read as one control, for a setting with three
+             values. Each corner is rounded only on the outside edge so the group looks joined. -->
+        <Style x:Key="SegmentBase" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="#141b28"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome" Background="{TemplateBinding Background}"
+                                CornerRadius="{TemplateBinding Tag}" Padding="{TemplateBinding Padding}"
+                                BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1">
+                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="#1d2638"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SegmentLeft"  TargetType="Button" BasedOn="{StaticResource SegmentBase}">
+            <Setter Property="Tag" Value="5,0,0,5"/>
+        </Style>
+        <Style x:Key="SegmentMid"   TargetType="Button" BasedOn="{StaticResource SegmentBase}">
+            <Setter Property="Tag" Value="0"/>
+            <Setter Property="Margin" Value="-1,0,0,0"/>
+        </Style>
+        <Style x:Key="SegmentRight" TargetType="Button" BasedOn="{StaticResource SegmentBase}">
+            <Setter Property="Tag" Value="0,5,5,0"/>
+            <Setter Property="Margin" Value="-1,0,0,0"/>
+        </Style>
+
+        <!-- One row of the SETTING / EXPLANATION pairs on the Overlay tab -->
+        <Style x:Key="OverlayNote" TargetType="TextBlock">
+            <Setter Property="Foreground"   Value="{StaticResource EveTextDim}"/>
+            <Setter Property="FontFamily"   Value="{StaticResource FontUI}"/>
+            <Setter Property="FontSize"     Value="11"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin"       Value="0,5,0,0"/>
         </Style>
     </UserControl.Resources>
 
@@ -43,23 +99,29 @@
                 <StackPanel Orientation="Horizontal">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Session Alerts" Style="{StaticResource PageTitle}"/>
-                        <v:HintIcon Margin="8,6,0,0" Text="Everything FCAT can raise, yours and the built-ins, in one list. Hit test on a row so you know what it sounds like before it matters.&#xA;&#xA;Built-ins mute instead of deleting, and muting only kills the sound. The alert still hits the feed and the AAR.&#xA;&#xA;Your own rules watch the intel channel or your game log. Log rules cover every client you have running and name the character, so a scout getting pointed reads differently from you getting pointed.&#xA;&#xA;The overlay goes over the game. Drag it where you want it, then lock it and it stops taking clicks. Clear times are per severity, and Stays up means it never clears itself."/>
+                        <v:HintIcon Margin="8,6,0,0" Text="FEED is what has already happened this session. Filter it by severity when a fight has filled it up.&#xA;&#xA;ALERTS is everything FCAT can raise, yours and the built-ins, in one list. Severity sets the colour and how long it sits on the overlay, and you can change it on any of them. Hit test on a row so you know what it sounds like before it matters - a test never reaches the AAR.&#xA;&#xA;Built-ins switch off instead of deleting. Your own rules watch the intel channel or your game log. Log rules cover every client you have running and name the character, so a scout getting pointed reads differently from you getting pointed.&#xA;&#xA;OVERLAY is the window drawn over the game. Drag it where you want it, then lock it and it stops taking clicks."/>
                     </StackPanel>
-                    <Border CornerRadius="9" Background="{DynamicResource EveRaisedBg}" Padding="8,2" Margin="12,0,0,0"
-                            VerticalAlignment="Center"
-                            Visibility="{Binding Alerts.Count, Converter={StaticResource CountToVisibility}}">
-                        <TextBlock Text="{Binding Alerts.Count}" Foreground="{StaticResource EveTextSecondary}"
-                                   FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold"/>
-                    </Border>
+                    <!-- Feed only, and only when it has something in it. It counts what the feed is
+                         showing, so on the other two tabs it was a number next to a page it says
+                         nothing about. Two nested visibilities rather than one with a trigger: a
+                         local Visibility outranks a style trigger, so the trigger never applied. -->
+                    <Grid Visibility="{Binding IsFeedTab, Converter={StaticResource BoolToVisibility}}">
+                        <Border CornerRadius="9" Background="{DynamicResource EveRaisedBg}" Padding="8,2" Margin="12,0,0,0"
+                                VerticalAlignment="Center"
+                                Visibility="{Binding ShownCount, Converter={StaticResource CountToVisibility}}">
+                            <TextBlock Text="{Binding ShownCount}" Foreground="{StaticResource EveTextSecondary}"
+                                       FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold"/>
+                        </Border>
+                    </Grid>
                 </StackPanel>
             </StackPanel>
-            <TextBlock Text="Every alert raised this session, newest first"
+            <TextBlock Text="{Binding TabHint}"
                        Foreground="{StaticResource EveTextDim}"
                        FontFamily="{StaticResource FontUI}" FontSize="11"
                        HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
         </Grid>
 
-        <!-- Feed / Configure switcher -->
+        <!-- Feed / Alerts / Overlay switcher -->
         <Border Grid.Row="1" CornerRadius="6" Background="#0f1622" BorderBrush="{DynamicResource EveHairlineStrong}" BorderThickness="1"
                 Padding="3" HorizontalAlignment="Left" Margin="34,0,0,12" VerticalAlignment="Top">
             <StackPanel Orientation="Horizontal">
@@ -71,101 +133,140 @@
                         </Style></TextBlock.Style>
                     </TextBlock>
                 </Button>
-                <Button Style="{StaticResource AlertTabBtn}" Command="{Binding SetTabCommand}" CommandParameter="Configure">
-                    <TextBlock Text="Configure" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold">
+                <Button Style="{StaticResource AlertTabBtn}" Command="{Binding SetTabCommand}" CommandParameter="Alerts">
+                    <TextBlock Text="Alerts" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold">
                         <TextBlock.Style><Style TargetType="TextBlock">
                             <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
                             <Style.Triggers><DataTrigger Binding="{Binding IsConfigTab}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/></DataTrigger></Style.Triggers>
                         </Style></TextBlock.Style>
                     </TextBlock>
                 </Button>
+                <Button Style="{StaticResource AlertTabBtn}" Command="{Binding SetTabCommand}" CommandParameter="Overlay">
+                    <TextBlock Text="Overlay" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold">
+                        <TextBlock.Style><Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                            <Style.Triggers><DataTrigger Binding="{Binding IsOverlayTab}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/></DataTrigger></Style.Triggers>
+                        </Style></TextBlock.Style>
+                    </TextBlock>
+                </Button>
             </StackPanel>
         </Border>
 
-        <!-- FEED -->
+        <!-- ================================================================================ FEED -->
         <Border Grid.Row="2" Style="{StaticResource Card}" Margin="34,0,34,24"
                 Visibility="{Binding IsFeedTab, Converter={StaticResource BoolToVisibility}}">
-            <Grid>
-                <!-- Empty state -->
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                            Visibility="{Binding Alerts.Count, Converter={StaticResource CountToInvisibility}}">
-                    <TextBlock Text="Waiting for alerts" Foreground="{StaticResource EveTextSecondary}"
-                               FontFamily="{StaticResource FontUI}" FontSize="14" HorizontalAlignment="Center"/>
+            <Grid Margin="14,14,14,14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Severity filter. A fight fills this list in seconds and the one you want back
+                     afterwards is nearly always the loud one. -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
+                    <TextBlock Text="SHOW" Style="{StaticResource ColumnHead}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <Button Style="{StaticResource AlertTabBtn}" Height="26" Padding="12,0" Command="{Binding SetFeedFilterCommand}" CommandParameter="All">
+                        <TextBlock Text="All" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold">
+                            <TextBlock.Style><Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                <Style.Triggers><DataTrigger Binding="{Binding FeedIsAll}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveAccent}"/></DataTrigger></Style.Triggers>
+                            </Style></TextBlock.Style>
+                        </TextBlock>
+                    </Button>
+                    <Button Style="{StaticResource AlertTabBtn}" Height="26" Padding="12,0" Command="{Binding SetFeedFilterCommand}" CommandParameter="Critical">
+                        <TextBlock Text="Critical" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold">
+                            <TextBlock.Style><Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                <Style.Triggers><DataTrigger Binding="{Binding FeedIsCritical}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveCritical}"/></DataTrigger></Style.Triggers>
+                            </Style></TextBlock.Style>
+                        </TextBlock>
+                    </Button>
+                    <Button Style="{StaticResource AlertTabBtn}" Height="26" Padding="12,0" Command="{Binding SetFeedFilterCommand}" CommandParameter="Warning">
+                        <TextBlock Text="Warning" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold">
+                            <TextBlock.Style><Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                <Style.Triggers><DataTrigger Binding="{Binding FeedIsWarning}" Value="True"><Setter Property="Foreground" Value="{DynamicResource EveAmber}"/></DataTrigger></Style.Triggers>
+                            </Style></TextBlock.Style>
+                        </TextBlock>
+                    </Button>
+                    <Button Style="{StaticResource AlertTabBtn}" Height="26" Padding="12,0" Command="{Binding SetFeedFilterCommand}" CommandParameter="Info">
+                        <TextBlock Text="Info" FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold">
+                            <TextBlock.Style><Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                <Style.Triggers><DataTrigger Binding="{Binding FeedIsInfo}" Value="True"><Setter Property="Foreground" Value="{StaticResource EveTextPrimary}"/></DataTrigger></Style.Triggers>
+                            </Style></TextBlock.Style>
+                        </TextBlock>
+                    </Button>
                 </StackPanel>
 
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding Alerts}" Margin="14,14,14,14">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type models:FcAlert}">
-                                <Border Margin="0,0,0,8">
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="Background"      Value="{DynamicResource EveRaisedBg}"/>
-                                            <Setter Property="BorderBrush"     Value="{DynamicResource EveHairline}"/>
-                                            <Setter Property="BorderThickness" Value="1"/>
-                                            <Setter Property="CornerRadius"    Value="8"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsCritical}" Value="True">
-                                                    <Setter Property="Background"  Value="#1c1012"/>
-                                                    <Setter Property="BorderBrush" Value="{StaticResource EveCritical}"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
+                <Grid Grid.Row="1">
+                    <!-- Empty state. Says which of the two empties this is: nothing has happened yet,
+                         or things happened and the filter is hiding them. -->
+                    <TextBlock Text="{Binding FeedEmptyText}" VerticalAlignment="Center" HorizontalAlignment="Center"
+                               Foreground="{StaticResource EveTextSecondary}"
+                               FontFamily="{StaticResource FontUI}" FontSize="14"
+                               Visibility="{Binding ShownCount, Converter={StaticResource CountToInvisibility}}"/>
 
-                                    <Grid Margin="12,10,12,10">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="3"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Rectangle Grid.Column="0" Width="3" RadiusX="1.5" RadiusY="1.5" Margin="0,1,10,1">
-                                            <Rectangle.Style>
-                                                <Style TargetType="Rectangle">
-                                                    <Setter Property="Fill" Value="{StaticResource EveAmber}"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsCritical}" Value="True">
-                                                            <Setter Property="Fill" Value="{StaticResource EveCritical}"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Rectangle.Style>
-                                        </Rectangle>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding FeedView}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:FcAlert}">
+                                    <Border Margin="0,0,0,8">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background"      Value="{DynamicResource EveRaisedBg}"/>
+                                                <Setter Property="BorderBrush"     Value="{DynamicResource EveHairline}"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                                <Setter Property="CornerRadius"    Value="8"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsCritical}" Value="True">
+                                                        <Setter Property="Background"  Value="#1c1012"/>
+                                                        <Setter Property="BorderBrush" Value="{StaticResource EveCritical}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
 
-                                        <StackPanel Grid.Column="1">
-                                            <TextBlock Text="{Binding AlertTag}"
-                                                       FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsCritical}" Value="True">
-                                                                <Setter Property="Foreground" Value="{StaticResource EveCritical}"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                            <TextBlock Text="{Binding Headline}" Foreground="{StaticResource EveTextPrimary}"
-                                                       FontFamily="{StaticResource FontUI}" FontSize="13" Margin="0,3,0,0" TextWrapping="Wrap"/>
-                                            <TextBlock Text="{Binding SubText}" Foreground="{StaticResource EveTextSecondary}"
-                                                       FontFamily="{StaticResource FontUI}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
-                                                       Visibility="{Binding SubText, Converter={StaticResource StringToVisibility}}"/>
-                                        </StackPanel>
+                                        <Grid Margin="12,10,12,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="3"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Rectangle Grid.Column="0" Style="{StaticResource AlertSeverityRail}" Margin="0,1,10,1"/>
 
-                                        <TextBlock Grid.Column="2" Text="{Binding Timestamp, StringFormat=HH:mm:ss}"
-                                                   Foreground="{StaticResource EveTextDim}" VerticalAlignment="Top"
-                                                   FontFamily="{StaticResource FontMono}" FontSize="11" Margin="10,1,0,0"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                                            <StackPanel Grid.Column="1">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding AlertTag}" Style="{StaticResource AlertSeverityTag}"/>
+                                                    <!-- A test fire looks like the real thing on purpose. The badge is
+                                                         the one thing that separates them in the feed. -->
+                                                    <Border CornerRadius="3" Background="#2a3343" Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                            Visibility="{Binding IsTest, Converter={StaticResource BoolToVisibility}}">
+                                                        <TextBlock Text="TEST" Foreground="{StaticResource EveTextSecondary}"
+                                                                   FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold"/>
+                                                    </Border>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Headline}" Foreground="{StaticResource EveTextPrimary}"
+                                                           FontFamily="{StaticResource FontUI}" FontSize="13" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding SubText}" Foreground="{StaticResource EveTextSecondary}"
+                                                           FontFamily="{StaticResource FontUI}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                                           Visibility="{Binding SubText, Converter={StaticResource StringToVisibility}}"/>
+                                            </StackPanel>
+
+                                            <TextBlock Grid.Column="2" Text="{Binding Timestamp, StringFormat=HH:mm:ss}"
+                                                       Foreground="{StaticResource EveTextDim}" VerticalAlignment="Top"
+                                                       FontFamily="{StaticResource FontMono}" FontSize="11" Margin="10,1,0,0"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
             </Grid>
         </Border>
 
-        <!-- CONFIGURE - every alert FCAT can raise, in one list -->
+        <!-- ============================================================================== ALERTS -->
         <Border Grid.Row="2" Style="{StaticResource Card}" Margin="34,0,34,24"
                 Visibility="{Binding IsConfigTab, Converter={StaticResource BoolToVisibility}}">
             <Grid Margin="24,20,24,20">
@@ -176,10 +277,12 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- master controls -->
+                <!-- Sounds, and adding an alert. Everything here acts on the list below; the overlay
+                     window controls that used to share this strip now have their own tab. -->
                 <Grid Grid.Row="0">
                     <StackPanel Orientation="Horizontal">
-                        <Button Command="{Binding ToggleSoundsCommand}" Style="{StaticResource SecondaryButton}" Height="32" Padding="14,0" Margin="0,0,8,0">
+                        <Button Command="{Binding ToggleSoundsCommand}" Style="{StaticResource SecondaryButton}" Height="32" Padding="14,0" Margin="0,0,8,0"
+                                ToolTip="Silence every alert at once, without changing any of their cues">
                             <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12">
                                 <TextBlock.Style><Style TargetType="TextBlock">
                                     <Setter Property="Text" Value="Sounds: OFF"/>
@@ -194,24 +297,262 @@
                                 ToolTip="Add your own .wav so any alert can use it">
                             <TextBlock Text="+ Add sound" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="12"/>
                         </Button>
-                        <Button Command="{Binding ManageSoundsCommand}" Style="{StaticResource GhostButton}" Height="32" Padding="14,0" Margin="0,0,8,0"
+                        <Button Command="{Binding ManageSoundsCommand}" Style="{StaticResource GhostButton}" Height="32" Padding="14,0"
                                 ToolTip="Preview or delete the sounds you've added"
                                 Visibility="{Binding HasCustomSounds, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Text="Your sounds" Foreground="{StaticResource EveTextSecondary}" FontFamily="{StaticResource FontUI}" FontSize="12"/>
                         </Button>
+                    </StackPanel>
+                    <Button Command="{Binding StartCreateCommand}" Style="{StaticResource PrimaryButton}" Height="32" Padding="18,0"
+                            HorizontalAlignment="Right"
+                            Visibility="{Binding IsCreating, Converter={StaticResource BoolToInvisibility}}">
+                        <TextBlock Text="New alert" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
+                    </Button>
+                </Grid>
 
-                        <Rectangle Width="1" Fill="{DynamicResource EveHairline}" Margin="4,4,12,4"/>
+                <StackPanel Grid.Row="1">
+                    <TextBlock Text="{Binding Status}" Foreground="{StaticResource EveTextDim}"
+                               FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap" Margin="0,12,0,0"
+                               Visibility="{Binding Status, Converter={StaticResource StringToVisibility}}"/>
+                    <!-- "Sounds: ON" with every cue set to None is silence, and the page gave no
+                         sign of it. Say it, because the FC only finds out by not being warned. -->
+                    <TextBlock Text="Sounds are on, but every alert below is set to None - nothing will play. Pick a cue in the SOUND column."
+                               Foreground="{DynamicResource EveAmber}"
+                               FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap" Margin="0,12,0,0"
+                               Visibility="{Binding AllCuesSilent, Converter={StaticResource BoolToVisibility}}"/>
+                </StackPanel>
 
-                        <!-- On-screen overlay: an always-on-top window showing alerts over the game -->
-                        <Button Command="{Binding Hub.ToggleOverlayCommand}" Style="{StaticResource SecondaryButton}" Height="32" Padding="14,0" Margin="0,0,8,0"
-                                ToolTip="Show / hide the on-screen alert overlay over your game">
+                <!-- Column headings. Right margin clears the list's scrollbar so they stay over
+                     their own columns rather than drifting when one appears. -->
+                <Grid Grid.Row="2" Margin="12,18,22,7">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="158"/>
+                        <ColumnDefinition Width="132"/>
+                        <ColumnDefinition Width="42"/>
+                        <ColumnDefinition Width="46"/>
+                        <ColumnDefinition Width="32"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="ALERT"    Style="{StaticResource ColumnHead}"/>
+                    <TextBlock Grid.Column="1" Text="SEVERITY" Style="{StaticResource ColumnHead}"/>
+                    <TextBlock Grid.Column="2" Text="SOUND"    Style="{StaticResource ColumnHead}"/>
+                    <TextBlock Grid.Column="3" Text="TEST"     Style="{StaticResource ColumnHead}"/>
+                    <TextBlock Grid.Column="4" Text="ON"       Style="{StaticResource ColumnHead}"/>
+                </Grid>
+                <Rectangle Grid.Row="2" Height="1" Fill="{DynamicResource EveHairline}" VerticalAlignment="Bottom" Margin="12,0,22,0"/>
+
+                <!-- One section per thing an alert can watch, built-ins and your own together -->
+                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                    <ItemsControl ItemsSource="{Binding Groups}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:AlertGroupRow}">
+                                <StackPanel Margin="0,0,0,20">
+
+                                    <!-- section heading, with one switch for the lot -->
+                                    <Grid Margin="12,0,4,7">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Title}" Style="{StaticResource SectionLabel}"/>
+                                            <TextBlock Text="{Binding Hint}" Foreground="{StaticResource EveTextDim}"
+                                                       FontFamily="{StaticResource FontUI}" FontSize="11"
+                                                       TextWrapping="Wrap" MaxWidth="640" HorizontalAlignment="Left" Margin="0,3,0,0"/>
+                                        </StackPanel>
+                                        <Button Command="{Binding ToggleAllCommand}" Style="{StaticResource GhostButton}"
+                                                Height="26" Padding="12,0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                ToolTip="Switch this whole section on or off"
+                                                Visibility="{Binding Rows.Count, Converter={StaticResource CountToVisibility}}">
+                                            <TextBlock FontFamily="{StaticResource FontUI}" FontSize="11">
+                                                <TextBlock.Style><Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="Turn all on"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource EveAccent}"/>
+                                                    <Style.Triggers><DataTrigger Binding="{Binding AnyOn}" Value="True">
+                                                        <Setter Property="Text" Value="Turn all off"/>
+                                                        <Setter Property="Foreground" Value="{StaticResource EveTextSecondary}"/>
+                                                    </DataTrigger></Style.Triggers>
+                                                </Style></TextBlock.Style>
+                                            </TextBlock>
+                                        </Button>
+                                    </Grid>
+
+                                    <!-- why this section is quiet, when it is -->
+                                    <Border Background="#161d2b" CornerRadius="7" Padding="12,9" Margin="0,0,4,6"
+                                            Visibility="{Binding HasNotice, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="{Binding Notice}" Foreground="{StaticResource EveTextSecondary}"
+                                                   FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap"/>
+                                    </Border>
+
+                                    <ItemsControl ItemsSource="{Binding Rows}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type vm:AlertConfigRow}">
+                                                <Border Background="{DynamicResource EveRaisedBg}" CornerRadius="7" Padding="12,9" Margin="0,0,4,6">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="158"/>
+                                                            <ColumnDefinition Width="132"/>
+                                                            <ColumnDefinition Width="42"/>
+                                                            <ColumnDefinition Width="46"/>
+                                                            <ColumnDefinition Width="32"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="{Binding Name}" FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center">
+                                                                    <TextBlock.Style><Style TargetType="TextBlock">
+                                                                        <Setter Property="Foreground" Value="{StaticResource EveTextPrimary}"/>
+                                                                        <Style.Triggers><DataTrigger Binding="{Binding Enabled}" Value="False">
+                                                                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                                                        </DataTrigger></Style.Triggers>
+                                                                    </Style></TextBlock.Style>
+                                                                </TextBlock>
+                                                                <Border CornerRadius="3" Background="#2a3343" Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                                        Visibility="{Binding IsCustom, Converter={StaticResource BoolToVisibility}}">
+                                                                    <TextBlock Text="YOURS" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold"/>
+                                                                </Border>
+                                                            </StackPanel>
+                                                            <TextBlock Text="{Binding Trigger}" Foreground="{StaticResource EveTextDim}"
+                                                                       FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                                        </StackPanel>
+
+                                                        <!-- Severity: three buttons, not a list. There are only three values, so a
+                                                             dropdown costs a click to show you what you could already have seen. -->
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                            <Button Command="{Binding SetSeverityCommand}" CommandParameter="Info"
+                                                                    Style="{StaticResource SegmentLeft}" ToolTip="Quietest. Clears off the overlay fastest.">
+                                                                <TextBlock Text="Info" FontFamily="{StaticResource FontUI}" FontSize="11">
+                                                                    <TextBlock.Style><Style TargetType="TextBlock">
+                                                                        <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                                                        <Style.Triggers><DataTrigger Binding="{Binding IsInfo}" Value="True">
+                                                                            <Setter Property="Foreground" Value="{StaticResource EveTextPrimary}"/><Setter Property="FontWeight" Value="SemiBold"/>
+                                                                        </DataTrigger></Style.Triggers>
+                                                                    </Style></TextBlock.Style>
+                                                                </TextBlock>
+                                                            </Button>
+                                                            <Button Command="{Binding SetSeverityCommand}" CommandParameter="Warning"
+                                                                    Style="{StaticResource SegmentMid}" ToolTip="Amber card.">
+                                                                <TextBlock Text="Warn" FontFamily="{StaticResource FontUI}" FontSize="11">
+                                                                    <TextBlock.Style><Style TargetType="TextBlock">
+                                                                        <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                                                        <Style.Triggers><DataTrigger Binding="{Binding IsWarning}" Value="True">
+                                                                            <Setter Property="Foreground" Value="{DynamicResource EveAmber}"/><Setter Property="FontWeight" Value="SemiBold"/>
+                                                                        </DataTrigger></Style.Triggers>
+                                                                    </Style></TextBlock.Style>
+                                                                </TextBlock>
+                                                            </Button>
+                                                            <Button Command="{Binding SetSeverityCommand}" CommandParameter="Critical"
+                                                                    Style="{StaticResource SegmentRight}" ToolTip="Red card, and holds the overlay longest.">
+                                                                <TextBlock Text="Crit" FontFamily="{StaticResource FontUI}" FontSize="11">
+                                                                    <TextBlock.Style><Style TargetType="TextBlock">
+                                                                        <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
+                                                                        <Style.Triggers><DataTrigger Binding="{Binding IsCritical}" Value="True">
+                                                                            <Setter Property="Foreground" Value="{DynamicResource EveCritical}"/><Setter Property="FontWeight" Value="SemiBold"/>
+                                                                        </DataTrigger></Style.Triggers>
+                                                                    </Style></TextBlock.Style>
+                                                                </TextBlock>
+                                                            </Button>
+                                                        </StackPanel>
+
+                                                        <!-- Sound: a popup where every cue has its own play button, so you can hear
+                                                             them all without picking any. -->
+                                                        <Grid Grid.Column="2" Margin="0,0,8,0">
+                                                            <Button Command="{Binding OpenSoundPickerCommand}" Style="{StaticResource SecondaryButton}"
+                                                                    Height="28" Padding="10,0" HorizontalAlignment="Stretch"
+                                                                    ToolTip="Choose the cue. Every one has a play button, so you can listen before you pick.">
+                                                                <Grid HorizontalAlignment="Stretch" Width="104">
+                                                                    <TextBlock Text="{Binding SoundLabel}" Foreground="{StaticResource EveTextSecondary}"
+                                                                               FontFamily="{StaticResource FontUI}" FontSize="11"
+                                                                               VerticalAlignment="Center" HorizontalAlignment="Left"
+                                                                               TextTrimming="CharacterEllipsis" MaxWidth="86"/>
+                                                                    <TextBlock Text="▾" Foreground="{StaticResource EveTextDim}" FontSize="10"
+                                                                               VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                                                </Grid>
+                                                            </Button>
+                                                            <Popup IsOpen="{Binding IsSoundPickerOpen, Mode=TwoWay}" StaysOpen="False"
+                                                                   Placement="Bottom" HorizontalOffset="-24" AllowsTransparency="True"
+                                                                   PopupAnimation="Fade" Focusable="False">
+                                                                <Border Background="{DynamicResource EvePanelBg}" BorderBrush="{DynamicResource EveHairlineStrong}"
+                                                                        BorderThickness="1" CornerRadius="8" Padding="6" Margin="0,4,0,0" MinWidth="188">
+                                                                    <Border.Effect><DropShadowEffect Color="#000000" BlurRadius="14" ShadowDepth="3" Opacity="0.55"/></Border.Effect>
+                                                                    <ItemsControl ItemsSource="{Binding SoundChoices}">
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate DataType="{x:Type vm:SoundChoice}">
+                                                                                <Grid Margin="0,0,0,2">
+                                                                                    <Grid.ColumnDefinitions>
+                                                                                        <ColumnDefinition Width="*"/>
+                                                                                        <ColumnDefinition Width="Auto"/>
+                                                                                    </Grid.ColumnDefinitions>
+                                                                                    <!-- AncestorType=ItemsControl, not UserControl: a Popup renders in its
+                                                                                         own visual tree, so there is no page above this to walk up to. -->
+                                                                                    <Button Grid.Column="0" Style="{StaticResource GhostButton}" Height="26" Padding="9,0"
+                                                                                            HorizontalContentAlignment="Left"
+                                                                                            Command="{Binding DataContext.PickSoundCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                                            CommandParameter="{Binding}">
+                                                                                        <TextBlock Text="{Binding Label}" Foreground="{StaticResource EveTextSecondary}"
+                                                                                                   FontFamily="{StaticResource FontUI}" FontSize="11"/>
+                                                                                    </Button>
+                                                                                    <Button Grid.Column="1" Style="{StaticResource GhostButton}" Height="26" Width="28" Padding="0"
+                                                                                            ToolTip="Hear it without choosing it"
+                                                                                            Command="{Binding DataContext.PreviewChoiceCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                                            CommandParameter="{Binding}">
+                                                                                        <Path Data="{StaticResource IconPlay}" Style="{StaticResource ButtonIcon}" Width="10" Height="10" Stroke="{DynamicResource EveAccent}"/>
+                                                                                    </Button>
+                                                                                </Grid>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                </Border>
+                                                            </Popup>
+                                                        </Grid>
+
+                                                        <Button Grid.Column="3" Command="{Binding DataContext.TestCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                CommandParameter="{Binding}" Style="{StaticResource GhostButton}" Height="28" Width="32" Padding="0"
+                                                                HorizontalAlignment="Left" VerticalAlignment="Center"
+                                                                ToolTip="Fire it now, as if it had really happened. Never reaches the AAR.">
+                                                            <Path Data="{StaticResource IconPlay}" Style="{StaticResource ButtonIcon}" Width="11" Height="11" Stroke="{DynamicResource EveAccent}"/>
+                                                        </Button>
+
+                                                        <ToggleButton Grid.Column="4" Style="{StaticResource ToggleSwitch}"
+                                                                      HorizontalAlignment="Left" VerticalAlignment="Center"
+                                                                      IsChecked="{Binding Enabled}"
+                                                                      ToolTip="Off means off - no sound, no feed row, no overlay card and no AAR line."/>
+
+                                                        <Button Grid.Column="5" Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                CommandParameter="{Binding}" Style="{StaticResource GhostButton}" Height="28" Width="28" Padding="0"
+                                                                VerticalAlignment="Center" ToolTip="Delete this alert"
+                                                                Visibility="{Binding IsCustom, Converter={StaticResource BoolToVisibility}}">
+                                                            <TextBlock Text="✕" FontSize="11" Foreground="{DynamicResource EveCritical}"/>
+                                                        </Button>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+            </Grid>
+        </Border>
+
+        <!-- ============================================================================= OVERLAY -->
+        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="34,0,34,24"
+                Visibility="{Binding IsOverlayTab, Converter={StaticResource BoolToVisibility}}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="24,20,24,20" MaxWidth="620" HorizontalAlignment="Left">
+
+                    <TextBlock Text="THE OVERLAY WINDOW" Style="{StaticResource SectionLabel}"/>
+                    <TextBlock Style="{StaticResource OverlayNote}"
+                               Text="An always-on-top window that shows alerts over your game, so you do not have to alt-tab to FCAT to see one. Drag it where you want it, then lock it: a locked overlay is click-through, so it stops stealing clicks from the game."/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                        <Button Command="{Binding Hub.ToggleOverlayCommand}" Style="{StaticResource SecondaryButton}" Height="32" Padding="14,0" Margin="0,0,8,0">
                             <StackPanel Orientation="Horizontal">
                                 <Path Margin="0,0,7,0">
                                     <Path.Style><Style TargetType="Path" BasedOn="{StaticResource ButtonIcon}">
                                         <Setter Property="Data"   Value="{StaticResource IconOverlay}"/>
                                         <Setter Property="Stroke" Value="{StaticResource EveTextDim}"/>
                                         <Style.Triggers><DataTrigger Binding="{Binding Hub.OverlayEnabled}" Value="True">
-                                            <Setter Property="Data"   Value="{StaticResource IconOverlay}"/>
                                             <Setter Property="Stroke" Value="{DynamicResource EveAccent}"/>
                                         </DataTrigger></Style.Triggers>
                                     </Style></Path.Style>
@@ -229,7 +570,6 @@
                             </StackPanel>
                         </Button>
                         <Button Command="{Binding Hub.ToggleOverlayLockCommand}" Style="{StaticResource GhostButton}" Height="32" Padding="14,0"
-                                ToolTip="Lock makes the overlay click-through so it won't steal clicks from the game"
                                 Visibility="{Binding Hub.OverlayEnabled, Converter={StaticResource BoolToVisibility}}">
                             <StackPanel Orientation="Horizontal">
                                 <Path Margin="0,0,7,0">
@@ -244,10 +584,10 @@
                                 </Path>
                                 <TextBlock FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center">
                                     <TextBlock.Style><Style TargetType="TextBlock">
-                                        <Setter Property="Text" Value="Unlocked"/>
+                                        <Setter Property="Text" Value="Unlocked - you can drag it"/>
                                         <Setter Property="Foreground" Value="{DynamicResource EveAmber}"/>
                                         <Style.Triggers><DataTrigger Binding="{Binding Hub.OverlayLocked}" Value="True">
-                                            <Setter Property="Text" Value="Locked"/>
+                                            <Setter Property="Text" Value="Locked - click-through"/>
                                             <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
                                         </DataTrigger></Style.Triggers>
                                     </Style></TextBlock.Style>
@@ -255,138 +595,54 @@
                             </StackPanel>
                         </Button>
                     </StackPanel>
-                    <Button Command="{Binding StartCreateCommand}" Style="{StaticResource PrimaryButton}" Height="32" Padding="18,0"
-                            HorizontalAlignment="Right"
-                            Visibility="{Binding IsCreating, Converter={StaticResource BoolToInvisibility}}">
-                        <TextBlock Text="New alert" FontFamily="{StaticResource FontUI}" FontSize="12" FontWeight="SemiBold"/>
-                    </Button>
-                </Grid>
 
-                <!-- Overlay clear times. The feed below keeps everything; this is the overlay only. -->
-                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,14" VerticalAlignment="Center">
-                    <TextBlock Text="CLEAR FROM OVERLAY AFTER" Foreground="{StaticResource EveTextDim}"
-                               FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="Bold"
-                               VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <TextBlock Text="Critical" Foreground="{DynamicResource EveCritical}"
-                               FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                    <ComboBox Width="86" Height="28" SelectedValuePath="Seconds"
-                              ItemsSource="{Binding ClearChoices}" SelectedValue="{Binding ClearCritical}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ComboBox>
-                    <TextBlock Text="Warning" Foreground="{DynamicResource EveAmber}"
-                               FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center" Margin="12,0,5,0"/>
-                    <ComboBox Width="86" Height="28" SelectedValuePath="Seconds"
-                              ItemsSource="{Binding ClearChoices}" SelectedValue="{Binding ClearWarning}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ComboBox>
-                    <TextBlock Text="Info" Foreground="{StaticResource EveTextSecondary}"
-                               FontFamily="{StaticResource FontUI}" FontSize="11" VerticalAlignment="Center" Margin="12,0,5,0"/>
-                    <ComboBox Width="86" Height="28" SelectedValuePath="Seconds"
-                              ItemsSource="{Binding ClearChoices}" SelectedValue="{Binding ClearInfo}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ComboBox>
+                    <Rectangle Height="1" Fill="{DynamicResource EveHairline}" Margin="0,22,0,18"/>
+
+                    <TextBlock Text="HOW LONG ALERTS STAY UP" Style="{StaticResource SectionLabel}"/>
+                    <TextBlock Style="{StaticResource OverlayNote}"
+                               Text="Per severity, so a tackle lingers while routine chatter clears fast. This governs the overlay only - the Feed tab keeps the whole session either way."/>
+
+                    <Grid Margin="0,12,0,0" HorizontalAlignment="Left">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="84"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Critical" Foreground="{DynamicResource EveCritical}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,8"/>
+                        <ComboBox Grid.Row="0" Grid.Column="1" Width="110" Height="28" Margin="0,0,0,8" SelectedValuePath="Seconds"
+                                  ItemsSource="{Binding ClearChoices}" SelectedValue="{Binding ClearCritical}">
+                            <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate></ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Warning" Foreground="{DynamicResource EveAmber}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,8"/>
+                        <ComboBox Grid.Row="1" Grid.Column="1" Width="110" Height="28" Margin="0,0,0,8" SelectedValuePath="Seconds"
+                                  ItemsSource="{Binding ClearChoices}" SelectedValue="{Binding ClearWarning}">
+                            <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate></ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Info" Foreground="{StaticResource EveTextSecondary}"
+                                   FontFamily="{StaticResource FontUI}" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox Grid.Row="2" Grid.Column="1" Width="110" Height="28" SelectedValuePath="Seconds"
+                                  ItemsSource="{Binding ClearChoices}" SelectedValue="{Binding ClearInfo}">
+                            <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate></ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+
                     <Button Command="{Binding ClearOverlayNowCommand}" Style="{StaticResource GhostButton}"
-                            Height="28" Padding="12,0" Margin="16,0,0,0"
-                            ToolTip="Wipe whatever is on the overlay right now. The feed below keeps it all.">
+                            Height="32" Padding="14,0" Margin="0,18,0,0" HorizontalAlignment="Left"
+                            ToolTip="Wipe whatever is on the overlay right now. The Feed tab keeps it all.">
                         <TextBlock Text="Clear overlay now" Foreground="{StaticResource EveTextSecondary}"
-                                   FontFamily="{StaticResource FontUI}" FontSize="11"/>
+                                   FontFamily="{StaticResource FontUI}" FontSize="12"/>
                     </Button>
                 </StackPanel>
-
-                <TextBlock Grid.Row="2" Text="{Binding Status}" Foreground="{StaticResource EveTextDim}"
-                           FontFamily="{StaticResource FontUI}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"
-                           Visibility="{Binding Status, Converter={StaticResource StringToVisibility}}"/>
-
-                <!-- the one list: built-in alerts and your own, together -->
-                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding Rows}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:AlertConfigRow}">
-                                <Border Background="{DynamicResource EveRaisedBg}" CornerRadius="7" Padding="12,9" Margin="0,0,4,6">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <!-- severity pip -->
-                                        <Ellipse Grid.Column="0" Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,11,0">
-                                            <Ellipse.Style>
-                                                <Style TargetType="Ellipse">
-                                                    <Setter Property="Fill" Value="{StaticResource EveTextDim}"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding SeverityLabel}" Value="WARNING"><Setter Property="Fill" Value="{DynamicResource EveAmber}"/></DataTrigger>
-                                                        <DataTrigger Binding="{Binding SeverityLabel}" Value="CRITICAL"><Setter Property="Fill" Value="{DynamicResource EveCritical}"/></DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Ellipse.Style>
-                                        </Ellipse>
-
-                                        <StackPanel Grid.Column="1">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Name}" FontFamily="{StaticResource FontUI}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center">
-                                                    <TextBlock.Style><Style TargetType="TextBlock">
-                                                        <Setter Property="Foreground" Value="{StaticResource EveTextPrimary}"/>
-                                                        <Style.Triggers><DataTrigger Binding="{Binding Enabled}" Value="False">
-                                                            <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
-                                                        </DataTrigger></Style.Triggers>
-                                                    </Style></TextBlock.Style>
-                                                </TextBlock>
-                                                <Border CornerRadius="3" Background="#2a3343" Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center"
-                                                        Visibility="{Binding IsCustom, Converter={StaticResource BoolToVisibility}}">
-                                                    <TextBlock Text="YOURS" Foreground="{DynamicResource EveAccent}" FontFamily="{StaticResource FontUI}" FontSize="9" FontWeight="SemiBold"/>
-                                                </Border>
-                                            </StackPanel>
-                                            <TextBlock Text="{Binding Trigger}" Foreground="{StaticResource EveTextDim}"
-                                                       FontFamily="{StaticResource FontUI}" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
-                                        </StackPanel>
-
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <!-- ItemTemplate, not DisplayMemberPath: the app's ComboBox template
-                                                 renders the closed box through ItemTemplate, which
-                                                 DisplayMemberPath doesn't populate. -->
-                                            <ComboBox Width="132" Height="28" Margin="0,0,4,0" ToolTip="The cue this alert plays"
-                                                      ItemsSource="{Binding DataContext.SoundChoices, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                      SelectedValuePath="Value" SelectedValue="{Binding Sound}">
-                                                <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate></ComboBox.ItemTemplate>
-                                            </ComboBox>
-                                            <Button Command="{Binding DataContext.TestCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}" Style="{StaticResource GhostButton}" Height="28" Padding="9,0" Margin="0,0,4,0" ToolTip="Fire it now">
-                                                <Path Data="{StaticResource IconPlay}" Style="{StaticResource ButtonIcon}" Width="11" Height="11" Stroke="{DynamicResource EveAccent}"/>
-                                            </Button>
-                                            <Button Command="{Binding ToggleEnabledCommand}" Style="{StaticResource GhostButton}" Height="28" Padding="9,0" Margin="0,0,4,0"
-                                                    ToolTip="Turn this alert on or off">
-                                                <TextBlock FontSize="11">
-                                                    <TextBlock.Style><Style TargetType="TextBlock">
-                                                        <Setter Property="Text" Value="Off"/>
-                                                        <Setter Property="Foreground" Value="{StaticResource EveTextDim}"/>
-                                                        <Style.Triggers><DataTrigger Binding="{Binding Enabled}" Value="True">
-                                                            <Setter Property="Text" Value="On"/><Setter Property="Foreground" Value="{StaticResource EveGreen}"/>
-                                                        </DataTrigger></Style.Triggers>
-                                                    </Style></TextBlock.Style>
-                                                </TextBlock>
-                                            </Button>
-                                            <Button Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}" Style="{StaticResource GhostButton}" Height="28" Padding="9,0" ToolTip="Delete this alert"
-                                                    Visibility="{Binding IsCustom, Converter={StaticResource BoolToVisibility}}">
-                                                <TextBlock Text="✕" FontSize="11" Foreground="{DynamicResource EveCritical}"/>
-                                            </Button>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-
-            </Grid>
+            </ScrollViewer>
         </Border>
 
         <!-- NEW ALERT OVERLAY - a few questions rather than one big form, asked over the page the
@@ -489,6 +745,7 @@
                                     </TextBlock>
                                 </Button>
                                 <ComboBox Width="132" Height="32" ToolTip="The cue this alert plays"
+                                          DropDownOpened="SoundDropDownOpened" DropDownClosed="SoundDropDownClosed"
                                           ItemsSource="{Binding SoundChoices}"
                                           SelectedValuePath="Value" SelectedValue="{Binding NewSound}">
                                     <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate></ComboBox.ItemTemplate>

@@ -1141,33 +1141,10 @@
                                                 <ColumnDefinition Width="3"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-                                            <Rectangle Grid.Column="0" Width="3" RadiusX="1.5" RadiusY="1.5" Margin="0,1,10,1">
-                                                <Rectangle.Style>
-                                                    <Style TargetType="Rectangle">
-                                                        <Setter Property="Fill" Value="{StaticResource EveAmber}"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsCritical}" Value="True">
-                                                                <Setter Property="Fill" Value="{StaticResource EveCritical}"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Rectangle.Style>
-                                            </Rectangle>
+                                            <Rectangle Grid.Column="0" Style="{StaticResource AlertSeverityRail}" Margin="0,1,10,1"/>
 
                                             <StackPanel Grid.Column="1">
-                                                <TextBlock Text="{Binding AlertTag}"
-                                                           FontFamily="{StaticResource FontUI}" FontSize="11" FontWeight="SemiBold">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="Foreground" Value="{StaticResource EveAmber}"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsCritical}" Value="True">
-                                                                    <Setter Property="Foreground" Value="{StaticResource EveCritical}"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
+                                                <TextBlock Text="{Binding AlertTag}" Style="{StaticResource AlertSeverityTag}"/>
                                                 <TextBlock Text="{Binding Headline}" Foreground="{StaticResource EveTextPrimary}"
                                                            FontFamily="{StaticResource FontUI}" FontSize="13" Margin="0,3,0,0" TextWrapping="Wrap"/>
                                                 <TextBlock Text="{Binding SubText}" Foreground="{StaticResource EveTextSecondary}"
